@@ -37,23 +37,79 @@ const syncConflict = {
 };
 
 const aiSuggestion = {
+  id: "618f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   product_id: product.id,
   description: "Train anywhere with a durable five-band set designed for progressive resistance.",
-  seo_title: "Resistance Band Set for Strength",
-  meta_description: "Build strength anywhere with a durable resistance band set.",
-  score: 84,
-  pass: true,
-  tokens_used: 120,
-  evaluation: {
-    score: 84,
-    pass: true,
-    readability_score: 82,
-    keyword_density: { "resistance band set": 4.5 },
-    tone: { style: "professional", pass: true, issues: [] },
-    length: { word_count: 18, max_words: 120, within_limit: true },
-    factual_issues: [],
+  status: "generated",
+  quality_score: {
+    overall: 84,
+    readability: 82,
+    seo: 78,
+    tone: 90,
+    length: 80,
+    factual: 88,
+    notes: ["Clear benefit-led opening"],
   },
+  created_at: "2026-05-07T00:08:00Z",
+  model: "minimax-text-01",
 };
+
+const agentSummary = {
+  id: "agent_sourcing",
+  kind: "sourcing",
+  name: "Sourcing Agent",
+  description: "Finds supplier opportunities from configured feeds.",
+  status: "running",
+  last_run_at: "2026-05-07T04:20:00Z",
+  next_run_at: "2026-05-07T05:00:00Z",
+  last_run_status: "succeeded",
+  in_flight_runs: 1,
+  queued_runs: 2,
+  success_rate: 0.82,
+  updated_at: "2026-05-07T04:31:00Z",
+} as {
+  id: string;
+  kind: "sourcing";
+  name: string;
+  description: string;
+  status: "idle" | "queued" | "running" | "succeeded" | "failed" | "disabled";
+  last_run_at: string;
+  next_run_at: string;
+  last_run_status: "succeeded";
+  in_flight_runs: number;
+  queued_runs: number;
+  success_rate: number;
+  updated_at: string;
+};
+
+type MockAgentRun = {
+  id: string;
+  agent_id: string;
+  status: "idle" | "queued" | "running" | "succeeded" | "failed" | "disabled";
+  trigger: "manual" | "scheduled" | "event";
+  started_at?: string;
+  finished_at?: string;
+  duration_ms?: number;
+  summary?: string;
+  input?: unknown;
+  output?: unknown;
+  created_at: string;
+};
+
+const agentRun: MockAgentRun = {
+  id: "run_1",
+  agent_id: agentSummary.id,
+  status: "succeeded",
+  trigger: "manual",
+  started_at: "2026-05-07T04:20:00Z",
+  finished_at: "2026-05-07T04:21:30Z",
+  duration_ms: 90000,
+  summary: "Found three supplier candidates.",
+  input: { category: "fitness" },
+  output: { candidates: 3 },
+  created_at: "2026-05-07T04:20:00Z",
+};
+const agentRuns: MockAgentRun[] = [agentRun];
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -135,19 +191,41 @@ const server = Bun.serve({
       return json(product);
     }
     if (url.pathname === `/api/v1/products/${product.id}/ai-suggestions` && req.method === "GET") {
-      return json(aiSuggestion);
+      return json({ suggestions: [aiSuggestion] });
     }
     if (url.pathname === `/api/v1/products/${product.id}/generate-description` && req.method === "POST") {
       return json({
-        ...aiSuggestion,
-        description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
-        score: 91,
-        evaluation: {
-          ...aiSuggestion.evaluation,
-          score: 91,
-          readability_score: 88,
+        suggestion: {
+          ...aiSuggestion,
+          id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+          description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
+          created_at: "2026-05-07T00:12:00Z",
         },
       });
+    }
+    if (url.pathname === "/api/v1/agents" && req.method === "GET") {
+      return json({ agents: [agentSummary] });
+    }
+    if (url.pathname === `/api/v1/agents/${agentSummary.id}/history` && req.method === "GET") {
+      return json({ runs: agentRuns });
+    }
+    if (url.pathname === `/api/v1/agents/${agentSummary.id}/run` && req.method === "POST") {
+      const nextRun = {
+        ...agentRun,
+        id: `run_${agentRuns.length + 1}`,
+        status: "queued",
+        trigger: "manual",
+        started_at: undefined,
+        finished_at: undefined,
+        duration_ms: undefined,
+        summary: "Manual run queued by operator.",
+        output: undefined,
+        created_at: "2026-05-07T04:32:00Z",
+      };
+      agentSummary.queued_runs += 1;
+      agentSummary.status = "queued";
+      agentRuns.unshift(nextRun);
+      return json({ run: nextRun }, { status: 202 });
     }
     if (url.pathname === "/api/v1/sync/status" && req.method === "GET") {
       return json({
