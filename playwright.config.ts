@@ -10,7 +10,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // The current E2E harness runs one Next.js server and one in-memory mock API.
+  // Keep the single Chromium project serial until the mock server is worker-isolated.
+  workers: 1,
   reporter: process.env.CI ? "github" : [["list"], ["html", { open: "never" }]],
   use: {
     baseURL,
