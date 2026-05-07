@@ -116,6 +116,7 @@ bun run api:generate
 | ESLint (next + ts)    | `bun run lint`        | zero errors                   |
 | Production build      | `bun run build`       | First Load JS < 200 kB        |
 | Playwright smoke      | `bun run test:e2e`    | green on Chromium             |
+| v1.0.0 release E2E    | `make release-e2e`    | checkout + admin AI flow green |
 
 ## Local development
 
@@ -144,6 +145,15 @@ bun run lint
 bun run test
 bun run build
 ```
+
+### v1.0.0 release E2E
+
+`make release-e2e` runs the full release flow against the deterministic Bun
+mock backend in `e2e/run-with-mock.ts`: product browse, cart, checkout, order
+confirmation, admin login, order lookup, mocked AI description generation, and
+a passing compliance check. It intentionally avoids live MiniMax and
+WooCommerce calls; full compose coverage remains a separate backend/infra
+validation step.
 
 ### Environment variables
 

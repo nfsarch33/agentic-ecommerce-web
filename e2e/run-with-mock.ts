@@ -86,6 +86,31 @@ const complianceResult = {
   ],
 };
 
+const passingComplianceResult = {
+  product_id: product.id,
+  pass: true,
+  score: 96,
+  reasons: [],
+  rule_ids: ["prohibited_words", "seo_minimum_score"],
+  severity: "info",
+  results: [
+    {
+      id: "prohibited_words",
+      pass: true,
+      score: 100,
+      severity: "info",
+      reasons: [],
+    },
+    {
+      id: "seo_minimum_score",
+      pass: true,
+      score: 96,
+      severity: "info",
+      reasons: [],
+    },
+  ],
+};
+
 const agentSummary = {
   id: "agent_sourcing",
   kind: "sourcing",
@@ -231,6 +256,7 @@ function sessionFromAuthorization(req: Request): Response {
 }
 
 const apiPort = Number(process.env.E2E_MOCK_API_PORT ?? 18080);
+const releaseFlowMode = process.env.E2E_RELEASE_FLOW === "true";
 const server = Bun.serve({
   port: apiPort,
   hostname: "127.0.0.1",
@@ -281,7 +307,7 @@ const server = Bun.serve({
       url.pathname === `/api/v1/products/${product.id}/compliance-check` &&
       req.method === "POST"
     ) {
-      return json(complianceResult);
+      return json(releaseFlowMode ? passingComplianceResult : complianceResult);
     }
     if (
       url.pathname === `/api/v1/products/${product.id}/seo-suggestions` &&
