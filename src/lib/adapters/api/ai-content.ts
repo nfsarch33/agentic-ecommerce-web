@@ -5,11 +5,19 @@ import {
   type AIProductDescriptionSuggestion,
   type QualityScoreInput,
 } from "@/lib/domain/ai-description";
+import type { components } from "@/lib/adapters/api/generated/schema";
+
+type BackendContentSuggestion = components["schemas"]["ContentSuggestion"];
+type BackendGenerateDescriptionRequest = Partial<components["schemas"]["GenerateDescriptionRequest"]>;
 
 export interface GenerateDescriptionOptions {
   readonly baseUrl: string;
   readonly productId: string;
   readonly prompt: string;
+  readonly style?: BackendGenerateDescriptionRequest["style"];
+  readonly language?: string;
+  readonly maxWords?: number;
+  readonly keywords?: readonly string[];
   readonly fetchImpl?: typeof fetch;
   readonly signal?: AbortSignal;
   readonly allowBffFallback?: boolean;
@@ -50,6 +58,12 @@ interface RawSuggestion {
   readonly product_id?: unknown;
   readonly productId?: unknown;
   readonly description?: unknown;
+  readonly seo_title?: unknown;
+  readonly meta_description?: unknown;
+  readonly score?: unknown;
+  readonly pass?: unknown;
+  readonly tokens_used?: unknown;
+  readonly evaluation?: unknown;
   readonly status?: unknown;
   readonly quality_score?: unknown;
   readonly qualityScore?: unknown;
@@ -124,7 +138,54 @@ function parseQualityScore(raw: unknown): QualityScoreInput | undefined {
   };
 }
 
+function isBackendContentSuggestion(raw: unknown): raw is BackendContentSuggestion {
+  const value = raw as RawSuggestion;
+  return (
+    typeof value?.product_id === "string" &&
+    typeof value.description === "string" &&
+    typeof value.score === "number" &&
+    typeof value.evaluation === "object" &&
+    value.evaluation !== null
+  );
+}
+
+function backendQualityScore(raw: BackendContentSuggestion): QualityScoreInput {
+  const evaluation = raw.evaluation;
+  return {
+    overall: raw.score,
+    readability: evaluation.readability_score,
+    seo: seoScoreFromKeywordDensity(evaluation.keyword_density, raw.score),
+    tone: evaluation.tone.pass ? 100 : 0,
+    length: evaluation.length.within_limit ? 100 : 0,
+    factual: evaluation.factual_issues.length === 0 ? 100 : 0,
+    notes: [
+      ...evaluation.tone.issues,
+      ...evaluation.factual_issues,
+      ...(raw.pass ? [] : ["Backend quality gate did not pass"]),
+    ],
+  };
+}
+
+function seoScoreFromKeywordDensity(density: Record<string, number>, fallback: number): number {
+  const values = Object.values(density);
+  if (values.length === 0) return fallback;
+  const missing = values.filter((value) => value === 0).length;
+  const overstuffed = values.filter((value) => value > 8).length;
+  return Math.max(0, Math.min(100, 100 - missing * 25 - overstuffed * 10));
+}
+
 function parseSuggestion(raw: unknown): AIProductDescriptionSuggestion {
+  if (isBackendContentSuggestion(raw)) {
+    return createAISuggestion({
+      id: `backend-${raw.product_id}`,
+      productId: raw.product_id,
+      description: raw.description,
+      status: "generated",
+      qualityScore: backendQualityScore(raw),
+      source: "backend",
+    });
+  }
+
   const value = raw as RawSuggestion;
   try {
     return createAISuggestion({
@@ -193,6 +254,15 @@ async function callBffDescribe(opts: GenerateDescriptionOptions): Promise<AIProd
   });
 }
 
+function buildGenerateDescriptionBody(opts: GenerateDescriptionOptions): BackendGenerateDescriptionRequest {
+  const body: BackendGenerateDescriptionRequest = {};
+  if (opts.style) body.style = opts.style;
+  if (opts.language) body.language = opts.language;
+  if (opts.maxWords !== undefined) body.max_words = opts.maxWords;
+  if (opts.keywords !== undefined) body.keywords = [...opts.keywords];
+  return body;
+}
+
 export async function generateDescription(
   opts: GenerateDescriptionOptions,
 ): Promise<AIProductDescriptionSuggestion> {
@@ -206,7 +276,7 @@ export async function generateDescription(
       {
         method: "POST",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ prompt: opts.prompt }),
+        body: JSON.stringify(buildGenerateDescriptionBody(opts)),
         signal: opts.signal,
       },
     );
@@ -240,6 +310,9 @@ export async function getAISuggestions(
     throw new AIContentApiError("getAISuggestions: network error", { cause: err });
   }
   const raw = (await readJson(res, "getAISuggestions")) as RawSuggestionsResponse | unknown[];
+  if (isBackendContentSuggestion(raw)) {
+    return [parseSuggestion(raw)];
+  }
   const suggestions = Array.isArray(raw) ? raw : raw.suggestions;
   if (!Array.isArray(suggestions)) {
     throw new AIContentApiError("getAISuggestions: response body must include suggestions array");

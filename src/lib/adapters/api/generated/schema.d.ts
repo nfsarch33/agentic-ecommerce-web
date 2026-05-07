@@ -59,6 +59,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/{id}/generate-description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate AI product content suggestions
+         * @description Uses the configured fleet AI bridge. The backend never calls MiniMax directly.
+         */
+        post: operations["generateProductDescription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{id}/ai-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get AI content suggestions for a product
+         * @description Generates non-persisted product description, SEO title, and meta description suggestions.
+         */
+        get: operations["getProductAISuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders": {
         parameters: {
             query?: never;
@@ -282,6 +322,51 @@ export interface components {
             total: number;
             page: number;
             per_page: number;
+        };
+        GenerateDescriptionRequest: {
+            /**
+             * @default professional
+             * @enum {string}
+             */
+            style: "professional" | "casual" | "luxury" | "technical";
+            /** @default en-AU */
+            language: string;
+            /** @default 120 */
+            max_words: number;
+            keywords?: string[];
+        };
+        ContentSuggestion: {
+            /** Format: uuid */
+            product_id: string;
+            description: string;
+            seo_title: string;
+            meta_description: string;
+            score: number;
+            pass: boolean;
+            tokens_used: number;
+            evaluation: components["schemas"]["ContentEvaluation"];
+        };
+        ContentEvaluation: {
+            score: number;
+            pass: boolean;
+            readability_score: number;
+            keyword_density: {
+                [key: string]: number;
+            };
+            tone: components["schemas"]["ContentToneEvaluation"];
+            length: components["schemas"]["ContentLengthEvaluation"];
+            factual_issues: string[];
+        };
+        ContentToneEvaluation: {
+            /** @enum {string} */
+            style: "professional" | "casual" | "luxury" | "technical";
+            pass: boolean;
+            issues: string[];
+        };
+        ContentLengthEvaluation: {
+            word_count: number;
+            max_words: number;
+            within_limit: boolean;
         };
         ShippingAddress: {
             name: string;
@@ -697,6 +782,126 @@ export interface operations {
             };
             /** @description Product not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    generateProductDescription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GenerateDescriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated content suggestion and quality evaluation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSuggestion"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Fleet bridge generation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content agent is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getProductAISuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generated content suggestion and quality evaluation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSuggestion"];
+                };
+            };
+            /** @description Invalid product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Fleet bridge generation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content agent is not configured. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
