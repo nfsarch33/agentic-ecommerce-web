@@ -4,58 +4,50 @@ Public Next.js 15 (App Router) frontend for the
 [Agentic Ecommerce](https://github.com/nfsarch33/agentic-ecommerce) Go
 backend.
 
+Current release: **v1.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
+
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Browser                                                     │
-│   ↓                                                         │
-│ Next.js (this repo, PUBLIC)                                 │
-│   - Server Components hit the Go backend over HTTPS         │
-│   - BFF route handlers under /api/* proxy where needed      │
-│   ↓                                                         │
-│ ┌─────────────────────┐  ┌─────────────────────────────┐    │
-│ │ Go mc-api (private) │  │ minimax-openai-bridge       │    │
-│ │ /api/v1/products    │  │  on Tailscale fleet node    │    │
-│ │ /api/v1/orders      │  │  (wsl1 / OCI)               │    │
-│ │ ...                 │  │  /v1/describe etc.          │    │
-│ └─────────────────────┘  └─────────────────────────────┘    │
-│                                ↑                            │
-│                                │  reads minimax-api-1/2     │
-│                                │  via 1Password vault       │
-│                          (state-only on MacBook;             │
-│                           live API calls happen only        │
-│                           on the fleet node)                │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TB
+  Browser["Browser"]
+  Next["Next.js App Router\nserver components + client UI"]
+  BFF["BFF route handlers\n/api/auth/* and /api/ai-describe"]
+  API["Go mc-api\n/api/v1/*"]
+  Bridge["Approved AI bridge\nOpenAI-compatible proxy"]
+  Deploy["Docker image\nCompose, ECS, or Cloud Run"]
+
+  Browser --> Next
+  Next --> API
+  Next --> BFF
+  BFF --> API
+  BFF --> Bridge
+  Next -. build artifact .-> Deploy
 ```
 
 The Go backend (`agentic-ecommerce`) and this frontend are deliberately
 split. The frontend is OSS so contributors can build storefront UI
-patterns; the backend keeps business logic, catalog data, and any
-private workflows.
+patterns; the backend owns API contracts, business logic, catalog data,
+and worker workflows.
 
 ## Hard network policy
 
 This app **MUST NOT** call `api.minimaxi.com` or any `*.minimaxi.com`
 host directly. AI-routed actions (such as automatic product
-descriptions) are proxied through the Tailscale fleet bridge
-(`minimax-openai-bridge`) running on a fleet node (wsl1 or OCI). The
-bridge URL is supplied via the `FLEET_AI_BRIDGE_URL` env var, and
-[`fleetBridgeUrl`](src/lib/adapters/api/ai-describe.ts) refuses any
-URL that:
+descriptions) are proxied through an approved bridge. The bridge URL is
+supplied via the `FLEET_AI_BRIDGE_URL` env var, and
+[`fleetBridgeUrl`](src/lib/adapters/api/ai-describe.ts) refuses any URL
+that:
 
 - targets `api.minimaxi.com` or `*.minimaxi.com`
 - targets `localhost` / `127.0.0.1` / `::1`
-- is outside the Tailscale 100.x range, the `*-travel` aliases,
-  `*.oraclecloud.com`, or the canonical fleet hostnames
+- is outside the approved bridge allowlist
 
 If `FLEET_AI_BRIDGE_URL` is missing, the BFF returns
 `HTTP 503 ai_routing_disabled` rather than silently falling back.
 
-Quota- and rate-limit-aware MiniMax key rotation is implemented in the
-sibling
-[`runx`](https://github.com/nfsarch33/runx) tool's
-`internal/minimaxauth` package and consumed by the bridge.
+Quota- and rate-limit-aware provider key rotation belongs inside the
+approved bridge runtime, not in browser or frontend server code.
 
 ## Security headers
 
@@ -102,6 +94,19 @@ The directory layout follows Clean Architecture:
 
 Tests live next to the code they cover (`*.test.ts` / `*.test.tsx`).
 
+## API and BFF Docs
+
+- Backend API source of truth: `agentic-ecommerce/api/openapi.yaml`.
+- Generated frontend schema: `src/lib/adapters/api/generated/schema.d.ts`.
+- Frontend BFF route documentation: `docs/bff-routes.md`.
+- Deployment guide: `docs/deployment.md`.
+
+Regenerate API types after backend OpenAPI changes:
+
+```bash
+bun run api:generate
+```
+
 ## Quality gates
 
 | Gate                  | Command               | Threshold                     |
@@ -120,8 +125,8 @@ Requires:
 - a running Go backend at `MC_API_BASE_URL` (default
   `http://localhost:8080`) — see
   [agentic-ecommerce](https://github.com/nfsarch33/agentic-ecommerce)
-- a Tailscale fleet bridge URL exported as `FLEET_AI_BRIDGE_URL` if
-  you want to exercise the AI describe route. **Never** point this at
+- an approved bridge URL exported as `FLEET_AI_BRIDGE_URL` if you want
+  to exercise the AI describe route. **Never** point this at
   `api.minimaxi.com` or `localhost`.
 
 ```bash
@@ -131,12 +136,21 @@ bun run dev
 
 The dev server runs on http://localhost:3000 by default.
 
+For a production-style build:
+
+```bash
+bun run typecheck
+bun run lint
+bun run test
+bun run build
+```
+
 ### Environment variables
 
 | Var                    | Default                       | Notes                                  |
 |------------------------|-------------------------------|----------------------------------------|
-| `MC_API_BASE_URL`      | `http://localhost:8080`       | Private Go backend base URL            |
-| `FLEET_AI_BRIDGE_URL`  | _(unset)_                     | Tailscale fleet bridge (validated)     |
+| `MC_API_BASE_URL`      | `http://localhost:8080`       | Go backend base URL                    |
+| `FLEET_AI_BRIDGE_URL`  | _(unset)_                     | Approved AI bridge URL (validated)     |
 | `NEXT_PUBLIC_APP_ORIGIN` | _(unset)_                   | Public storefront origin for deployment docs and headers |
 | `CSP_CONNECT_SRC`      | _(unset)_                     | Deployment header allowlist for API/BFF connections |
 | `CSP_REPORT_URI`       | _(unset)_                     | Optional CSP report endpoint           |
@@ -146,6 +160,5 @@ The dev server runs on http://localhost:3000 by default.
 
 This is a public OSS repo under the Apache-2.0 licence. Pull requests
 welcome for storefront UI improvements, accessibility, performance, and
-test coverage. Backend / business-logic changes belong in the private
-[`agentic-ecommerce`](https://github.com/nfsarch33/agentic-ecommerce)
-repo.
+test coverage. Backend / business-logic changes belong in
+[`agentic-ecommerce`](https://github.com/nfsarch33/agentic-ecommerce).

@@ -25,8 +25,8 @@ must not be exposed through `NEXT_PUBLIC_*` variables or browser storage.
 ## Network policy
 
 This app must not call `api.minimaxi.com` or `*.minimaxi.com` directly. AI
-routes go through the approved Tailscale fleet bridge supplied by
-`FLEET_AI_BRIDGE_URL`; the BFF validates that URL before use.
+routes go through the approved bridge supplied by `FLEET_AI_BRIDGE_URL`; the
+BFF validates that URL before use.
 
 ## CSP and deployment headers
 
