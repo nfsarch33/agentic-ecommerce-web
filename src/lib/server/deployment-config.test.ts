@@ -5,6 +5,7 @@ describe("resolveDeploymentConfig", () => {
   it("normalizes production cloud URLs from environment variables", () => {
     const config = resolveDeploymentConfig({
       MC_API_BASE_URL: "https://api.example.com/",
+      NEXT_PUBLIC_MC_API_BASE_URL: "https://api.example.com/",
       NEXT_PUBLIC_APP_ORIGIN: "https://storefront.example.com/",
       NEXT_PUBLIC_MEDIA_CDN_BASE_URL: "https://cdn.example.com/media/",
       NEXT_PUBLIC_N8N_URL: "https://n8n.example.com/",
@@ -12,6 +13,7 @@ describe("resolveDeploymentConfig", () => {
     });
 
     expect(config.mcApiBaseUrl).toBe("https://api.example.com");
+    expect(config.publicMcApiBaseUrl).toBe("https://api.example.com");
     expect(config.publicAppOrigin).toBe("https://storefront.example.com");
     expect(config.mediaCdnBaseUrl).toBe("https://cdn.example.com/media");
     expect(config.n8nUrl).toBe("https://n8n.example.com");
@@ -68,6 +70,7 @@ describe("deploymentReadiness", () => {
     const readiness = deploymentReadiness({
       NODE_ENV: "production",
       MC_API_BASE_URL: "https://api.example.com",
+      NEXT_PUBLIC_MC_API_BASE_URL: "https://api.example.com",
       NEXT_PUBLIC_APP_ORIGIN: "https://storefront.example.com",
       NEXT_PUBLIC_MEDIA_CDN_BASE_URL: "https://cdn.example.com",
       NEXT_PUBLIC_N8N_URL: "https://n8n.example.com",
@@ -106,5 +109,47 @@ describe("deploymentReadiness", () => {
         ok: false,
       }),
     );
+  });
+
+  it("fails production readiness when browser-facing URLs are not HTTPS", () => {
+    const readiness = deploymentReadiness({
+      NODE_ENV: "production",
+      MC_API_BASE_URL: "http://internal-api.example.local",
+      NEXT_PUBLIC_MC_API_BASE_URL: "http://api.example.com",
+      NEXT_PUBLIC_APP_ORIGIN: "http://storefront.example.com",
+      NEXT_PUBLIC_MEDIA_CDN_BASE_URL: "http://cdn.example.com",
+    });
+
+    expect(readiness.ready).toBe(false);
+    expect(readiness.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "NEXT_PUBLIC_MC_API_BASE_URL",
+          ok: false,
+          detail: "must use HTTPS in production",
+        }),
+        expect.objectContaining({
+          name: "NEXT_PUBLIC_APP_ORIGIN",
+          ok: false,
+          detail: "must use HTTPS in production",
+        }),
+        expect.objectContaining({
+          name: "NEXT_PUBLIC_MEDIA_CDN_BASE_URL",
+          ok: false,
+          detail: "must use HTTPS in production",
+        }),
+      ]),
+    );
+  });
+
+  it("allows a private server-side API URL when the browser API URL is HTTPS", () => {
+    const readiness = deploymentReadiness({
+      NODE_ENV: "production",
+      MC_API_BASE_URL: "http://mc-api.internal:8080",
+      NEXT_PUBLIC_MC_API_BASE_URL: "https://api.example.com",
+      NEXT_PUBLIC_APP_ORIGIN: "https://storefront.example.com",
+    });
+
+    expect(readiness.ready).toBe(true);
   });
 });
