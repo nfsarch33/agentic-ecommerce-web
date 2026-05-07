@@ -10,20 +10,20 @@ function jsonResponse(body: unknown, init: ResponseInit = { status: 200 }): Resp
 
 const rawSettings = {
   tenant_id: "tenant_default",
-  display_name: "Demo Store",
   branding: {
+    store_name: "Demo Store",
     logo_url: "https://cdn.example/logo.svg",
     primary_color: "#2563eb",
     accent_color: "#10b981",
   },
-  preferences: {
-    default_locale: "en-AU",
-    currency: "AUD",
-    timezone: "Australia/Melbourne",
-    ai_tone: "friendly",
-    compliance_strict_mode: true,
-    data_retention_days: 365,
+  woocommerce: {},
+  ai: {
+    content_tone: "friendly",
+    model_tier: "fast",
+    auto_generate_seo: true,
+    fact_check_required: true,
   },
+  compliance: { seo_score_min: 80 },
   updated_at: "2026-05-08T00:00:00Z",
 };
 
@@ -31,17 +31,23 @@ describe("tenant API adapter", () => {
   it("fetches the active tenant settings contract", async () => {
     const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ settings: rawSettings }));
 
-    const settings = await fetchTenantSettings({ baseUrl: "http://api.test", fetchImpl: mockFetch });
+    const settings = await fetchTenantSettings({
+      baseUrl: "http://api.test",
+      fetchImpl: mockFetch,
+    });
 
     expect(settings.tenantId).toBe("tenant_default");
     expect(settings.branding.primaryColor).toBe("#2563eb");
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://api.test/api/v1/tenants/current/settings",
-      expect.objectContaining({ method: "GET" }),
+      "http://api.test/api/v1/tenant/settings",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ "X-Tenant-ID": "tenant_default" }),
+      }),
     );
   });
 
-  it("patches tenant settings using the expected snake_case backend payload", async () => {
+  it("puts tenant settings using the expected backend payload", async () => {
     const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ settings: rawSettings }));
 
     await updateTenantSettings({
@@ -49,7 +55,11 @@ describe("tenant API adapter", () => {
       settings: {
         tenantId: "tenant_default",
         displayName: "Demo Store",
-        branding: { logoUrl: "https://cdn.example/logo.svg", primaryColor: "#2563eb", accentColor: "#10b981" },
+        branding: {
+          logoUrl: "https://cdn.example/logo.svg",
+          primaryColor: "#2563eb",
+          accentColor: "#10b981",
+        },
         preferences: {
           defaultLocale: "en-AU",
           currency: "AUD",
@@ -64,23 +74,25 @@ describe("tenant API adapter", () => {
     });
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://api.test/api/v1/tenants/current/settings",
+      "http://api.test/api/v1/tenant/settings",
       expect.objectContaining({
-        method: "PATCH",
+        method: "PUT",
+        headers: expect.objectContaining({ "X-Tenant-ID": "tenant_default" }),
         body: JSON.stringify({
-          display_name: "Demo Store",
           branding: {
+            store_name: "Demo Store",
             logo_url: "https://cdn.example/logo.svg",
             primary_color: "#2563eb",
             accent_color: "#10b981",
           },
-          preferences: {
-            default_locale: "en-AU",
-            currency: "AUD",
-            timezone: "Australia/Melbourne",
-            ai_tone: "friendly",
-            compliance_strict_mode: true,
-            data_retention_days: 365,
+          ai: {
+            content_tone: "friendly",
+            model_tier: "fast",
+            auto_generate_seo: true,
+            fact_check_required: true,
+          },
+          compliance: {
+            seo_score_min: 80,
           },
         }),
       }),
@@ -157,5 +169,32 @@ describe("tenant API adapter", () => {
         fetchImpl: vi.fn().mockRejectedValue(new Error("ECONNREFUSED")),
       }),
     ).rejects.toBeInstanceOf(TenantApiError);
+  });
+
+  it("uses an explicit tenant header and defaults optional backend settings", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      jsonResponse({
+        tenant_id: "tenant_a",
+        branding: { store_name: "Tenant A" },
+        woocommerce: {},
+        ai: { content_tone: "formal" },
+        compliance: {},
+        updated_at: "2026-05-08T00:00:00Z",
+      }),
+    );
+
+    const settings = await fetchTenantSettings({
+      baseUrl: "http://api.test",
+      tenantId: "tenant_a",
+      fetchImpl: mockFetch,
+    });
+
+    expect(settings.displayName).toBe("Tenant A");
+    expect(settings.branding.accentColor).toBe(settings.branding.primaryColor);
+    expect(settings.preferences.dataRetentionDays).toBe(365);
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://api.test/api/v1/tenant/settings",
+      expect.objectContaining({ headers: expect.objectContaining({ "X-Tenant-ID": "tenant_a" }) }),
+    );
   });
 });

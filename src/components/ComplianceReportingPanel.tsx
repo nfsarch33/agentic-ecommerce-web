@@ -25,9 +25,15 @@ export interface ComplianceReportingPanelProps {
   readonly apiBaseUrl: string;
   readonly reportSummary: ComplianceReportSummary;
   readonly customRules: readonly CustomComplianceRule[];
-  readonly exportReportImpl?: (opts: ExportComplianceReportOptions) => Promise<ComplianceReportExport>;
-  readonly createRuleImpl?: (opts: CreateCustomComplianceRuleOptions) => Promise<CustomComplianceRule>;
-  readonly updateRuleImpl?: (opts: UpdateCustomComplianceRuleOptions) => Promise<CustomComplianceRule>;
+  readonly exportReportImpl?: (
+    opts: ExportComplianceReportOptions,
+  ) => Promise<ComplianceReportExport>;
+  readonly createRuleImpl?: (
+    opts: CreateCustomComplianceRuleOptions,
+  ) => Promise<CustomComplianceRule>;
+  readonly updateRuleImpl?: (
+    opts: UpdateCustomComplianceRuleOptions,
+  ) => Promise<CustomComplianceRule>;
   readonly deleteRuleImpl?: (opts: DeleteCustomComplianceRuleOptions) => Promise<void>;
 }
 
@@ -146,9 +152,20 @@ export function ComplianceReportingPanel({
       const updated = await updateRuleImpl({
         baseUrl: apiBaseUrl,
         ruleId: rule.id,
-        patch: { tenantId: reportSummary.tenantId, enabled: !rule.enabled },
+        patch: {
+          tenantId: reportSummary.tenantId,
+          code: rule.code,
+          name: rule.name,
+          description: rule.description,
+          category: rule.category,
+          severity: rule.severity,
+          enabled: !rule.enabled,
+          condition: rule.condition,
+        },
       });
-      setRules((current) => current.map((candidate) => (candidate.id === updated.id ? updated : candidate)));
+      setRules((current) =>
+        current.map((candidate) => (candidate.id === updated.id ? updated : candidate)),
+      );
       setMessage(`Custom rule ${updated.enabled ? "enabled" : "disabled"}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to update custom rule.");
@@ -162,7 +179,11 @@ export function ComplianceReportingPanel({
     setError(null);
     setIsWorking(true);
     try {
-      await deleteRuleImpl({ baseUrl: apiBaseUrl, tenantId: reportSummary.tenantId, ruleId: rule.id });
+      await deleteRuleImpl({
+        baseUrl: apiBaseUrl,
+        tenantId: reportSummary.tenantId,
+        ruleId: rule.id,
+      });
       setRules((current) => current.filter((candidate) => candidate.id !== rule.id));
       setMessage("Custom compliance rule deleted.");
     } catch (err) {
@@ -175,10 +196,13 @@ export function ComplianceReportingPanel({
   return (
     <section className="mb-8 space-y-8" aria-label="Compliance reporting">
       <div>
-        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">Tenant compliance</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          Tenant compliance
+        </p>
         <h2 className="mt-2 text-2xl font-semibold tracking-tight">Compliance Reporting</h2>
         <p className="mt-2 max-w-3xl text-sm text-gray-600">
-          Track pass/fail movement, rule coverage, and tenant-specific rule overrides for the selected period.
+          Track pass/fail movement, rule coverage, and tenant-specific rule overrides for the
+          selected period.
         </p>
       </div>
 
@@ -186,7 +210,9 @@ export function ComplianceReportingPanel({
         <div
           role={error ? "alert" : "status"}
           className={`rounded-md border p-4 text-sm ${
-            error ? "border-red-200 bg-red-50 text-red-700" : "border-green-200 bg-green-50 text-green-700"
+            error
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-green-200 bg-green-50 text-green-700"
           }`}
         >
           {error ?? message}
@@ -196,11 +222,15 @@ export function ComplianceReportingPanel({
       <div className="grid gap-4 md:grid-cols-4">
         <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500">Pass rate</h3>
-          <p className="mt-2 text-2xl font-semibold text-green-700">{reportSummary.passRate}% pass rate</p>
+          <p className="mt-2 text-2xl font-semibold text-green-700">
+            {reportSummary.passRate}% pass rate
+          </p>
         </article>
         <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500">Fail rate</h3>
-          <p className="mt-2 text-2xl font-semibold text-red-700">{reportSummary.failRate}% fail rate</p>
+          <p className="mt-2 text-2xl font-semibold text-red-700">
+            {reportSummary.failRate}% fail rate
+          </p>
         </article>
         <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500">Average score</h3>
@@ -209,7 +239,9 @@ export function ComplianceReportingPanel({
         <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500">Latest trend</h3>
           <p className="mt-2 text-sm font-semibold text-gray-900">
-            {latestTrend ? `${latestTrend.date}: ${latestTrend.passed} passed, ${latestTrend.failed} failed` : "No trend data"}
+            {latestTrend
+              ? `${latestTrend.date}: ${latestTrend.passed} passed, ${latestTrend.failed} failed`
+              : "No trend data"}
           </p>
         </article>
       </div>
@@ -242,7 +274,8 @@ export function ComplianceReportingPanel({
               <div key={trend.date} className="rounded-md border border-gray-200 p-4">
                 <p className="font-semibold text-gray-950">{trend.date}</p>
                 <p className="mt-1 text-sm text-gray-600">
-                  {trend.passed} passed / {trend.failed} failed / {trend.needsReview} need review, {trend.averageScore}/100 average
+                  {trend.passed} passed / {trend.failed} failed / {trend.needsReview} need review,{" "}
+                  {trend.averageScore}/100 average
                 </p>
               </div>
             ))}
@@ -313,7 +346,9 @@ export function ComplianceReportingPanel({
           <select
             aria-label="Operator"
             value={form.operator}
-            onChange={(event) => updateForm("operator", event.target.value as CustomComplianceOperator)}
+            onChange={(event) =>
+              updateForm("operator", event.target.value as CustomComplianceOperator)
+            }
             className="rounded-md border border-gray-300 p-3 text-sm"
           >
             <option value="does_not_contain">Does not contain</option>
@@ -352,7 +387,9 @@ export function ComplianceReportingPanel({
                   <h4 className="font-semibold text-gray-950">{rule.name}</h4>
                   <p className="mt-1 text-xs text-gray-500">{rule.code}</p>
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${severityClasses(rule.severity)}`}>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${severityClasses(rule.severity)}`}
+                >
                   {rule.severity}
                 </span>
               </div>

@@ -363,50 +363,54 @@ const recentEvents = [
 
 const tenantSettings = {
   tenant_id: "tenant_default",
-  display_name: "Demo Store",
   branding: {
+    store_name: "Demo Store",
     logo_url: "https://cdn.example/logo.svg",
     primary_color: "#2563eb",
     accent_color: "#10b981",
   },
-  preferences: {
-    default_locale: "en-AU",
-    currency: "AUD",
-    timezone: "Australia/Melbourne",
-    ai_tone: "friendly",
-    compliance_strict_mode: true,
-    data_retention_days: 365,
+  woocommerce: {},
+  ai: {
+    content_tone: "friendly",
+    model_tier: "fast",
+    auto_generate_seo: true,
+    fact_check_required: true,
   },
+  compliance: { seo_score_min: 80 },
   updated_at: "2026-05-08T00:00:00Z",
 };
 
 const complianceReportSummary = {
   tenant_id: "tenant_default",
-  period: "30d",
-  generated_at: "2026-05-08T00:00:00Z",
-  totals: { checks: 10, passed: 7, failed: 2, needs_review: 1 },
-  average_score: 83,
+  total_checks: 10,
+  passed_checks: 7,
+  failed_checks: 2,
+  pass_rate: 0.7,
   trends: [
-    { date: "2026-05-01", passed: 3, failed: 1, needs_review: 0, average_score: 84 },
-    { date: "2026-05-02", passed: 4, failed: 1, needs_review: 1, average_score: 82 },
+    { date: "2026-05-01", passed: 3, failed: 1, total: 4 },
+    { date: "2026-05-02", passed: 4, failed: 1, total: 6 },
   ],
-  rule_coverage: [
-    { rule_id: "rule_alt_text", rule_name: "Image alt text", checked: 10, passed: 8, failed: 2 },
-    { rule_id: "rule_claims", rule_name: "No exaggerated claims", checked: 6, passed: 6, failed: 0 },
-  ],
+  rule_stats: {
+    rule_alt_text: { rule_id: "Image alt text", passed: 8, failed: 2, total: 10 },
+    rule_claims: { rule_id: "No exaggerated claims", passed: 6, failed: 0, total: 6 },
+  },
 };
 
 type MockCustomComplianceRule = {
   id: string;
   tenant_id: string;
-  code: string;
   name: string;
   description: string;
-  category: "content" | "seo" | "media" | "legal";
-  severity: "info" | "warning" | "critical";
+  severity: "info" | "warning" | "error" | "critical";
   enabled: boolean;
-  condition: { field: string; operator: "contains" | "does_not_contain" | "equals" | "not_equals" | "min_score" | "max_score"; value: string };
+  definition: {
+    type: "contains_any";
+    field: "title" | "description" | "meta_description" | "seo_title";
+    values: string[];
+    fail_reason?: string;
+  };
   version: number;
+  created_at: string;
   updated_at: string;
 };
 
@@ -414,14 +418,18 @@ const customComplianceRules: MockCustomComplianceRule[] = [
   {
     id: "custom_health_claims",
     tenant_id: "tenant_default",
-    code: "copy.health_claims",
     name: "Health claim guardrail",
     description: "Reject unsupported medical claims.",
-    category: "legal",
     severity: "critical",
     enabled: true,
-    condition: { field: "description", operator: "does_not_contain", value: "cure" },
+    definition: {
+      type: "contains_any",
+      field: "description",
+      values: ["cure"],
+      fail_reason: "Reject unsupported medical claims.",
+    },
     version: 1,
+    created_at: "2026-05-08T00:00:00Z",
     updated_at: "2026-05-08T00:00:00Z",
   },
 ];
@@ -527,7 +535,13 @@ const workflows: MockWorkflow[] = [
 type MockWebhook = {
   id: string;
   url: string;
-  event_types: Array<"product.approved" | "order.placed" | "product.created" | "product.updated" | "compliance.checked">;
+  event_types: Array<
+    | "product.approved"
+    | "order.placed"
+    | "product.created"
+    | "product.updated"
+    | "compliance.checked"
+  >;
   description?: string;
   secret_configured: boolean;
   active: boolean;
@@ -660,8 +674,8 @@ const mediaAssets: MockMediaAsset[] = [
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
-  "access-control-allow-headers": "content-type,accept",
+  "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+  "access-control-allow-headers": "content-type,accept,x-tenant-id,authorization",
 };
 
 function json(body: unknown, init: ResponseInit = {}): Response {
@@ -780,20 +794,20 @@ const server = Bun.serve({
     if (url.pathname === "/api/v1/auth/logout" && req.method === "POST") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
-    if (url.pathname === "/api/v1/tenants/current/settings" && req.method === "GET") {
-      return json({ settings: tenantSettings });
+    if (url.pathname === "/api/v1/tenant/settings" && req.method === "GET") {
+      return json(tenantSettings);
     }
-    if (url.pathname === "/api/v1/tenants/current/settings" && req.method === "PATCH") {
+    if (url.pathname === "/api/v1/tenant/settings" && req.method === "PUT") {
       const body = (await req.json()) as {
-        display_name?: string;
         branding?: typeof tenantSettings.branding;
-        preferences?: typeof tenantSettings.preferences;
+        ai?: typeof tenantSettings.ai;
+        compliance?: typeof tenantSettings.compliance;
       };
-      tenantSettings.display_name = body.display_name ?? tenantSettings.display_name;
       tenantSettings.branding = body.branding ?? tenantSettings.branding;
-      tenantSettings.preferences = body.preferences ?? tenantSettings.preferences;
+      tenantSettings.ai = body.ai ?? tenantSettings.ai;
+      tenantSettings.compliance = body.compliance ?? tenantSettings.compliance;
       tenantSettings.updated_at = "2026-05-08T00:10:00Z";
-      return json({ settings: tenantSettings });
+      return json(tenantSettings);
     }
     if (url.pathname === "/api/v1/products" && req.method === "GET") {
       return json({ products: [product], total: 1, page: 1, per_page: 20 });
@@ -857,8 +871,14 @@ const server = Bun.serve({
       webhooks.unshift(webhook);
       return json({ ...webhook, webhook }, { status: 201 });
     }
-    if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
-      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
+    if (
+      url.pathname.startsWith("/api/v1/webhooks/") &&
+      url.pathname.endsWith("/test") &&
+      req.method === "POST"
+    ) {
+      const webhookId = decodeURIComponent(
+        url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""),
+      );
       const webhook = webhooks.find((candidate) => candidate.id === webhookId);
       if (!webhook) return json({ error: "not_found" }, { status: 404 });
       const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
@@ -1053,11 +1073,11 @@ const server = Bun.serve({
       return json({ rules: [complianceRule] });
     }
     if (url.pathname === "/api/v1/compliance/reports/summary" && req.method === "GET") {
-      return json({ report: complianceReportSummary });
+      return json(complianceReportSummary);
     }
     if (url.pathname === "/api/v1/compliance/reports/export" && req.method === "GET") {
       if (url.searchParams.get("format") === "json") {
-        return json({ report: complianceReportSummary });
+        return json(complianceReportSummary);
       }
       return new Response("rule,passed,failed\nalt_text,8,2\n", {
         headers: {
@@ -1071,26 +1091,35 @@ const server = Bun.serve({
       return json({ rules: customComplianceRules });
     }
     if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "POST") {
-      const body = (await req.json()) as Omit<MockCustomComplianceRule, "id" | "version" | "updated_at">;
+      const body = (await req.json()) as Omit<
+        MockCustomComplianceRule,
+        "tenant_id" | "version" | "created_at" | "updated_at"
+      >;
       const rule: MockCustomComplianceRule = {
         ...body,
-        id: `custom_${customComplianceRules.length + 1}`,
+        id: body.id,
+        tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
         version: 1,
+        created_at: "2026-05-08T00:20:00Z",
         updated_at: "2026-05-08T00:20:00Z",
       };
       customComplianceRules.unshift(rule);
-      return json({ rule }, { status: 201 });
+      return json(rule, { status: 201 });
     }
-    if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "PATCH") {
-      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
+    if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "PUT") {
+      const ruleId = decodeURIComponent(
+        url.pathname.replace("/api/v1/compliance/custom-rules/", ""),
+      );
       const rule = customComplianceRules.find((candidate) => candidate.id === ruleId);
       if (!rule) return json({ error: "not_found" }, { status: 404 });
       const body = (await req.json()) as Partial<MockCustomComplianceRule>;
       Object.assign(rule, body, { updated_at: "2026-05-08T00:21:00Z", version: rule.version + 1 });
-      return json({ rule });
+      return json(rule);
     }
     if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "DELETE") {
-      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
+      const ruleId = decodeURIComponent(
+        url.pathname.replace("/api/v1/compliance/custom-rules/", ""),
+      );
       const index = customComplianceRules.findIndex((candidate) => candidate.id === ruleId);
       if (index === -1) return json({ error: "not_found" }, { status: 404 });
       customComplianceRules.splice(index, 1);
@@ -1125,7 +1154,8 @@ const server = Bun.serve({
       return json({ recommendations: [sourcingRecommendation] });
     }
     if (
-      url.pathname === `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
+      url.pathname ===
+        `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
       req.method === "POST"
     ) {
       const body = (await req.json()) as {
@@ -1133,7 +1163,11 @@ const server = Bun.serve({
         adjusted_unit_cost_cents?: number;
       };
       sourcingRecommendation.status =
-        body.decision === "approve" ? "approved" : body.decision === "reject" ? "rejected" : "adjusted";
+        body.decision === "approve"
+          ? "approved"
+          : body.decision === "reject"
+            ? "rejected"
+            : "adjusted";
       if (body.adjusted_unit_cost_cents !== undefined) {
         sourcingRecommendation.candidates[0].unit_cost_cents = body.adjusted_unit_cost_cents;
       }
@@ -1153,8 +1187,10 @@ const server = Bun.serve({
         min_margin_percent?: number;
       };
       pricingStrategy.enabled = body.enabled ?? pricingStrategy.enabled;
-      pricingStrategy.target_margin_percent = body.target_margin_percent ?? pricingStrategy.target_margin_percent;
-      pricingStrategy.min_margin_percent = body.min_margin_percent ?? pricingStrategy.min_margin_percent;
+      pricingStrategy.target_margin_percent =
+        body.target_margin_percent ?? pricingStrategy.target_margin_percent;
+      pricingStrategy.min_margin_percent =
+        body.min_margin_percent ?? pricingStrategy.min_margin_percent;
       pricingStrategy.updated_at = "2026-05-08T01:21:00Z";
       return json({ strategy: pricingStrategy });
     }
@@ -1167,12 +1203,18 @@ const server = Bun.serve({
     ) {
       return json({ schedules: [agentSchedule] });
     }
-    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` && req.method === "POST") {
+    if (
+      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` &&
+      req.method === "POST"
+    ) {
       agentSchedule.enabled = true;
       agentSchedule.updated_at = "2026-05-08T01:22:00Z";
       return json({ schedule: agentSchedule });
     }
-    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` && req.method === "POST") {
+    if (
+      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` &&
+      req.method === "POST"
+    ) {
       agentSchedule.enabled = false;
       agentSchedule.updated_at = "2026-05-08T01:22:00Z";
       return json({ schedule: agentSchedule });

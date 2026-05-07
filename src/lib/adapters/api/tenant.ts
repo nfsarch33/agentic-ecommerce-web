@@ -3,9 +3,11 @@ import {
   TenantValidationError,
   type TenantSettings,
 } from "@/lib/domain/tenant";
+import type { components } from "./generated/schema";
 
 export interface TenantApiOptions {
   readonly baseUrl: string;
+  readonly tenantId?: string;
   readonly fetchImpl?: typeof fetch;
   readonly signal?: AbortSignal;
 }
@@ -19,12 +21,17 @@ export class TenantApiError extends Error {
   override readonly cause?: unknown;
   readonly status?: number;
 
-  constructor(message: string, options: { readonly status?: number; readonly cause?: unknown } = {}) {
+  constructor(
+    message: string,
+    options: { readonly status?: number; readonly cause?: unknown } = {},
+  ) {
     super(message);
     this.status = options.status;
     this.cause = options.cause;
   }
 }
+
+type GeneratedTenantSettings = components["schemas"]["TenantSettings"];
 
 interface RawTenantSettings {
   readonly tenant_id?: unknown;
@@ -32,6 +39,7 @@ interface RawTenantSettings {
   readonly display_name?: unknown;
   readonly displayName?: unknown;
   readonly branding?: {
+    readonly store_name?: unknown;
     readonly logo_url?: unknown;
     readonly logoUrl?: unknown;
     readonly primary_color?: unknown;
@@ -50,6 +58,12 @@ interface RawTenantSettings {
     readonly complianceStrictMode?: unknown;
     readonly data_retention_days?: unknown;
     readonly dataRetentionDays?: unknown;
+  };
+  readonly ai?: {
+    readonly content_tone?: unknown;
+  };
+  readonly compliance?: {
+    readonly seo_score_min?: unknown;
   };
   readonly updated_at?: unknown;
   readonly updatedAt?: unknown;
@@ -79,35 +93,52 @@ function optionalText(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function tenantHeaders(tenantId: string): Record<string, string> {
+  return { accept: "application/json", "X-Tenant-ID": tenantId };
+}
+
 function parseSettings(raw: unknown): TenantSettings {
-  const value = raw as RawTenantSettings;
+  const value = raw as RawTenantSettings & Partial<GeneratedTenantSettings>;
   const branding = value.branding ?? {};
   const preferences = value.preferences ?? {};
   try {
+    const tenantId = text(value.tenant_id ?? value.tenantId, "settings.tenant_id");
+    const primaryColor = optionalText(branding.primary_color ?? branding.primaryColor) ?? "#2563eb";
     return createTenantSettings({
-      tenantId: text(value.tenant_id ?? value.tenantId, "settings.tenant_id"),
-      displayName: text(value.display_name ?? value.displayName, "settings.display_name"),
+      tenantId,
+      displayName: text(
+        value.display_name ?? value.displayName ?? branding.store_name,
+        "settings.display_name",
+      ),
       branding: {
         logoUrl: optionalText(branding.logo_url ?? branding.logoUrl),
-        primaryColor: text(branding.primary_color ?? branding.primaryColor, "settings.branding.primary_color"),
-        accentColor: text(branding.accent_color ?? branding.accentColor, "settings.branding.accent_color"),
+        primaryColor,
+        accentColor: optionalText(branding.accent_color ?? branding.accentColor) ?? primaryColor,
       },
       preferences: {
-        defaultLocale: text(
-          preferences.default_locale ?? preferences.defaultLocale,
-          "settings.preferences.default_locale",
+        defaultLocale:
+          optionalText(preferences.default_locale ?? preferences.defaultLocale) ?? "en-AU",
+        currency: optionalText(preferences.currency) ?? "AUD",
+        timezone: optionalText(preferences.timezone) ?? "Australia/Melbourne",
+        aiTone: text(
+          preferences.ai_tone ?? preferences.aiTone ?? value.ai?.content_tone,
+          "settings.preferences.ai_tone",
         ),
-        currency: text(preferences.currency, "settings.preferences.currency"),
-        timezone: text(preferences.timezone, "settings.preferences.timezone"),
-        aiTone: text(preferences.ai_tone ?? preferences.aiTone, "settings.preferences.ai_tone"),
-        complianceStrictMode: bool(
-          preferences.compliance_strict_mode ?? preferences.complianceStrictMode,
-          "settings.preferences.compliance_strict_mode",
-        ),
-        dataRetentionDays: number(
-          preferences.data_retention_days ?? preferences.dataRetentionDays,
-          "settings.preferences.data_retention_days",
-        ),
+        complianceStrictMode:
+          typeof (preferences.compliance_strict_mode ?? preferences.complianceStrictMode) ===
+          "boolean"
+            ? bool(
+                preferences.compliance_strict_mode ?? preferences.complianceStrictMode,
+                "settings.preferences.compliance_strict_mode",
+              )
+            : Boolean(value.compliance?.seo_score_min),
+        dataRetentionDays:
+          typeof (preferences.data_retention_days ?? preferences.dataRetentionDays) === "number"
+            ? number(
+                preferences.data_retention_days ?? preferences.dataRetentionDays,
+                "settings.preferences.data_retention_days",
+              )
+            : 365,
       },
       updatedAt: text(value.updated_at ?? value.updatedAt, "settings.updated_at"),
     });
@@ -130,53 +161,61 @@ async function readJson(res: Response, label: string): Promise<unknown> {
 
 function settingsPayload(settings: TenantSettings) {
   return {
-    display_name: settings.displayName,
     branding: {
+      store_name: settings.displayName,
       logo_url: settings.branding.logoUrl,
       primary_color: settings.branding.primaryColor,
       accent_color: settings.branding.accentColor,
     },
-    preferences: {
-      default_locale: settings.preferences.defaultLocale,
-      currency: settings.preferences.currency,
-      timezone: settings.preferences.timezone,
-      ai_tone: settings.preferences.aiTone,
-      compliance_strict_mode: settings.preferences.complianceStrictMode,
-      data_retention_days: settings.preferences.dataRetentionDays,
+    ai: {
+      content_tone: settings.preferences.aiTone,
+      model_tier: "fast",
+      auto_generate_seo: true,
+      fact_check_required: settings.preferences.complianceStrictMode,
+    },
+    compliance: {
+      seo_score_min: settings.preferences.complianceStrictMode ? 80 : 70,
     },
   };
 }
 
 export async function fetchTenantSettings(opts: TenantApiOptions): Promise<TenantSettings> {
   const fetchImpl = opts.fetchImpl ?? fetch;
+  const tenantId = opts.tenantId ?? "tenant_default";
   let res: Response;
   try {
-    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/tenants/current/settings"), {
+    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/tenant/settings"), {
       method: "GET",
-      headers: { accept: "application/json" },
+      headers: tenantHeaders(tenantId),
       signal: opts.signal,
     });
   } catch (err) {
     throw new TenantApiError("fetchTenantSettings: network error", { cause: err });
   }
-  const raw = (await readJson(res, "fetchTenantSettings")) as { settings?: unknown } | RawTenantSettings;
+  const raw = (await readJson(res, "fetchTenantSettings")) as
+    | { settings?: unknown }
+    | RawTenantSettings;
   return parseSettings("settings" in raw ? raw.settings : raw);
 }
 
-export async function updateTenantSettings(opts: UpdateTenantSettingsOptions): Promise<TenantSettings> {
+export async function updateTenantSettings(
+  opts: UpdateTenantSettingsOptions,
+): Promise<TenantSettings> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const settings = createTenantSettings(opts.settings);
   let res: Response;
   try {
-    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/tenants/current/settings"), {
-      method: "PATCH",
-      headers: { accept: "application/json", "content-type": "application/json" },
+    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/tenant/settings"), {
+      method: "PUT",
+      headers: { ...tenantHeaders(settings.tenantId), "content-type": "application/json" },
       body: JSON.stringify(settingsPayload(settings)),
       signal: opts.signal,
     });
   } catch (err) {
     throw new TenantApiError("updateTenantSettings: network error", { cause: err });
   }
-  const raw = (await readJson(res, "updateTenantSettings")) as { settings?: unknown } | RawTenantSettings;
+  const raw = (await readJson(res, "updateTenantSettings")) as
+    | { settings?: unknown }
+    | RawTenantSettings;
   return parseSettings("settings" in raw ? raw.settings : raw);
 }

@@ -104,7 +104,9 @@ describe("fetchComplianceRules", () => {
 
 describe("checkProductCompliance", () => {
   it("posts a product compliance check and parses rule and SEO results", async () => {
-    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ result: rawResult }, { status: 202 }));
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ result: rawResult }, { status: 202 }));
 
     const result = await checkProductCompliance({
       baseUrl: "http://api.test",
@@ -227,14 +229,14 @@ describe("requestSeoSuggestions", () => {
 describe("compliance reporting API", () => {
   const rawReport = {
     tenant_id: "tenant_default",
-    period: "30d",
-    generated_at: "2026-05-08T00:00:00Z",
-    totals: { checks: 10, passed: 7, failed: 2, needs_review: 1 },
-    average_score: 83,
-    trends: [{ date: "2026-05-01", passed: 3, failed: 1, needs_review: 0, average_score: 84 }],
-    rule_coverage: [
-      { rule_id: "rule_alt_text", rule_name: "Image alt text", checked: 10, passed: 8, failed: 2 },
-    ],
+    total_checks: 10,
+    passed_checks: 7,
+    failed_checks: 2,
+    pass_rate: 0.7,
+    trends: [{ date: "2026-05-01", passed: 3, failed: 1, total: 4 }],
+    rule_stats: {
+      rule_alt_text: { rule_id: "rule_alt_text", passed: 8, failed: 2, total: 10 },
+    },
   };
 
   it("fetches report summaries scoped to the active tenant", async () => {
@@ -248,17 +250,23 @@ describe("compliance reporting API", () => {
     });
 
     expect(report.passRate).toBe(70);
-    expect(report.ruleCoverage[0]?.ruleName).toBe("Image alt text");
+    expect(report.ruleCoverage[0]?.ruleName).toBe("rule_alt_text");
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://api.test/api/v1/compliance/reports/summary?tenant_id=tenant_default&period=30d",
-      expect.objectContaining({ method: "GET" }),
+      "http://api.test/api/v1/compliance/reports/summary",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ "X-Tenant-ID": "tenant_default" }),
+      }),
     );
   });
 
   it("exports CSV and JSON compliance reports", async () => {
     const csvFetch = vi.fn().mockResolvedValue(
       new Response("rule,passed\nalt_text,8\n", {
-        headers: { "content-type": "text/csv", "content-disposition": 'attachment; filename="report.csv"' },
+        headers: {
+          "content-type": "text/csv",
+          "content-disposition": 'attachment; filename="report.csv"',
+        },
       }),
     );
 
@@ -282,20 +290,47 @@ describe("compliance reporting API", () => {
     expect(json.mimeType).toBe("application/json");
     expect(json.content).toContain("tenant_default");
   });
+
+  it("parses sparse backend summaries without trend or rule stats", async () => {
+    const report = await fetchComplianceReportSummary({
+      baseUrl: "http://api.test",
+      tenantId: "tenant_default",
+      fetchImpl: vi.fn().mockResolvedValue(
+        jsonResponse({
+          tenant_id: "tenant_default",
+          total_checks: 0,
+          passed_checks: 0,
+          failed_checks: 0,
+          pass_rate: 0,
+          rule_stats: {},
+          product_stats: {},
+          trends: [],
+        }),
+      ),
+    });
+
+    expect(report.passRate).toBe(0);
+    expect(report.trends).toEqual([]);
+    expect(report.ruleCoverage).toEqual([]);
+  });
 });
 
 describe("custom compliance rule API", () => {
   const rawCustomRule = {
     id: "custom_health_claims",
     tenant_id: "tenant_default",
-    code: "copy.health_claims",
     name: "Health claim guardrail",
     description: "Reject unsupported medical claims.",
-    category: "legal",
     severity: "critical",
     enabled: true,
-    condition: { field: "description", operator: "does_not_contain", value: "cure" },
+    definition: {
+      type: "contains_any",
+      field: "description",
+      values: ["cure"],
+      fail_reason: "Reject unsupported medical claims.",
+    },
     version: 1,
+    created_at: "2026-05-08T00:00:00Z",
     updated_at: "2026-05-08T00:00:00Z",
   };
 
@@ -309,11 +344,16 @@ describe("custom compliance rule API", () => {
 
     expect(rules[0]?.condition.field).toBe("description");
     expect(listFetch).toHaveBeenCalledWith(
-      "http://api.test/api/v1/compliance/custom-rules?tenant_id=tenant_default",
-      expect.objectContaining({ method: "GET" }),
+      "http://api.test/api/v1/compliance/custom-rules",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ "X-Tenant-ID": "tenant_default" }),
+      }),
     );
 
-    const createFetch = vi.fn().mockResolvedValue(jsonResponse({ rule: rawCustomRule }, { status: 201 }));
+    const createFetch = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ rule: rawCustomRule }, { status: 201 }));
     await createCustomComplianceRule({
       baseUrl: "http://api.test",
       rule: {
@@ -334,21 +374,26 @@ describe("custom compliance rule API", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
-          tenant_id: "tenant_default",
-          code: "copy.health_claims",
+          id: "copy.health_claims",
           name: "Health claim guardrail",
           description: "Reject unsupported medical claims.",
-          category: "legal",
           severity: "critical",
           enabled: true,
-          condition: { field: "description", operator: "does_not_contain", value: "cure" },
+          definition: {
+            type: "contains_any",
+            field: "description",
+            values: ["cure"],
+            fail_reason: "Reject unsupported medical claims.",
+          },
         }),
       }),
     );
   });
 
   it("updates and deletes custom compliance rules", async () => {
-    const updateFetch = vi.fn().mockResolvedValue(jsonResponse({ rule: { ...rawCustomRule, enabled: false } }));
+    const updateFetch = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ rule: { ...rawCustomRule, enabled: false } }));
     const rule = await updateCustomComplianceRule({
       baseUrl: "http://api.test",
       ruleId: rawCustomRule.id,
@@ -359,7 +404,11 @@ describe("custom compliance rule API", () => {
     expect(rule.enabled).toBe(false);
     expect(updateFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/compliance/custom-rules/custom_health_claims",
-      expect.objectContaining({ method: "PATCH", body: JSON.stringify({ tenant_id: "tenant_default", enabled: false }) }),
+      expect.objectContaining({
+        method: "PUT",
+        headers: expect.objectContaining({ "X-Tenant-ID": "tenant_default" }),
+        body: JSON.stringify({ enabled: false }),
+      }),
     );
 
     const deleteFetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
@@ -371,8 +420,11 @@ describe("custom compliance rule API", () => {
     });
 
     expect(deleteFetch).toHaveBeenCalledWith(
-      "http://api.test/api/v1/compliance/custom-rules/custom_health_claims?tenant_id=tenant_default",
-      expect.objectContaining({ method: "DELETE" }),
+      "http://api.test/api/v1/compliance/custom-rules/custom_health_claims",
+      expect.objectContaining({
+        method: "DELETE",
+        headers: expect.objectContaining({ "X-Tenant-ID": "tenant_default" }),
+      }),
     );
   });
 });
