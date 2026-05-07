@@ -41,6 +41,10 @@ interface RawProduct {
   description?: unknown;
 }
 
+interface RawProductListResponse {
+  products?: unknown;
+}
+
 const knownCurrencies: ReadonlySet<Currency> = new Set<Currency>(["AUD", "USD", "GBP", "EUR"]);
 
 function parseProduct(raw: RawProduct): Product {
@@ -137,8 +141,9 @@ export async function fetchProducts(opts: FetchProductsOptions): Promise<Product
   } catch (err) {
     throw new ProductsApiError("fetchProducts: invalid JSON", err);
   }
-  if (!Array.isArray(raw)) {
-    throw new ProductsApiError("fetchProducts: response body must be a JSON array");
+  const list = raw as RawProductListResponse;
+  if (!Array.isArray(list.products)) {
+    throw new ProductsApiError("fetchProducts: response body must include a products array");
   }
-  return raw.map((item) => parseProduct(item as RawProduct));
+  return list.products.map((item) => parseProduct(item as RawProduct));
 }
