@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import { MediaLibrary } from "@/components/MediaLibrary";
 import { loadMediaLibrary } from "@/lib/usecases/media-library";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Media Library | Agentic Ecommerce Admin",
-  description: "Source product media, edit metadata, and review media QA status.",
-  alternates: {
+  ...adminPageMetadata({
+    title: "Media Library | Agentic Ecommerce Admin",
+    description: "Source product media, edit metadata, and review media QA status.",
     canonical: "/admin/media",
-  },
+  }),
 };
 
 export default async function MediaAdminPage() {

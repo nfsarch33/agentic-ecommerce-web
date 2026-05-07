@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import { SyncDashboard } from "@/components/SyncDashboard";
 import { loadSyncDashboard } from "@/lib/usecases/load-sync-dashboard";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  ...adminPageMetadata({
+    title: "WooCommerce Sync | Agentic Ecommerce Admin",
+    description: "Monitor WooCommerce synchronization status, conflicts, and catalog integration health.",
+    canonical: "/admin/sync",
+  }),
+};
 
 export default async function SyncPage() {
   const serverBaseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";

@@ -1,10 +1,21 @@
+import type { Metadata } from "next";
 import { OrderConfirmation } from "@/components/OrderConfirmation";
 import { fetchOrder } from "@/lib/adapters/api/orders";
+import { privatePageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
 interface OrderConfirmationPageProps {
   readonly params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: OrderConfirmationPageProps): Promise<Metadata> {
+  const { id } = await params;
+  return privatePageMetadata({
+    title: `Order ${id} | Agentic Ecommerce`,
+    description: "Review a private order confirmation and checkout receipt.",
+    canonical: `/orders/${id}`,
+  });
 }
 
 export default async function OrderConfirmationPage({ params }: OrderConfirmationPageProps) {

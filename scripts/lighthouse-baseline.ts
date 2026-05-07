@@ -1,28 +1,15 @@
 #!/usr/bin/env bun
-import { mkdirSync } from "node:fs";
-import { resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(__dirname, "..");
-const url = process.env["LIGHTHOUSE_URL"] ?? "http://127.0.0.1:3000/admin";
-const outputDir = process.env["LIGHTHOUSE_OUTPUT_DIR"] ?? resolve(root, "reports/lighthouse");
-const chromeFlags = process.env["LIGHTHOUSE_CHROME_FLAGS"] ?? "--headless=new --no-sandbox";
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-mkdirSync(outputDir, { recursive: true });
-
-const baseArgs = [
-  "lighthouse",
-  url,
-  "--quiet",
-  "--only-categories=performance,accessibility,best-practices,seo",
-  `--chrome-flags=${chromeFlags}`,
-  "--output=json",
-  "--output=html",
-  `--output-path=${resolve(outputDir, "baseline")}`,
-];
-
-execFileSync("bunx", baseArgs, {
+execFileSync("bun", ["run", "scripts/lighthouse-audit.ts"], {
   cwd: root,
   stdio: "inherit",
-  env: process.env,
+  env: {
+    ...process.env,
+    LIGHTHOUSE_OUTPUT_NAME: process.env["LIGHTHOUSE_OUTPUT_NAME"] ?? "baseline",
+  },
 });

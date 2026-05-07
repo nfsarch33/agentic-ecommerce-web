@@ -21,15 +21,12 @@ test("admin media library sources, filters, edits, and validates media", async (
   await page.getByLabel("Alt text").fill("Athlete using resistance bands at home");
   await page.getByLabel("Tags").fill("lifestyle,home");
   await page.getByRole("button", { name: /source media/i }).click();
-  await expect(page.getByText("Lifestyle image")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lifestyle image", exact: true }).first()).toBeVisible();
 
-  await page.getByRole("button", { name: /edit lifestyle image/i }).click();
-  await page
-    .getByRole("region", { name: /metadata editor/i })
-    .getByLabel("Title")
-    .fill("Updated lifestyle image");
+  await page.getByRole("button", { name: /^edit lifestyle image$/i }).first().click();
+  await page.getByRole("region", { name: /metadata editor/i }).getByLabel("Title").fill("Updated lifestyle image");
   await page.getByRole("button", { name: /save metadata/i }).click();
-  await expect(page.getByText("Updated lifestyle image")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Updated lifestyle image", exact: true }).first()).toBeVisible();
 });
 
 test("admin media library covers empty, error, and loading states", async ({ page }) => {
@@ -69,7 +66,7 @@ test("admin media library covers empty, error, and loading states", async ({ pag
   await page.getByLabel("Alt text").fill("Loading state product media");
   await page.getByRole("button", { name: /source media/i }).click();
   await expect(page.getByRole("button", { name: /sourcing/i })).toBeVisible();
-  await expect(page.getByText("Loading state image")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Loading state image", exact: true })).toBeVisible();
 });
 
 test("product content page manages product media panel", async ({ page }) => {

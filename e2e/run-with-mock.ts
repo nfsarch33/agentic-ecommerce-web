@@ -441,13 +441,7 @@ const workflows: MockWorkflow[] = [
 type MockWebhook = {
   id: string;
   url: string;
-  event_types: Array<
-    | "product.approved"
-    | "order.placed"
-    | "product.created"
-    | "product.updated"
-    | "compliance.checked"
-  >;
+  event_types: Array<"product.approved" | "order.placed" | "product.created" | "product.updated" | "compliance.checked">;
   description?: string;
   secret_configured: boolean;
   active: boolean;
@@ -760,16 +754,10 @@ const server = Bun.serve({
         failure_count: 0,
       };
       webhooks.unshift(webhook);
-      return json(webhook, { status: 201 });
+      return json({ webhook }, { status: 201 });
     }
-    if (
-      url.pathname.startsWith("/api/v1/webhooks/") &&
-      url.pathname.endsWith("/test") &&
-      req.method === "POST"
-    ) {
-      const webhookId = decodeURIComponent(
-        url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""),
-      );
+    if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
+      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
       const webhook = webhooks.find((candidate) => candidate.id === webhookId);
       if (!webhook) return json({ error: "not_found" }, { status: 404 });
       const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
@@ -992,8 +980,7 @@ const server = Bun.serve({
       return json({ recommendations: [sourcingRecommendation] });
     }
     if (
-      url.pathname ===
-        `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
+      url.pathname === `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
       req.method === "POST"
     ) {
       const body = (await req.json()) as {
@@ -1001,11 +988,7 @@ const server = Bun.serve({
         adjusted_unit_cost_cents?: number;
       };
       sourcingRecommendation.status =
-        body.decision === "approve"
-          ? "approved"
-          : body.decision === "reject"
-            ? "rejected"
-            : "adjusted";
+        body.decision === "approve" ? "approved" : body.decision === "reject" ? "rejected" : "adjusted";
       if (body.adjusted_unit_cost_cents !== undefined) {
         sourcingRecommendation.candidates[0].unit_cost_cents = body.adjusted_unit_cost_cents;
       }
@@ -1025,37 +1008,29 @@ const server = Bun.serve({
         min_margin_percent?: number;
       };
       pricingStrategy.enabled = body.enabled ?? pricingStrategy.enabled;
-      pricingStrategy.target_margin_percent =
-        body.target_margin_percent ?? pricingStrategy.target_margin_percent;
-      pricingStrategy.min_margin_percent =
-        body.min_margin_percent ?? pricingStrategy.min_margin_percent;
+      pricingStrategy.target_margin_percent = body.target_margin_percent ?? pricingStrategy.target_margin_percent;
+      pricingStrategy.min_margin_percent = body.min_margin_percent ?? pricingStrategy.min_margin_percent;
       pricingStrategy.updated_at = "2026-05-08T01:21:00Z";
       return json({ strategy: pricingStrategy });
     }
     if (url.pathname === "/api/v1/agents/pricing/recommendations" && req.method === "GET") {
       return json({ recommendations: [pricingRecommendation] });
     }
-    if (url.pathname === "/api/v1/agent-schedules" && req.method === "GET") {
+    if (
+      (url.pathname === "/api/v1/agents/schedules" || url.pathname === "/api/v1/agent-schedules") &&
+      req.method === "GET"
+    ) {
       return json({ schedules: [agentSchedule] });
     }
-    if (
-      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` &&
-      req.method === "POST"
-    ) {
+    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` && req.method === "POST") {
       agentSchedule.enabled = true;
       agentSchedule.updated_at = "2026-05-08T01:22:00Z";
       return json({ schedule: agentSchedule });
     }
-    if (
-      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` &&
-      req.method === "POST"
-    ) {
+    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` && req.method === "POST") {
       agentSchedule.enabled = false;
       agentSchedule.updated_at = "2026-05-08T01:22:00Z";
       return json({ schedule: agentSchedule });
-    }
-    if (url.pathname === "/api/v1/agents/schedules" && req.method === "GET") {
-      return json({ schedules: [agentSchedule] });
     }
     if (url.pathname === `/api/v1/agents/schedules/${agentSchedule.id}` && req.method === "PATCH") {
       const body = (await req.json()) as {
@@ -1158,7 +1133,7 @@ const server = Bun.serve({
 });
 
 const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
-const next = Bun.spawn(["bun", "run", "dev"], {
+const next = Bun.spawn(["bun", "run", "dev:e2e"], {
   stdout: "inherit",
   stderr: "inherit",
   stdin: "inherit",

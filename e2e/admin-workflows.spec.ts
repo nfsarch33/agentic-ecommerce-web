@@ -13,7 +13,7 @@ test("admin workflows page shows status groups and sends review signal", async (
 
   await page.getByRole("link", { name: "Resistance Band Set" }).first().click();
   await expect(page.getByRole("heading", { name: /resistance band set workflow/i })).toBeVisible();
-  await expect(page.getByText("Check compliance")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Check compliance" })).toBeVisible();
   await expect(page.getByText("Waiting for operator approval.")).toBeVisible();
 
   await page.getByLabel(/review note/i).fill("Approved in mocked E2E");

@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import { WebhookManagement } from "@/components/WebhookManagement";
 import { requireServerSession } from "@/lib/server/auth-session";
 import { loadWebhookSettings } from "@/lib/usecases/webhooks";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Webhooks | Agentic Ecommerce Admin",
-  description: "Register outbound webhook destinations and monitor n8n automation status.",
-  alternates: {
+  ...adminPageMetadata({
+    title: "Webhooks | Agentic Ecommerce Admin",
+    description: "Register outbound webhook destinations and monitor n8n automation status.",
     canonical: "/admin/settings/webhooks",
-  },
+  }),
 };
 
 export default async function WebhookSettingsPage() {

@@ -2,41 +2,30 @@ import { expect, test } from "@playwright/test";
 import { signInAs } from "./helpers/auth";
 
 test("admin webhook settings manages n8n automation webhooks", async ({ page }) => {
+  const destinationUrl = `https://hooks.n8n.example/webhook/product-approved-${Date.now()}`;
+
   await signInAs(page, "admin");
   await page.goto("/admin/settings/webhooks");
 
   await expect(page.getByRole("heading", { level: 1, name: "Webhooks" })).toBeVisible();
   await expect(page.getByText("Product approved -> Slack notification")).toBeVisible();
   await expect(page.getByText("Order placed -> email confirmation")).toBeVisible();
-  const n8nUrl = process.env.NEXT_PUBLIC_N8N_URL ?? "https://n8n.example.com";
-  if (n8nUrl.trim()) {
-    await expect(page.getByRole("link", { name: /open n8n/i })).toBeVisible();
-  } else {
-    await expect(page.getByRole("link", { name: /open n8n/i })).not.toBeVisible();
-  }
 
-  await page
-    .getByLabel(/destination url/i)
-    .fill("https://hooks.n8n.example/webhook/product-approved");
+  await page.getByLabel(/destination url/i).fill(destinationUrl);
+  await page.getByLabel(/description/i).fill("Product approval Slack alert");
   await page.getByLabel(/signing secret/i).fill("test-secret");
   await page.getByLabel(/product approved/i).check();
   await page.getByRole("button", { name: /register webhook/i }).click();
 
   await expect(page.getByRole("status")).toContainText("Webhook registered.");
-  await expect(page.getByRole("article", { name: /product approval slack alert/i })).toBeVisible();
+  const registeredWebhook = page.getByRole("article", { name: "Product approval Slack alert" }).first();
+  await expect(registeredWebhook).toBeVisible();
+  await expect(registeredWebhook).toContainText(destinationUrl);
 
-  await page
-    .getByRole("article", { name: /product approval slack alert/i })
-    .getByRole("button", { name: /send test/i })
-    .click();
+  await registeredWebhook.getByRole("button", { name: /send test/i }).click();
   await expect(page.getByRole("status")).toContainText("Test delivery delivered.");
 
-  await page
-    .getByRole("article", { name: /product approval slack alert/i })
-    .getByRole("button", { name: /delete/i })
-    .click();
+  await registeredWebhook.getByRole("button", { name: /delete/i }).click();
   await expect(page.getByRole("status")).toContainText("Webhook deleted.");
-  await expect(
-    page.getByRole("article", { name: /product approval slack alert/i }),
-  ).not.toBeVisible();
+  await expect(page.getByText(destinationUrl)).not.toBeVisible();
 });

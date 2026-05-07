@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import { WorkflowStatusList } from "@/components/WorkflowStatusList";
 import { loadWorkflowList } from "@/lib/usecases/workflows";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Workflow Status | Agentic Ecommerce Admin",
-  description: "Monitor product publish workflows across running, completed, and failed states.",
-  alternates: {
+  ...adminPageMetadata({
+    title: "Workflow Status | Agentic Ecommerce Admin",
+    description: "Monitor product publish workflows across running, completed, and failed states.",
     canonical: "/admin/workflows",
-  },
+  }),
 };
 
 export default async function WorkflowsPage() {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { fetchProductBySlug } from "@/lib/adapters/api/products";
 import { formatMoney, isInStock } from "@/lib/domain/product";
+import { publicPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +12,11 @@ interface ProductDetailPageProps {
 
 export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  return {
+  return publicPageMetadata({
     title: `${slug.replace(/-/g, " ")} | Agentic Ecommerce`,
-    description:
-      "View product details, pricing, and stock status in the Agentic Ecommerce storefront.",
-    alternates: {
-      canonical: `/products/${slug}`,
-    },
-  };
+    description: "View product details, pricing, and stock status in the Agentic Ecommerce storefront.",
+    canonical: `/products/${slug}`,
+  });
 }
 
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
@@ -39,7 +37,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
       </nav>
       <article>
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>
-        {product.description && <p className="mt-4 text-gray-700">{product.description}</p>}
+        {product.description && (
+          <p className="mt-4 text-gray-700">{product.description}</p>
+        )}
         <p className="mt-4 text-2xl font-medium">{formatMoney(product.price)}</p>
         <p className={`mt-2 text-sm ${inStock ? "text-green-700" : "text-red-700"}`}>
           {inStock ? "In stock" : "Out of stock"}
