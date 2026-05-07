@@ -30,6 +30,35 @@ const suggestion = createAISuggestion({
   createdAt: "2026-05-07T04:00:00Z",
 });
 
+const factCheckResult = {
+  id: "fc_1",
+  productId: product.id,
+  suggestionId: suggestion.id,
+  overallConfidence: { score: 86, label: "High" as const },
+  status: "supported" as const,
+  checkedAt: "2026-05-08T01:00:00Z",
+  claims: [
+    {
+      id: "claim_1",
+      text: "The set includes five tension levels.",
+      confidence: { score: 92, label: "High" as const },
+      verdict: "supported" as const,
+      evidence: [
+        {
+          id: "ev_1",
+          title: "Resistance Band Product Manual",
+          uri: "s3://rag-docs/resistance-band-manual.md",
+          excerpt: "The set includes five latex bands with progressive tension levels.",
+          similarity: 0.91,
+          sourceType: "manual",
+          metadata: { page: 2 },
+        },
+      ],
+      explanation: "Product manual confirms this claim.",
+    },
+  ],
+};
+
 describe("AIProductDescriptionPanel", () => {
   it("renders current and generated descriptions side by side with quality scores", () => {
     render(
@@ -44,9 +73,7 @@ describe("AIProductDescriptionPanel", () => {
     expect(screen.getByRole("heading", { name: /ai description studio/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /current description/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /generated suggestion/i })).toBeInTheDocument();
-    expect(
-      screen.getAllByText("Progressive resistance band set with 5 tension levels."),
-    ).toHaveLength(2);
+    expect(screen.getAllByText("Progressive resistance band set with 5 tension levels.")).toHaveLength(2);
     expect(screen.getByText(/Train anywhere with a durable/)).toBeInTheDocument();
     expect(screen.getByText("Readability")).toBeInTheDocument();
     expect(screen.getByText("SEO")).toBeInTheDocument();
@@ -81,9 +108,35 @@ describe("AIProductDescriptionPanel", () => {
         prompt: "Make it punchier",
       }),
     );
-    expect(
-      await screen.findByText("Fresh AI copy focused on ecommerce conversion."),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Fresh AI copy focused on ecommerce conversion.")).toBeInTheDocument();
+  });
+
+  it("shows fact-check evidence returned with a generated suggestion", async () => {
+    const user = userEvent.setup();
+    const generateDescriptionImpl = vi.fn().mockResolvedValue({
+      ...suggestion,
+      id: "sug_2",
+      description: "Fresh AI copy with RAG evidence.",
+      factCheckResult: {
+        ...factCheckResult,
+        suggestionId: "sug_2",
+      },
+    });
+
+    render(
+      <AIProductDescriptionPanel
+        apiBaseUrl="http://api.test"
+        product={product}
+        initialSuggestions={[]}
+        generateDescriptionImpl={generateDescriptionImpl}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /generate description/i }));
+
+    expect(await screen.findByRole("heading", { name: /fact-check evidence/i })).toBeInTheDocument();
+    expect(screen.getByText("The set includes five tension levels.")).toBeInTheDocument();
+    expect(screen.getByText("Resistance Band Product Manual")).toBeInTheDocument();
   });
 
   it("approves, edits, and rejects a generated suggestion", async () => {
@@ -103,13 +156,8 @@ describe("AIProductDescriptionPanel", () => {
     expect(screen.getByText(/suggestion approved/i)).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/editable description/i));
-    await user.type(
-      screen.getByLabelText(/editable description/i),
-      "Operator-edited approved copy.",
-    );
-    expect(screen.getByLabelText(/editable description/i)).toHaveValue(
-      "Operator-edited approved copy.",
-    );
+    await user.type(screen.getByLabelText(/editable description/i), "Operator-edited approved copy.");
+    expect(screen.getByLabelText(/editable description/i)).toHaveValue("Operator-edited approved copy.");
 
     await user.click(screen.getByRole("button", { name: /reject suggestion/i }));
     expect(screen.getByText(/no active ai suggestion/i)).toBeInTheDocument();

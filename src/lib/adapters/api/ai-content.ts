@@ -5,6 +5,7 @@ import {
   type AIProductDescriptionSuggestion,
   type QualityScoreInput,
 } from "@/lib/domain/ai-description";
+import { FactCheckApiError, parseFactCheckResult } from "@/lib/adapters/api/fact-check";
 import type { components } from "@/lib/adapters/api/generated/schema";
 
 type BackendContentSuggestion = components["schemas"]["ContentSuggestion"];
@@ -72,6 +73,8 @@ interface RawSuggestion {
   readonly updated_at?: unknown;
   readonly updatedAt?: unknown;
   readonly model?: unknown;
+  readonly fact_check_result?: unknown;
+  readonly factCheckResult?: unknown;
 }
 
 interface RawGenerateResponse {
@@ -176,6 +179,7 @@ function seoScoreFromKeywordDensity(density: Record<string, number>, fallback: n
 
 function parseSuggestion(raw: unknown): AIProductDescriptionSuggestion {
   if (isBackendContentSuggestion(raw)) {
+    const value = raw as RawSuggestion;
     return createAISuggestion({
       id: `backend-${raw.product_id}`,
       productId: raw.product_id,
@@ -183,6 +187,10 @@ function parseSuggestion(raw: unknown): AIProductDescriptionSuggestion {
       status: "generated",
       qualityScore: backendQualityScore(raw),
       source: "backend",
+      factCheckResult:
+        value.fact_check_result || value.factCheckResult
+          ? parseFactCheckResult(value.fact_check_result ?? value.factCheckResult)
+          : undefined,
     });
   }
 
@@ -198,9 +206,13 @@ function parseSuggestion(raw: unknown): AIProductDescriptionSuggestion {
       updatedAt: parseOptionalString(value?.updated_at ?? value?.updatedAt, "suggestion.updated_at"),
       model: parseOptionalString(value?.model, "suggestion.model"),
       source: "backend",
+      factCheckResult:
+        value?.fact_check_result || value?.factCheckResult
+          ? parseFactCheckResult(value?.fact_check_result ?? value?.factCheckResult)
+          : undefined,
     });
   } catch (err) {
-    if (err instanceof AIContentValidationError || err instanceof AIContentApiError) {
+    if (err instanceof AIContentValidationError || err instanceof AIContentApiError || err instanceof FactCheckApiError) {
       throw new AIContentApiError(`parseSuggestion: ${err.message}`, { cause: err });
     }
     throw err;

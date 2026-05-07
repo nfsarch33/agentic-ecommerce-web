@@ -27,6 +27,33 @@ const rawSuggestion = {
   },
 };
 
+const rawFactCheckResult = {
+  id: "fc_1",
+  product_id: "p_1",
+  suggestion_id: "backend-p_1",
+  overall_confidence: 86,
+  status: "supported",
+  checked_at: "2026-05-08T01:00:00Z",
+  claims: [
+    {
+      id: "claim_1",
+      text: "The set includes five tension levels.",
+      confidence: 92,
+      verdict: "supported",
+      evidence: [
+        {
+          id: "ev_1",
+          title: "Resistance Band Product Manual",
+          uri: "s3://rag-docs/resistance-band-manual.md",
+          excerpt: "The set includes five latex bands with progressive tension levels.",
+          similarity: 0.91,
+          source_type: "manual",
+        },
+      ],
+    },
+  ],
+};
+
 describe("generateDescription", () => {
   it("posts to the backend content-agent endpoint and parses a direct ContentSuggestion", async () => {
     const mockFetch = vi.fn().mockResolvedValue(jsonResponse(rawSuggestion));
@@ -153,6 +180,25 @@ describe("generateDescription", () => {
       "http://api.test/api/v1/products/p_1/generate-description",
       expect.objectContaining({ body: "{}" }),
     );
+  });
+
+  it("parses fact-check results embedded in generated suggestions", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      jsonResponse({
+        ...rawSuggestion,
+        fact_check_result: rawFactCheckResult,
+      }),
+    );
+
+    const suggestion = await generateDescription({
+      baseUrl: "http://api.test",
+      productId: "p_1",
+      prompt: "Describe it",
+      fetchImpl: mockFetch,
+    });
+
+    expect(suggestion.factCheckResult?.overallConfidence.score).toBe(86);
+    expect(suggestion.factCheckResult?.claims[0]?.evidence[0]?.title).toBe("Resistance Band Product Manual");
   });
 
   it("wraps backend network errors when fallback is disabled", async () => {

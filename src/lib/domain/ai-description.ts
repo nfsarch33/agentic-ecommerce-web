@@ -1,3 +1,5 @@
+import type { FactCheckResult } from "@/lib/domain/fact-check";
+
 export type AIContentSuggestionStatus = "generated" | "approved" | "rejected" | "edited";
 export type AISuggestionSource = "backend" | "bff_fallback";
 
@@ -30,6 +32,7 @@ export interface AISuggestionInput {
   readonly updatedAt?: string;
   readonly model?: string;
   readonly source?: AISuggestionSource;
+  readonly factCheckResult?: FactCheckResult;
 }
 
 export interface AIProductDescriptionSuggestion {
@@ -42,6 +45,7 @@ export interface AIProductDescriptionSuggestion {
   readonly updatedAt?: string;
   readonly model?: string;
   readonly source: AISuggestionSource;
+  readonly factCheckResult?: FactCheckResult;
 }
 
 export class AIContentValidationError extends Error {
@@ -93,6 +97,7 @@ export function createAISuggestion(input: AISuggestionInput): AIProductDescripti
     updatedAt: input.updatedAt,
     model: input.model,
     source: input.source ?? "backend",
+    factCheckResult: input.factCheckResult,
   };
 }
 
