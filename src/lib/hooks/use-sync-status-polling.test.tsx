@@ -4,20 +4,14 @@ import { useSyncStatusPolling } from "./use-sync-status-polling";
 import type { SyncStatus } from "@/lib/domain/sync";
 
 const initialStatus: SyncStatus = {
-  state: "idle",
-  syncLagSeconds: 0,
-  inFlightJobs: 0,
-  queuedEvents: 0,
-  conflictCount: 0,
-  errorCount: 0,
+  totalEvents: 0,
+  pendingConflicts: 0,
   updatedAt: "2026-05-07T04:30:00Z",
 };
 
 const nextStatus: SyncStatus = {
   ...initialStatus,
-  state: "running",
-  inFlightJobs: 1,
-  queuedEvents: 2,
+  totalEvents: 2,
   updatedAt: "2026-05-07T04:31:00Z",
 };
 
@@ -42,14 +36,14 @@ describe("useSyncStatusPolling", () => {
       }),
     );
 
-    expect(result.current.status.state).toBe("idle");
+    expect(result.current.status.totalEvents).toBe(0);
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
     expect(fetchStatusImpl).toHaveBeenCalledWith(expect.objectContaining({ baseUrl: "http://api.test" }));
-    expect(result.current.status.state).toBe("running");
+    expect(result.current.status.totalEvents).toBe(2);
     expect(result.current.error).toBeNull();
   });
 
@@ -69,7 +63,7 @@ describe("useSyncStatusPolling", () => {
       await vi.advanceTimersByTimeAsync(1000);
     });
 
-    expect(result.current.status.state).toBe("idle");
+    expect(result.current.status.totalEvents).toBe(0);
     expect(result.current.error).toBe("network down");
   });
 });

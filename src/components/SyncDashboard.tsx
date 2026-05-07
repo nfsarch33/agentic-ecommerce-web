@@ -69,6 +69,7 @@ export function SyncDashboard({
 
   const healthy = isSyncHealthy(status);
   const openConflicts = countOpenConflicts(conflicts);
+  const stateLabel = status.lastError ? "failed" : healthy ? "idle" : "degraded";
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
@@ -85,24 +86,24 @@ export function SyncDashboard({
         <article className="rounded-lg border border-gray-200 p-4 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500">State</h2>
           <p className={`mt-2 text-2xl font-semibold ${healthy ? "text-green-700" : "text-amber-700"}`}>
-            {status.state}
+            {stateLabel}
           </p>
           <p className="mt-1 text-xs text-gray-500">{isPolling ? "Refreshing..." : "Polling every 5s"}</p>
         </article>
         <article className="rounded-lg border border-gray-200 p-4 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-500">Sync lag</h2>
-          <p className="mt-2 text-2xl font-semibold">{status.syncLagSeconds}s</p>
+          <h2 className="text-sm font-medium text-gray-500">Last event</h2>
+          <p className="mt-2 text-2xl font-semibold">{status.lastEvent?.type ?? "none"}</p>
           <p className="mt-1 text-xs text-gray-500">Updated {formatTimestamp(status.updatedAt)}</p>
         </article>
         <article className="rounded-lg border border-gray-200 p-4 shadow-sm">
-          <h2 className="text-sm font-medium text-gray-500">Queue</h2>
-          <p className="mt-2 text-2xl font-semibold">{status.queuedEvents}</p>
-          <p className="mt-1 text-xs text-gray-500">{status.inFlightJobs} in flight</p>
+          <h2 className="text-sm font-medium text-gray-500">Events</h2>
+          <p className="mt-2 text-2xl font-semibold">{status.totalEvents}</p>
+          <p className="mt-1 text-xs text-gray-500">Recorded sync events</p>
         </article>
         <article className="rounded-lg border border-gray-200 p-4 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500">Conflicts</h2>
           <p className="mt-2 text-2xl font-semibold">{openConflicts}</p>
-          <p className="mt-1 text-xs text-gray-500">{status.errorCount} sync errors</p>
+          <p className="mt-1 text-xs text-gray-500">{status.pendingConflicts} pending in backend</p>
         </article>
       </section>
 
@@ -116,7 +117,7 @@ export function SyncDashboard({
         <div className="border-b border-gray-200 p-5">
           <h2 className="text-xl font-semibold">Conflict Review Queue</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Last sync: {formatTimestamp(status.lastSyncAt)}. Next sync: {formatTimestamp(status.nextSyncAt)}.
+            Last backend update: {formatTimestamp(status.updatedAt)}. SSE follow-up is tracked for v0.4.0.
           </p>
         </div>
 
@@ -129,11 +130,11 @@ export function SyncDashboard({
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-                      {conflict.resourceType} {conflict.resourceId}
+                      Product {conflict.sku} / WooCommerce #{conflict.remoteId}
                     </p>
-                    <h3 className="mt-1 text-lg font-semibold">{conflict.field}</h3>
+                    <h3 className="mt-1 text-lg font-semibold">{conflict.fields.length} divergent fields</h3>
                     <p className="mt-1 text-sm text-gray-600">
-                      Detected {formatTimestamp(conflict.detectedAt)}. Status: {conflict.status}
+                      Detected {formatTimestamp(conflict.createdAt)}. Status: {conflict.status}
                     </p>
                   </div>
                   {conflict.resolution && (
@@ -143,47 +144,54 @@ export function SyncDashboard({
                   )}
                 </div>
 
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <section className="rounded-md border border-blue-200 bg-blue-50 p-4">
-                    <h4 className="text-sm font-semibold text-blue-900">Backend value</h4>
-                    <pre className="mt-3 whitespace-pre-wrap break-words rounded bg-white p-3 text-sm text-gray-900">
-                      {formatValue(conflict.backendValue)}
-                    </pre>
-                    <p className="mt-2 text-xs text-blue-800">Updated {formatTimestamp(conflict.localUpdatedAt)}</p>
-                  </section>
-                  <section className="rounded-md border border-purple-200 bg-purple-50 p-4">
-                    <h4 className="text-sm font-semibold text-purple-900">WooCommerce value</h4>
-                    <pre className="mt-3 whitespace-pre-wrap break-words rounded bg-white p-3 text-sm text-gray-900">
-                      {formatValue(conflict.wooCommerceValue)}
-                    </pre>
-                    <p className="mt-2 text-xs text-purple-800">Updated {formatTimestamp(conflict.remoteUpdatedAt)}</p>
-                  </section>
+                <div className="mt-5 space-y-4">
+                  {conflict.fields.map((field) => (
+                    <section key={field.field} className="rounded-md border border-gray-200 p-4">
+                      <h4 className="text-sm font-semibold text-gray-900">{field.field}</h4>
+                      <div className="mt-3 grid gap-4 md:grid-cols-2">
+                        <div className="rounded border border-blue-200 bg-blue-50 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-blue-900">Local value</p>
+                          <pre className="mt-2 whitespace-pre-wrap break-words rounded bg-white p-3 text-sm text-gray-900">
+                            {formatValue(field.localValue)}
+                          </pre>
+                        </div>
+                        <div className="rounded border border-purple-200 bg-purple-50 p-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-purple-900">
+                            WooCommerce value
+                          </p>
+                          <pre className="mt-2 whitespace-pre-wrap break-words rounded bg-white p-3 text-sm text-gray-900">
+                            {formatValue(field.remoteValue)}
+                          </pre>
+                        </div>
+                      </div>
+                    </section>
+                  ))}
                 </div>
 
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button
                     type="button"
                     disabled={pendingConflictId === conflict.id}
-                    onClick={() => void resolveConflict(conflict.id, "accept_local")}
+                    onClick={() => void resolveConflict(conflict.id, "local")}
                     className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-wait disabled:bg-gray-300"
                   >
-                    Accept backend
+                    Use local
                   </button>
                   <button
                     type="button"
                     disabled={pendingConflictId === conflict.id}
-                    onClick={() => void resolveConflict(conflict.id, "accept_remote")}
+                    onClick={() => void resolveConflict(conflict.id, "remote")}
                     className="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:cursor-wait disabled:bg-gray-300"
                   >
-                    Accept WooCommerce
+                    Use WooCommerce
                   </button>
                   <button
                     type="button"
                     disabled={pendingConflictId === conflict.id}
-                    onClick={() => void resolveConflict(conflict.id, "mark_resolved")}
+                    onClick={() => void resolveConflict(conflict.id, "manual")}
                     className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 disabled:cursor-wait disabled:bg-gray-100"
                   >
-                    Mark resolved
+                    Mark manual
                   </button>
                 </div>
               </article>

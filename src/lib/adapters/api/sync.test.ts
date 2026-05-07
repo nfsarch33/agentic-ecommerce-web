@@ -14,28 +14,27 @@ function jsonResponse(body: unknown, init: ResponseInit = { status: 200 }): Resp
 }
 
 const rawStatus = {
-  state: "running",
-  last_sync_at: "2026-05-07T04:30:00Z",
-  next_sync_at: "2026-05-07T04:35:00Z",
-  sync_lag_seconds: 18,
-  in_flight_jobs: 2,
-  queued_events: 7,
-  conflict_count: 1,
-  error_count: 0,
+  total_events: 3,
+  pending_conflicts: 1,
+  last_event: {
+    id: "event_1",
+    type: "conflict_detected",
+    product_id: "p_1",
+    remote_id: 44,
+    message: "manual sync conflict detected",
+    created_at: "2026-05-07T04:30:00Z",
+  },
   updated_at: "2026-05-07T04:31:00Z",
 };
 
 const rawConflict = {
   id: "conflict_1",
-  resource_type: "product",
-  resource_id: "p_1",
-  field: "price.amount",
-  backend_value: 3500,
-  woocommerce_value: 3999,
-  local_updated_at: "2026-05-07T04:20:00Z",
-  remote_updated_at: "2026-05-07T04:25:00Z",
-  detected_at: "2026-05-07T04:26:00Z",
-  status: "open",
+  product_id: "p_1",
+  sku: "SKU-1",
+  remote_id: 44,
+  fields: [{ field: "price", local_value: "3500", remote_value: "3999" }],
+  status: "pending",
+  created_at: "2026-05-07T04:26:00Z",
 };
 
 describe("fetchSyncStatus", () => {
@@ -44,9 +43,9 @@ describe("fetchSyncStatus", () => {
 
     const status = await fetchSyncStatus({ baseUrl: "http://api.test", fetchImpl: mockFetch });
 
-    expect(status.state).toBe("running");
-    expect(status.syncLagSeconds).toBe(18);
-    expect(status.conflictCount).toBe(1);
+    expect(status.totalEvents).toBe(3);
+    expect(status.pendingConflicts).toBe(1);
+    expect(status.lastEvent?.type).toBe("conflict_detected");
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/sync/status",
       expect.objectContaining({ method: "GET" }),
@@ -64,7 +63,7 @@ describe("fetchSyncStatus", () => {
     await expect(
       fetchSyncStatus({
         baseUrl: "http://api.test",
-        fetchImpl: vi.fn().mockResolvedValue(jsonResponse({ state: "unknown" })),
+        fetchImpl: vi.fn().mockResolvedValue(jsonResponse({ total_events: -1, pending_conflicts: 0 })),
       }),
     ).rejects.toBeInstanceOf(SyncApiError);
   });
@@ -77,8 +76,8 @@ describe("fetchSyncConflicts", () => {
     const conflicts = await fetchSyncConflicts({ baseUrl: "http://api.test", fetchImpl: mockFetch });
 
     expect(conflicts).toHaveLength(1);
-    expect(conflicts[0]?.backendValue).toBe(3500);
-    expect(conflicts[0]?.wooCommerceValue).toBe(3999);
+    expect(conflicts[0]?.sku).toBe("SKU-1");
+    expect(conflicts[0]?.fields[0]?.remoteValue).toBe("3999");
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/sync/conflicts",
       expect.objectContaining({ method: "GET" }),
@@ -90,30 +89,28 @@ describe("resolveSyncConflict", () => {
   it("posts the selected resolution and parses the updated conflict", async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       jsonResponse({
-        conflict: {
-          ...rawConflict,
-          resolution: "accept_remote",
-          status: "resolved",
-          resolved_at: "2026-05-07T04:40:00Z",
-        },
+        ...rawConflict,
+        resolution: "remote",
+        status: "resolved",
+        resolved_at: "2026-05-07T04:40:00Z",
       }),
     );
 
     const conflict = await resolveSyncConflict({
       baseUrl: "http://api.test",
       conflictId: "conflict_1",
-      resolution: "accept_remote",
+      resolution: "remote",
       fetchImpl: mockFetch,
     });
 
     expect(conflict.status).toBe("resolved");
-    expect(conflict.resolution).toBe("accept_remote");
+    expect(conflict.resolution).toBe("remote");
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/sync/conflicts/conflict_1/resolve",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ "content-type": "application/json" }),
-        body: JSON.stringify({ resolution: "accept_remote" }),
+        body: JSON.stringify({ resolution: "remote" }),
       }),
     );
   });

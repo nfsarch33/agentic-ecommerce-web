@@ -128,6 +128,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sync/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get WooCommerce sync status */
+        get: operations["getSyncStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/conflicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending WooCommerce sync conflicts */
+        get: operations["listSyncConflicts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/conflicts/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve a WooCommerce sync conflict */
+        post: operations["resolveSyncConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/products/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a local product to WooCommerce */
+        post: operations["publishProductToWooCommerce"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/woocommerce/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Receive WooCommerce order webhooks */
+        post: operations["receiveWooCommerceOrderWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/woocommerce/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Receive WooCommerce product webhooks */
+        post: operations["receiveWooCommerceProductWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -247,6 +349,88 @@ export interface components {
         };
         CartRequest: {
             items: components["schemas"]["OrderItemInput"][];
+        };
+        StatusResponse: {
+            status: string;
+        };
+        SyncEvent: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "product_imported" | "product_published" | "inventory_reconciled" | "conflict_detected" | "sync_failed";
+            /** Format: uuid */
+            product_id?: string;
+            remote_id?: number;
+            message?: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            created_at: string;
+        };
+        SyncStatus: {
+            total_events: number;
+            pending_conflicts: number;
+            last_event?: components["schemas"]["SyncEvent"];
+            last_error?: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        SyncConflictField: {
+            /** @enum {string} */
+            field: "title" | "price" | "stock" | "description";
+            local_value: string;
+            remote_value: string;
+        };
+        SyncConflict: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            product_id?: string;
+            sku: string;
+            remote_id: number;
+            /** @enum {string} */
+            status: "pending" | "resolved";
+            fields: components["schemas"]["SyncConflictField"][];
+            resolution?: string;
+            note?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            resolved_at?: string;
+        };
+        ConflictListResponse: {
+            conflicts: components["schemas"]["SyncConflict"][];
+        };
+        ResolveConflictRequest: {
+            /**
+             * @description Operator decision: keep local data, accept remote WooCommerce data, or mark as manually reconciled.
+             * @enum {string}
+             */
+            resolution: "local" | "remote" | "manual";
+            note?: string;
+        };
+        WooCommerceOrderWebhook: {
+            id: number;
+            status: string;
+            total?: string;
+            currency?: string;
+            billing?: {
+                /** Format: email */
+                email?: string;
+            };
+            line_items?: {
+                id?: number;
+                name?: string;
+                product_id?: number;
+                quantity?: number;
+                total?: string;
+            }[];
+        };
+        WooCommerceProductWebhook: {
+            id: number;
+            sku: string;
+            name: string;
         };
         ErrorResponse: {
             error: string;
@@ -713,6 +897,229 @@ export interface operations {
                 };
             };
             /** @description Cart validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSyncStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current sync status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStatus"];
+                };
+            };
+        };
+    };
+    listSyncConflicts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending conflicts queued for manual review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictListResponse"];
+                };
+            };
+        };
+    };
+    resolveSyncConflict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveConflictRequest"];
+            };
+        };
+        responses: {
+            /** @description Conflict marked resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncConflict"];
+                };
+            };
+            /** @description Invalid JSON body or conflict ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict cannot be resolved. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    publishProductToWooCommerce: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Product published */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description Invalid product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description WooCommerce publish failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    receiveWooCommerceOrderWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-WC-Webhook-Signature": string;
+                "X-WC-Webhook-Topic"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WooCommerceOrderWebhook"];
+            };
+        };
+        responses: {
+            /** @description Webhook accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description Invalid HMAC signature. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid WooCommerce order payload. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    receiveWooCommerceProductWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-WC-Webhook-Signature": string;
+                "X-WC-Webhook-Topic"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WooCommerceProductWebhook"];
+            };
+        };
+        responses: {
+            /** @description Webhook accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description Invalid HMAC signature. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid WooCommerce product payload. */
             422: {
                 headers: {
                     [name: string]: unknown;
