@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProductList } from "./ProductList";
+import { CartProvider } from "./CartProvider";
 import { Product } from "@/lib/domain/product";
 
 describe("ProductList", () => {
@@ -21,7 +22,11 @@ describe("ProductList", () => {
         stock: 1,
       }),
     ];
-    render(<ProductList products={products} />);
+    render(
+      <CartProvider>
+        <ProductList products={products} />
+      </CartProvider>,
+    );
     expect(screen.getByRole("heading", { name: /foam roller/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /yoga mat/i })).toBeInTheDocument();
   });
