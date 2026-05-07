@@ -7,6 +7,12 @@ import {
   type FactCheckResult,
   type FactCheckStatus,
 } from "@/lib/domain/fact-check";
+import type { components } from "@/lib/adapters/api/generated/schema";
+
+type BackendFactCheckResult = components["schemas"]["FactCheckResult"];
+type BackendClaimCheck = components["schemas"]["ClaimCheck"];
+type BackendRAGSearchResult = components["schemas"]["RAGSearchResult"];
+type BackendRAGSearchResponse = components["schemas"]["RAGSearchResponse"];
 
 export interface GetLatestFactCheckResultOptions {
   readonly baseUrl: string;
@@ -37,7 +43,7 @@ export class FactCheckApiError extends Error {
   }
 }
 
-interface RawEvidenceSource {
+type RawEvidenceSource = Partial<BackendRAGSearchResult> & {
   readonly id?: unknown;
   readonly title?: unknown;
   readonly uri?: unknown;
@@ -46,18 +52,18 @@ interface RawEvidenceSource {
   readonly source_type?: unknown;
   readonly sourceType?: unknown;
   readonly metadata?: unknown;
-}
+};
 
-interface RawClaim {
+type RawClaim = Partial<BackendClaimCheck> & {
   readonly id?: unknown;
   readonly text?: unknown;
   readonly confidence?: unknown;
   readonly verdict?: unknown;
   readonly evidence?: unknown;
   readonly explanation?: unknown;
-}
+};
 
-interface RawFactCheckResult {
+type RawFactCheckResult = Partial<BackendFactCheckResult> & {
   readonly id?: unknown;
   readonly product_id?: unknown;
   readonly productId?: unknown;
@@ -69,7 +75,7 @@ interface RawFactCheckResult {
   readonly checked_at?: unknown;
   readonly checkedAt?: unknown;
   readonly claims?: unknown;
-}
+};
 
 function apiUrl(baseUrl: string, path: string): string {
   if (!baseUrl) throw new FactCheckApiError("fact-check API: baseUrl is required");
@@ -95,6 +101,11 @@ function parseNumber(value: unknown, label: string): number {
   return value;
 }
 
+function parseConfidencePercent(value: unknown, label: string): number {
+  const score = parseNumber(value, label);
+  return score <= 1 ? Math.round(score * 100) : score;
+}
+
 function parseMetadata(value: unknown): Readonly<Record<string, unknown>> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
@@ -102,6 +113,19 @@ function parseMetadata(value: unknown): Readonly<Record<string, unknown>> {
 export function parseEvidenceSource(raw: unknown): EvidenceSource {
   const value = raw as RawEvidenceSource;
   try {
+    if (typeof value?.chunk_id === "string" && typeof value.text === "string" && typeof value.score === "number") {
+      const metadata = parseMetadata(value.metadata);
+      const sourceType = typeof metadata["source_type"] === "string" ? metadata["source_type"] : undefined;
+      return createEvidenceSource({
+        id: parseString(value.chunk_id, "evidence.chunk_id"),
+        title: parseOptionalString(value.title, "evidence.title") ?? parseString(value.document_id, "evidence.document_id"),
+        uri: parseOptionalString(value.source, "evidence.source") ?? parseString(value.document_id, "evidence.document_id"),
+        excerpt: parseString(value.text, "evidence.text"),
+        similarity: parseNumber(value.score, "evidence.score"),
+        sourceType,
+        metadata,
+      });
+    }
     return createEvidenceSource({
       id: parseString(value?.id, "evidence.id"),
       title: parseString(value?.title, "evidence.title"),
@@ -125,6 +149,32 @@ export function parseFactCheckResult(raw: unknown): FactCheckResult {
     const rawClaims = value?.claims;
     if (!Array.isArray(rawClaims)) {
       throw new FactCheckApiError("factCheck.claims must be an array");
+    }
+
+    if (typeof value?.pass === "boolean" && typeof value.confidence === "number") {
+      const claims = rawClaims.map((claim, index) => {
+        const rawClaim = claim as RawClaim;
+        const evidence = rawClaim.evidence;
+        const status = parseString(rawClaim?.status, "claim.status") as ClaimVerdict;
+        return {
+          id: parseOptionalString(rawClaim?.id, "claim.id") ?? `claim_${index + 1}`,
+          text: parseString(rawClaim?.text ?? rawClaim?.claim?.text, "claim.text"),
+          confidence: parseConfidencePercent(rawClaim?.confidence, "claim.confidence"),
+          verdict: status,
+          evidence: Array.isArray(evidence) ? evidence.map(parseEvidenceSource) : [],
+          explanation: parseOptionalString(rawClaim?.explanation, "claim.explanation"),
+        };
+      });
+      const firstNonSupported = claims.find((claim) => claim.verdict !== "supported");
+      return createFactCheckResult({
+        id: parseOptionalString(value?.id, "factCheck.id") ?? "fact-check-result",
+        productId: parseOptionalString(value?.product_id ?? value?.productId, "factCheck.product_id") ?? "unknown-product",
+        suggestionId: parseOptionalString(value?.suggestion_id ?? value?.suggestionId, "factCheck.suggestion_id"),
+        overallConfidence: parseConfidencePercent(value?.confidence, "factCheck.confidence"),
+        status: value.pass ? "supported" : (firstNonSupported?.verdict ?? "unsupported"),
+        checkedAt: parseOptionalString(value?.checked_at ?? value?.checkedAt, "factCheck.checked_at"),
+        claims,
+      });
     }
 
     return createFactCheckResult({
@@ -200,26 +250,23 @@ export async function searchEvidenceSources(opts: SearchEvidenceSourcesOptions):
   const query = opts.query.trim();
   if (query === "") throw new FactCheckApiError("searchEvidenceSources: query is required");
   const fetchImpl = opts.fetchImpl ?? fetch;
+  const params = new URLSearchParams({ q: query });
+  if (opts.limit !== undefined) params.set("top_k", String(opts.limit));
   let res: Response;
   try {
-    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/rag/evidence/search"), {
-      method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json" },
-      body: JSON.stringify({
-        query,
-        ...(opts.productId ? { product_id: opts.productId } : {}),
-        ...(opts.limit !== undefined ? { limit: opts.limit } : {}),
-      }),
+    res = await fetchImpl(apiUrl(opts.baseUrl, `/api/v1/rag/search?${params.toString()}`), {
+      method: "GET",
+      headers: { accept: "application/json" },
       signal: opts.signal,
     });
   } catch (err) {
     throw new FactCheckApiError("searchEvidenceSources: network error", { cause: err });
   }
 
-  const raw = (await readJson(res, "searchEvidenceSources")) as { sources?: unknown } | unknown[];
-  const sources = Array.isArray(raw) ? raw : raw.sources;
+  const raw = (await readJson(res, "searchEvidenceSources")) as BackendRAGSearchResponse | { sources?: unknown } | unknown[];
+  const sources = Array.isArray(raw) ? raw : "results" in raw ? raw.results : raw.sources;
   if (!Array.isArray(sources)) {
-    throw new FactCheckApiError("searchEvidenceSources: response body must include sources array");
+    throw new FactCheckApiError("searchEvidenceSources: response body must include results array");
   }
   return sources.map(parseEvidenceSource);
 }

@@ -33,6 +33,9 @@ test("admin AI content studio shows RAG-backed fact-check evidence", async ({ pa
   await expect(page.getByText("The set includes five tension levels.")).toBeVisible();
   await expect(page.getByText("Resistance Band Product Manual")).toBeVisible();
   await expect(page.getByText("91% match")).toBeVisible();
+  await expect(page.getByText("Warranty coverage is available.")).toBeVisible();
+  await expect(page.getByText("Ambiguous")).toBeVisible();
+  await expect(page.getByText("1 need evidence")).toBeVisible();
 
   await page.getByLabel(/search source library/i).fill("five tension levels");
   await page.getByRole("button", { name: /search evidence/i }).click();

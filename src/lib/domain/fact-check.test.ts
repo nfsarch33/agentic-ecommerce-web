@@ -41,6 +41,13 @@ describe("fact-check domain", () => {
           evidence: [{ ...evidence, id: "ev_2", excerpt: "No therapeutic claims are made for this product." }],
           explanation: "Source material does not support medical claims.",
         },
+        {
+          id: "claim_3",
+          text: "Warranty coverage is available.",
+          confidence: 46,
+          verdict: "ambiguous",
+          evidence: [],
+        },
       ],
     });
 
@@ -51,8 +58,8 @@ describe("fact-check domain", () => {
     expect(summarizeFactCheckResult(result)).toEqual({
       supported: 1,
       contradicted: 1,
-      insufficient: 0,
-      total: 2,
+      insufficient: 1,
+      total: 3,
     });
   });
 
