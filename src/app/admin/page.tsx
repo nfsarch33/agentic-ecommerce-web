@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { requireServerSession } from "@/lib/server/auth-session";
 import { canViewAdminNavItem } from "@/lib/domain/auth";
+import { EventActivityFeed } from "@/components/EventActivityFeed";
 
 export const dynamic = "force-dynamic";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
 export default async function AdminHomePage() {
   const session = await requireServerSession();
@@ -35,6 +38,10 @@ export default async function AdminHomePage() {
           </Link>
         ))}
       </section>
+
+      <div className="mt-8">
+        <EventActivityFeed apiBaseUrl={API_BASE_URL} />
+      </div>
     </main>
   );
 }
