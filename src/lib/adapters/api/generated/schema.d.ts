@@ -286,6 +286,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Source supplier media
+         * @description Fetches an image from a supplier URL through the backend media intelligence service and extracts deterministic metadata.
+         */
+        post: operations["sourceMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process sourced media
+         * @description Applies deterministic resize/format stubs and records explicit TODO metadata for background removal.
+         */
+        post: operations["processMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get media asset */
+        get: operations["getMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate media quality
+         * @description Runs resolution, aspect ratio, format, alt text, and brand-safety placeholder checks.
+         */
+        post: operations["validateMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/{id}/compliance-check": {
         parameters: {
             query?: never;
@@ -633,6 +710,26 @@ export interface paths {
          * @description Starts the Temporal workflow that generates content, fact-checks claims against RAG evidence, evaluates quality, and auto-approves or rejects the result.
          */
         post: operations["startContentGenerationWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/media-processing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the MediaProcessingWorkflow
+         * @description Starts the Temporal workflow that sources supplier media, processes it, runs QA, stores it, and links it to a product.
+         */
+        post: operations["startMediaProcessingWorkflow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1020,6 +1117,72 @@ export interface components {
             max_words: number;
             within_limit: boolean;
         };
+        MediaSourceRequest: {
+            /** Format: uri */
+            url: string;
+            /** @description Product identifier to associate with the sourced asset. */
+            product_id?: string;
+            /** @description Candidate alt text from supplier data or operator input. */
+            alt_text?: string;
+        };
+        MediaProcessRequest: {
+            media_id: string;
+            resize?: components["schemas"]["MediaResizeOptions"];
+            /** @enum {string} */
+            format?: "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "jpeg" | "png" | "webp" | "gif";
+            /** @default false */
+            remove_background: boolean;
+        };
+        MediaResizeOptions: {
+            max_width?: number;
+            max_height?: number;
+        };
+        MediaAsset: {
+            id: string;
+            product_id?: string;
+            /** Format: uri */
+            source_url?: string;
+            alt_text?: string;
+            metadata: components["schemas"]["MediaMetadata"];
+            processing?: components["schemas"]["MediaProcessingInfo"];
+            quality?: components["schemas"]["MediaQualityReport"];
+            storage?: components["schemas"]["MediaStorageInfo"];
+            /** Format: date-time */
+            created_at?: string;
+        };
+        MediaMetadata: {
+            mime_type: string;
+            content_length: number;
+            checksum_sha256: string;
+            width: number;
+            height: number;
+        };
+        MediaProcessingInfo: {
+            operations?: components["schemas"]["MediaProcessingOperation"][];
+        };
+        MediaProcessingOperation: {
+            /** @enum {string} */
+            id: "resize_stub" | "format_conversion_stub" | "background_removal_todo";
+            message: string;
+        };
+        MediaQualityReport: {
+            pass: boolean;
+            score: number;
+            issues?: components["schemas"]["MediaQualityIssue"][];
+        };
+        MediaQualityIssue: {
+            id: string;
+            message: string;
+            /** @enum {string} */
+            severity?: "info" | "warning" | "error" | "critical";
+            blocking: boolean;
+        };
+        MediaStorageInfo: {
+            key?: string;
+            url?: string;
+            content_type?: string;
+            size_bytes?: number;
+        };
         ShippingAddress: {
             name: string;
             line1: string;
@@ -1108,6 +1271,20 @@ export interface components {
             /** @default 120 */
             max_words: number;
             keywords?: string[];
+        };
+        StartMediaProcessingWorkflowRequest: {
+            /** @description Product identifier to link the processed media to. */
+            product_id: string;
+            /** Format: uri */
+            source_url: string;
+            alt_text?: string;
+            /** @description Operator identity recorded in workflow audit events. */
+            requested_by?: string;
+            resize?: components["schemas"]["MediaResizeOptions"];
+            /** @enum {string} */
+            format?: "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "jpeg" | "png" | "webp" | "gif";
+            /** @default false */
+            remove_background: boolean;
         };
         WorkflowStartResponse: {
             workflow_id: string;
@@ -2021,6 +2198,179 @@ export interface operations {
             };
         };
     };
+    sourceMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaSourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Media asset sourced and registered. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid source URL. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Supplier media fetch failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media sourcing is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    processMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaProcessRequest"];
+            };
+        };
+        responses: {
+            /** @description Processed media asset. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing media ID. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media asset metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    validateMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media quality assessment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaQualityReport"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     checkProductCompliance: {
         parameters: {
             query?: never;
@@ -2803,6 +3153,66 @@ export interface operations {
             };
             /** @description Product not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startMediaProcessingWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartMediaProcessingWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product ID or source URL is missing. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

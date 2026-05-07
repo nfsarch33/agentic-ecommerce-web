@@ -645,16 +645,19 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/v1/media/source" && req.method === "POST") {
       const body = (await req.json()) as {
+        url?: string;
+        alt_text?: string;
         source_url?: string;
         product_id?: string;
         file?: { name?: string; type?: string; size?: number };
         metadata?: { alt_text?: string; title?: string; tags?: string[] };
       };
-      const filename = body.file?.name ?? body.source_url?.split("/").pop() ?? "sourced-media.png";
+      const sourceURL = body.url ?? body.source_url;
+      const filename = body.file?.name ?? sourceURL?.split("/").pop() ?? "sourced-media.png";
       const asset: MockMediaAsset = {
         id: `media_${mediaAssets.length + 1}`,
         product_id: body.product_id,
-        source_url: body.source_url,
+        source_url: sourceURL,
         original_filename: filename,
         mime_type: body.file?.type ?? "image/png",
         size_bytes: body.file?.size ?? 180000,
@@ -665,10 +668,10 @@ const server = Bun.serve({
           provider: "local",
           bucket: "media",
           key: `products/${body.product_id ?? "library"}/${filename}`,
-          url: body.source_url,
+          url: sourceURL,
         },
         metadata: {
-          alt_text: body.metadata?.alt_text ?? "",
+          alt_text: body.alt_text ?? body.metadata?.alt_text ?? "",
           title: body.metadata?.title ?? filename,
           tags: body.metadata?.tags ?? [],
         },

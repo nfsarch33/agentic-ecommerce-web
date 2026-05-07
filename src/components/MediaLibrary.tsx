@@ -259,6 +259,7 @@ export function MediaLibrary({
         <button
           type="button"
           disabled={isSubmitting}
+          aria-busy={isSubmitting}
           onClick={() => void handleSourceMedia()}
           className="mt-5 rounded-md bg-[var(--color-brand-500)] px-4 py-2 text-sm font-medium text-white disabled:bg-gray-300"
         >
@@ -291,6 +292,11 @@ export function MediaLibrary({
       </div>
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Media assets">
+        {filteredAssets.length === 0 && (
+          <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-sm text-gray-600 md:col-span-2 xl:col-span-3">
+            No media assets found. Source media or adjust the processing status filter.
+          </div>
+        )}
         {filteredAssets.map((asset) => (
           <article
             key={asset.id}

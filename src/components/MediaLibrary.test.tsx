@@ -64,6 +64,15 @@ const assets: MediaAsset[] = [
 ];
 
 describe("MediaLibrary", () => {
+  it("shows an empty state when no assets match the current filter", async () => {
+    const user = userEvent.setup();
+    render(<MediaLibrary assets={assets} />);
+
+    await user.selectOptions(screen.getByLabelText(/processing status/i), "processing");
+
+    expect(screen.getByText(/no media assets found/i)).toBeInTheDocument();
+  });
+
   it("renders media cards with processing and QA status badges", () => {
     render(<MediaLibrary assets={assets} />);
 
@@ -113,6 +122,31 @@ describe("MediaLibrary", () => {
       }),
     );
     expect(await screen.findByText("New hero image")).toBeInTheDocument();
+  });
+
+  it("shows a loading state while source media is pending", async () => {
+    const user = userEvent.setup();
+    let resolveSource: (asset: MediaAsset) => void = () => {};
+    const sourceMediaImpl = vi.fn(
+      () =>
+        new Promise<MediaAsset>((resolve) => {
+          resolveSource = resolve;
+        }),
+    );
+
+    render(<MediaLibrary assets={[]} sourceMediaImpl={sourceMediaImpl} />);
+    fireEvent.change(screen.getByLabelText(/source url/i), {
+      target: { value: "https://supplier.example/new.png" },
+    });
+    await user.click(screen.getByRole("button", { name: /source media/i }));
+
+    expect(screen.getByRole("button", { name: /sourcing/i })).toHaveAttribute("aria-busy", "true");
+    resolveSource({
+      ...assets[0]!,
+      id: "media_loading",
+      metadata: { altText: "Loading alt text", title: "Loaded image", tags: [] },
+    });
+    expect(await screen.findByText("Loaded image")).toBeInTheDocument();
   });
 
   it("accepts file metadata when upload transport is stubbed", async () => {

@@ -198,6 +198,7 @@ export function ProductMediaPanel({
       <button
         type="button"
         disabled={isSubmitting}
+        aria-busy={isSubmitting}
         onClick={() => void handleSourceMedia()}
         className="mt-5 rounded-md bg-[var(--color-brand-500)] px-4 py-2 text-sm font-medium text-white disabled:bg-gray-300"
       >
@@ -205,6 +206,11 @@ export function ProductMediaPanel({
       </button>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {assets.length === 0 && (
+          <div className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-600 md:col-span-2">
+            No product media linked yet.
+          </div>
+        )}
         {assets.map((asset) => (
           <article key={asset.id} className="rounded-lg border border-gray-200 p-4">
             <div className="flex flex-wrap gap-2">
