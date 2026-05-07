@@ -14,7 +14,9 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: "standalone",
   outputFileTracingRoot: here,
+  allowedDevOrigins: ["localhost", "127.0.0.1"],
 
   typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: false },

@@ -1,0 +1,45 @@
+[constraints]
+max_cycles = 0
+max_coupling = "B"
+max_cc = 35
+no_god_files = true
+
+[[layers]]
+name = "domain"
+paths = ["src/lib/domain/*"]
+order = 4
+
+[[layers]]
+name = "usecases"
+paths = ["src/lib/usecases/*"]
+order = 3
+
+[[layers]]
+name = "adapters"
+paths = ["src/lib/adapters/*"]
+order = 2
+
+[[layers]]
+name = "components"
+paths = ["src/components/*"]
+order = 1
+
+[[layers]]
+name = "app"
+paths = ["src/app/*"]
+order = 0
+
+[[boundaries]]
+from = "src/lib/domain/*"
+to = "src/app/*"
+reason = "Domain entities stay framework-independent."
+
+[[boundaries]]
+from = "src/lib/domain/*"
+to = "src/components/*"
+reason = "Domain entities stay UI-independent."
+
+[[boundaries]]
+from = "src/lib/domain/*"
+to = "src/lib/adapters/*"
+reason = "Domain entities must not depend on API adapters."
