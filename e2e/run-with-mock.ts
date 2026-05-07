@@ -324,6 +324,34 @@ const workflows: MockWorkflow[] = [
   },
 ];
 
+type MockWebhook = {
+  id: string;
+  url: string;
+  event_types: Array<"product.approved" | "order.placed" | "product.created" | "product.updated" | "compliance.checked">;
+  description?: string;
+  secret_configured: boolean;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  last_delivery_at?: string;
+  failure_count?: number;
+};
+
+const webhooks: MockWebhook[] = [
+  {
+    id: "wh_existing_order",
+    url: "https://hooks.n8n.example/webhook/order-placed",
+    event_types: ["order.placed"],
+    description: "Order confirmation email",
+    secret_configured: true,
+    active: true,
+    created_at: "2026-05-08T00:00:00Z",
+    updated_at: "2026-05-08T00:01:00Z",
+    last_delivery_at: "2026-05-08T00:02:00Z",
+    failure_count: 0,
+  },
+];
+
 type MockMediaAsset = {
   id: string;
   product_id?: string;
@@ -420,7 +448,7 @@ const mediaAssets: MockMediaAsset[] = [
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
+  "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
   "access-control-allow-headers": "content-type,accept",
 };
 
@@ -577,6 +605,59 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/v1/rag/evidence/search" && req.method === "POST") {
       return json({ sources: [evidenceSource] });
+    }
+    if (url.pathname === "/api/v1/webhooks" && req.method === "GET") {
+      return json({ webhooks });
+    }
+    if (url.pathname === "/api/v1/webhooks" && req.method === "POST") {
+      const body = (await req.json()) as {
+        url?: string;
+        event_types?: MockWebhook["event_types"];
+        description?: string;
+        secret?: string;
+      };
+      const webhook: MockWebhook = {
+        id: `wh_${webhooks.length + 1}`,
+        url: body.url ?? "https://hooks.n8n.example/webhook/generated",
+        event_types: body.event_types ?? ["product.approved"],
+        description: body.description,
+        secret_configured: Boolean(body.secret),
+        active: true,
+        created_at: "2026-05-08T00:05:00Z",
+        updated_at: "2026-05-08T00:05:00Z",
+        failure_count: 0,
+      };
+      webhooks.unshift(webhook);
+      return json({ webhook }, { status: 201 });
+    }
+    if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
+      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
+      const webhook = webhooks.find((candidate) => candidate.id === webhookId);
+      if (!webhook) return json({ error: "not_found" }, { status: 404 });
+      const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
+      webhook.last_delivery_at = "2026-05-08T00:06:00Z";
+      webhook.updated_at = "2026-05-08T00:06:00Z";
+      return json(
+        {
+          delivery: {
+            id: `del_${webhook.id}`,
+            webhook_id: webhook.id,
+            event_type: body.event_type ?? webhook.event_types[0],
+            status: "delivered",
+            response_status: 200,
+            attempt: 1,
+            occurred_at: "2026-05-08T00:06:00Z",
+          },
+        },
+        { status: 202 },
+      );
+    }
+    if (url.pathname.startsWith("/api/v1/webhooks/") && req.method === "DELETE") {
+      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", ""));
+      const index = webhooks.findIndex((candidate) => candidate.id === webhookId);
+      if (index === -1) return json({ error: "not_found" }, { status: 404 });
+      webhooks.splice(index, 1);
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
     if (url.pathname === "/api/v1/workflows" && req.method === "GET") {
       const status = url.searchParams.get("status");
@@ -862,6 +943,7 @@ const next = Bun.spawn(["bun", "run", "dev"], {
     ...process.env,
     MC_API_BASE_URL: apiBaseUrl,
     NEXT_PUBLIC_MC_API_BASE_URL: apiBaseUrl,
+    NEXT_PUBLIC_N8N_URL: process.env.NEXT_PUBLIC_N8N_URL ?? "https://n8n.example.com",
   },
 });
 

@@ -24,6 +24,8 @@ describe("auth domain", () => {
 
   it.each([
     ["admin", "settings", true],
+    ["admin", "n8n", true],
+    ["operator", "n8n", false],
     ["operator", "settings", false],
     ["viewer", "agents", false],
     ["viewer", "products", true],

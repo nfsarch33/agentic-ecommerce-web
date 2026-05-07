@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdminShell } from "./AdminShell";
 import type { Role, User } from "@/lib/domain/auth";
 
@@ -12,6 +12,10 @@ function user(role: Role): User {
 }
 
 describe("AdminShell", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("shows all admin navigation for administrators", () => {
     render(
       <AdminShell user={user("admin")}>
@@ -37,5 +41,34 @@ describe("AdminShell", () => {
     expect(screen.queryByRole("link", { name: /settings/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /agents/i })).not.toBeInTheDocument();
     expect(screen.getByText(/viewer access/i)).toBeInTheDocument();
+  });
+
+  it("shows the n8n admin link only when configured for administrators", () => {
+    vi.stubEnv("NEXT_PUBLIC_N8N_URL", "https://n8n.example.com");
+
+    const { rerender } = render(
+      <AdminShell user={user("admin")}>
+        <p>Dashboard content</p>
+      </AdminShell>,
+    );
+
+    expect(screen.getByRole("link", { name: /open n8n/i })).toHaveAttribute("href", "https://n8n.example.com");
+
+    rerender(
+      <AdminShell user={user("operator")}>
+        <p>Dashboard content</p>
+      </AdminShell>,
+    );
+    expect(screen.queryByRole("link", { name: /open n8n/i })).not.toBeInTheDocument();
+  });
+
+  it("hides the n8n admin link when no URL is configured", () => {
+    render(
+      <AdminShell user={user("admin")}>
+        <p>Dashboard content</p>
+      </AdminShell>,
+    );
+
+    expect(screen.queryByRole("link", { name: /open n8n/i })).not.toBeInTheDocument();
   });
 });
