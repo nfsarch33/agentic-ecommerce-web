@@ -55,58 +55,41 @@ const aiSuggestion = {
 };
 
 const agentSummary = {
-  id: "agent_sourcing",
-  kind: "sourcing",
+  id: "sourcing",
   name: "Sourcing Agent",
   description: "Finds supplier opportunities from configured feeds.",
-  status: "running",
-  last_run_at: "2026-05-07T04:20:00Z",
-  next_run_at: "2026-05-07T05:00:00Z",
-  last_run_status: "succeeded",
-  in_flight_runs: 1,
-  queued_runs: 2,
-  success_rate: 0.82,
-  updated_at: "2026-05-07T04:31:00Z",
+  capabilities: ["candidate_scoring", "opportunity_ranking"],
 } as {
   id: string;
-  kind: "sourcing";
   name: string;
   description: string;
-  status: "idle" | "queued" | "running" | "succeeded" | "failed" | "disabled";
-  last_run_at: string;
-  next_run_at: string;
-  last_run_status: "succeeded";
-  in_flight_runs: number;
-  queued_runs: number;
-  success_rate: number;
-  updated_at: string;
+  capabilities: string[];
 };
 
 type MockAgentRun = {
   id: string;
+  task_id: string;
   agent_id: string;
-  status: "idle" | "queued" | "running" | "succeeded" | "failed" | "disabled";
-  trigger: "manual" | "scheduled" | "event";
+  state: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+  priority: number;
+  input?: unknown;
+  result?: unknown;
+  error?: { code?: string; detail?: string };
   started_at?: string;
   finished_at?: string;
-  duration_ms?: number;
-  summary?: string;
-  input?: unknown;
-  output?: unknown;
   created_at: string;
 };
 
 const agentRun: MockAgentRun = {
-  id: "run_1",
+  id: "218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  task_id: "228f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   agent_id: agentSummary.id,
-  status: "succeeded",
-  trigger: "manual",
+  state: "succeeded",
+  priority: 5,
   started_at: "2026-05-07T04:20:00Z",
   finished_at: "2026-05-07T04:21:30Z",
-  duration_ms: 90000,
-  summary: "Found three supplier candidates.",
-  input: { category: "fitness" },
-  output: { candidates: 3 },
+  input: { candidates: [{ sku: "RB-SET" }] },
+  result: { top_candidate: { sku: "RB-SET" }, scores: [{ sku: "RB-SET" }] },
   created_at: "2026-05-07T04:20:00Z",
 };
 const agentRuns: MockAgentRun[] = [agentRun];
@@ -212,20 +195,16 @@ const server = Bun.serve({
     if (url.pathname === `/api/v1/agents/${agentSummary.id}/run` && req.method === "POST") {
       const nextRun = {
         ...agentRun,
-        id: `run_${agentRuns.length + 1}`,
-        status: "queued",
-        trigger: "manual",
+        id: `318f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3${agentRuns.length}`,
+        task_id: `328f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3${agentRuns.length}`,
+        state: "queued" as const,
         started_at: undefined,
         finished_at: undefined,
-        duration_ms: undefined,
-        summary: "Manual run queued by operator.",
-        output: undefined,
+        result: undefined,
         created_at: "2026-05-07T04:32:00Z",
       };
-      agentSummary.queued_runs += 1;
-      agentSummary.status = "queued";
       agentRuns.unshift(nextRun);
-      return json({ run: nextRun }, { status: 202 });
+      return json(nextRun, { status: 202 });
     }
     if (url.pathname === "/api/v1/sync/status" && req.method === "GET") {
       return json({

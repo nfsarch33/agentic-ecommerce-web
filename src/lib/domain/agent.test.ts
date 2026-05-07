@@ -49,6 +49,7 @@ describe("agent domain helpers", () => {
     expect(agentStatusTone("running")).toBe("blue");
     expect(agentStatusTone("succeeded")).toBe("green");
     expect(agentStatusTone("failed")).toBe("red");
+    expect(agentStatusTone("cancelled")).toBe("gray");
     expect(agentStatusTone("disabled")).toBe("gray");
   });
 
