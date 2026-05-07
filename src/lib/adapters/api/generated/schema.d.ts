@@ -420,6 +420,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tenant/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant settings */
+        get: operations["getTenantSettings"];
+        /** Update tenant settings */
+        put: operations["updateTenantSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/custom-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tenant custom compliance rules */
+        get: operations["listCustomComplianceRules"];
+        put?: never;
+        /** Create tenant custom compliance rule */
+        post: operations["createCustomComplianceRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/custom-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update tenant custom compliance rule */
+        put: operations["updateCustomComplianceRule"];
+        post?: never;
+        /** Delete tenant custom compliance rule */
+        delete: operations["deleteCustomComplianceRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant compliance reporting summary */
+        get: operations["getComplianceReportSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/reports/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export tenant compliance report */
+        get: operations["exportComplianceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders": {
         parameters: {
             query?: never;
@@ -960,6 +1048,7 @@ export interface components {
             checks: {
                 database: components["schemas"]["DependencyReadiness"];
                 redis: components["schemas"]["DependencyReadiness"];
+                eventbus: components["schemas"]["DependencyReadiness"];
             };
         };
         DependencyReadiness: {
@@ -970,6 +1059,11 @@ export interface components {
             latency_ms: number;
             /** @description Present only for failed checks. The value is intentionally generic to avoid leaking connection details. */
             error?: string;
+            /**
+             * @description Cloud load-balancer-safe failure detail without connection strings, credentials, hosts, or provider secrets.
+             * @enum {string}
+             */
+            detail?: "dependency_failed" | "dependency_timeout";
         };
         AgentWorkerReadiness: {
             ready: boolean;
@@ -1079,6 +1173,8 @@ export interface components {
         WebhookRegistration: {
             /** Format: uuid */
             id: string;
+            /** @description Tenant scope for tenant-scoped webhook registrations. */
+            tenant_id?: string;
             /** Format: uri */
             url: string;
             event_types: ("agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed")[];
@@ -1291,6 +1387,128 @@ export interface components {
         };
         /** @enum {string} */
         ComplianceSeverity: "info" | "warning" | "error" | "critical";
+        TenantSettings: {
+            tenant_id: string;
+            branding: components["schemas"]["TenantBrandingSettings"];
+            woocommerce: components["schemas"]["TenantWooCredentialRefs"];
+            ai: components["schemas"]["TenantAIPreferences"];
+            compliance: components["schemas"]["TenantComplianceOverrides"];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TenantSettingsUpdate: {
+            branding?: components["schemas"]["TenantBrandingSettings"];
+            woocommerce?: components["schemas"]["TenantWooCredentialRefs"];
+            ai?: components["schemas"]["TenantAIPreferences"];
+            compliance?: components["schemas"]["TenantComplianceOverrides"];
+        };
+        TenantBrandingSettings: {
+            store_name?: string;
+            /** Format: uri */
+            logo_url?: string;
+            primary_color?: string;
+            accent_color?: string;
+        };
+        TenantWooCredentialRefs: {
+            /** Format: uri */
+            store_url?: string;
+            consumer_key_ref?: string;
+            consumer_secret_ref?: string;
+        };
+        TenantAIPreferences: {
+            content_tone?: string;
+            model_tier?: string;
+            auto_generate_seo?: boolean;
+            fact_check_required?: boolean;
+        };
+        TenantComplianceOverrides: {
+            disabled_rule_ids?: string[];
+            severity_override?: {
+                [key: string]: "info" | "warning" | "error" | "critical";
+            };
+            seo_score_min?: number;
+        };
+        ComplianceCustomRulesResponse: {
+            rules: components["schemas"]["ComplianceCustomRule"][];
+        };
+        ComplianceCustomRule: {
+            tenant_id: string;
+            id: string;
+            version: number;
+            name: string;
+            description?: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+            enabled: boolean;
+            definition: components["schemas"]["ComplianceCustomRuleDefinition"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ComplianceCustomRuleRequest: {
+            id: string;
+            name: string;
+            description?: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+            enabled: boolean;
+            definition: components["schemas"]["ComplianceCustomRuleDefinition"];
+        };
+        ComplianceCustomRuleUpdate: {
+            name: string;
+            description?: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+            enabled: boolean;
+            definition: components["schemas"]["ComplianceCustomRuleDefinition"];
+        };
+        ComplianceCustomRuleDefinition: {
+            /** @enum {string} */
+            type: "contains_any";
+            /** @enum {string} */
+            field: "title" | "description" | "meta_description" | "seo_title";
+            values: string[];
+            fail_reason?: string;
+        };
+        ComplianceSummary: {
+            tenant_id: string;
+            total_checks: number;
+            passed_checks: number;
+            failed_checks: number;
+            pass_rate: number;
+            rule_stats: {
+                [key: string]: components["schemas"]["ComplianceRuleStat"];
+            };
+            product_stats: {
+                [key: string]: components["schemas"]["ComplianceProductStat"];
+            };
+            trends: components["schemas"]["ComplianceTrendPoint"][];
+        };
+        ComplianceRuleStat: {
+            rule_id: string;
+            passed: number;
+            failed: number;
+            total: number;
+        };
+        ComplianceProductStat: {
+            product_id: string;
+            passed: number;
+            failed: number;
+            total: number;
+        };
+        ComplianceTrendPoint: {
+            /** Format: date */
+            date: string;
+            passed: number;
+            failed: number;
+            total: number;
+        };
+        ComplianceEvaluationRecord: {
+            tenant_id: string;
+            product_id: string;
+            /** Format: date-time */
+            checked_at: string;
+            result: components["schemas"]["ComplianceCheckResponse"];
+        };
+        ComplianceExportResponse: components["schemas"]["ComplianceEvaluationRecord"][];
         SEOSuggestionRequest: {
             keywords?: string[];
         };
@@ -1646,7 +1864,10 @@ export interface components {
         };
     };
     responses: never;
-    parameters: never;
+    parameters: {
+        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+        TenantIDHeader: string;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -2709,6 +2930,369 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ComplianceRulesResponse"];
+                };
+            };
+        };
+    };
+    getTenantSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped configuration settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantSettings"];
+                };
+            };
+            /** @description Tenant context is required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateTenantSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated tenant-scoped configuration settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantSettings"];
+                };
+            };
+            /** @description Invalid JSON body or missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Actor does not have permission to update tenant settings. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Tenant settings failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listCustomComplianceRules: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped custom compliance rules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCustomRulesResponse"];
+                };
+            };
+            /** @description Tenant context is required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createCustomComplianceRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplianceCustomRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description Custom compliance rule created at version 1. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCustomRule"];
+                };
+            };
+            /** @description Invalid JSON body or missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Actor does not have permission to mutate custom rules. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateCustomComplianceRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplianceCustomRuleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Custom compliance rule updated with incremented version. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCustomRule"];
+                };
+            };
+            /** @description Invalid JSON body or missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule not found for this tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteCustomComplianceRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Custom rule deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule not found for this tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getComplianceReportSummary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated pass/fail reporting by tenant, rule, product, and trend. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceSummary"];
+                };
+            };
+            /** @description Tenant context is required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exportComplianceReport: {
+        parameters: {
+            query?: {
+                format?: "json" | "csv";
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped compliance history export. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceExportResponse"];
+                    "text/csv": string;
+                };
+            };
+            /** @description Tenant context is required or export format is invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

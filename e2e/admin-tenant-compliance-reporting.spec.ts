@@ -5,6 +5,8 @@ test("admin updates tenant settings and exports compliance reporting", async ({ 
   await signInAs(page, "admin");
 
   await page.goto("/admin/settings/tenant");
+  await expect(page.getByLabel(/active tenant/i)).toHaveValue("tenant_default");
+  await expect(page.getByText(/single tenant mode/i)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Tenant Settings" })).toBeVisible();
   await expect(page.getByLabel(/display name/i)).toHaveValue(/Demo (Store|Outlet)/);
   await page.getByLabel(/display name/i).fill("Demo Outlet");
@@ -16,6 +18,11 @@ test("admin updates tenant settings and exports compliance reporting", async ({ 
   await expect(page.getByText("70% pass rate")).toBeVisible();
   await page.getByRole("button", { name: /export csv/i }).click();
   await expect(page.getByRole("status")).toContainText("Exported compliance-report.csv");
+  await page.getByRole("button", { name: /export json/i }).click();
+  await expect(page.getByRole("status")).toContainText("Exported compliance-report.json");
+
+  await page.getByRole("button", { name: /create rule/i }).click();
+  await expect(page.getByText(/rule\.(id|code)|must be non-empty/i)).toBeVisible();
 
   await page.getByLabel(/rule name/i).fill("SEO title guardrail");
   await page.getByLabel(/rule code/i).fill("seo.title_length");
@@ -24,4 +31,7 @@ test("admin updates tenant settings and exports compliance reporting", async ({ 
   await page.getByLabel(/value/i).fill("sale");
   await page.getByRole("button", { name: /create rule/i }).click();
   await expect(page.getByText("SEO title guardrail")).toBeVisible();
+  const ruleCard = page.getByRole("article", { name: /seo title guardrail/i });
+  await ruleCard.getByRole("button", { name: /disable/i }).click();
+  await expect(page.getByRole("status")).toContainText("Custom rule disabled.");
 });

@@ -76,7 +76,9 @@ describe("ComplianceReportingPanel", () => {
 
   it("creates, edits, disables, and deletes custom tenant rules", async () => {
     const user = userEvent.setup();
-    const createRuleImpl = vi.fn().mockResolvedValue({ ...customRule, id: "custom_seo_title", name: "SEO title guardrail" });
+    const createRuleImpl = vi
+      .fn()
+      .mockResolvedValue({ ...customRule, id: "custom_seo_title", name: "SEO title guardrail" });
     const updateRuleImpl = vi.fn().mockResolvedValue({ ...customRule, enabled: false });
     const deleteRuleImpl = vi.fn().mockResolvedValue(undefined);
 
@@ -112,12 +114,14 @@ describe("ComplianceReportingPanel", () => {
     expect(updateRuleImpl).toHaveBeenCalledWith({
       baseUrl: "http://api.test",
       ruleId: "custom_health_claims",
-      patch: { tenantId: "tenant_default", enabled: false },
+      patch: expect.objectContaining({ tenantId: "tenant_default", enabled: false }),
     });
     expect(await screen.findByRole("status")).toHaveTextContent(/custom rule disabled/i);
 
     await user.click(
-      within(screen.getByRole("article", { name: /health claim guardrail/i })).getByRole("button", { name: /delete/i }),
+      within(screen.getByRole("article", { name: /health claim guardrail/i })).getByRole("button", {
+        name: /delete/i,
+      }),
     );
     expect(deleteRuleImpl).toHaveBeenCalledWith({
       baseUrl: "http://api.test",
