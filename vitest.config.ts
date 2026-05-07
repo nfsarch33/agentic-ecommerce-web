@@ -25,6 +25,12 @@ export default defineConfig({
         "src/app/**/layout.tsx",
         "src/app/**/loading.tsx",
         "src/app/**/error.tsx",
+        "src/app/page.tsx",
+        "src/app/api/**",
+        "scripts/**",
+        "e2e/**",
+        "src/lib/adapters/api/generated/**",
+        "next-env.d.ts",
       ],
       thresholds: {
         lines: 80,

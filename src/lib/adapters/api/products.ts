@@ -74,6 +74,44 @@ function parseProduct(raw: RawProduct): Product {
   }
 }
 
+export interface FetchProductBySlugOptions {
+  readonly baseUrl: string;
+  readonly slug: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export async function fetchProductBySlug(opts: FetchProductBySlugOptions): Promise<Product> {
+  if (!opts.baseUrl) {
+    throw new ProductsApiError("fetchProductBySlug: baseUrl is required");
+  }
+  if (!opts.slug) {
+    throw new ProductsApiError("fetchProductBySlug: slug is required");
+  }
+  const url = `${opts.baseUrl}/api/v1/products/${encodeURIComponent(opts.slug)}`;
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  let res: Response;
+  try {
+    res = await fetchImpl(url, {
+      method: "GET",
+      headers: { accept: "application/json" },
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw new ProductsApiError("fetchProductBySlug: network error", err);
+  }
+  if (!res.ok) {
+    throw new ProductsApiError(`fetchProductBySlug: HTTP ${res.status}`);
+  }
+  let raw: unknown;
+  try {
+    raw = await res.json();
+  } catch (err) {
+    throw new ProductsApiError("fetchProductBySlug: invalid JSON", err);
+  }
+  return parseProduct(raw as RawProduct);
+}
+
 export async function fetchProducts(opts: FetchProductsOptions): Promise<Product[]> {
   if (!opts.baseUrl) {
     throw new ProductsApiError("fetchProducts: baseUrl is required");
