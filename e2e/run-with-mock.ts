@@ -37,21 +37,22 @@ const syncConflict = {
 };
 
 const aiSuggestion = {
-  id: "618f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   product_id: product.id,
   description: "Train anywhere with a durable five-band set designed for progressive resistance.",
-  status: "generated",
-  quality_score: {
-    overall: 84,
-    readability: 82,
-    seo: 78,
-    tone: 90,
-    length: 80,
-    factual: 88,
-    notes: ["Clear benefit-led opening"],
+  seo_title: "Resistance Band Set for Strength",
+  meta_description: "Build strength anywhere with a durable resistance band set.",
+  score: 84,
+  pass: true,
+  tokens_used: 120,
+  evaluation: {
+    score: 84,
+    pass: true,
+    readability_score: 82,
+    keyword_density: { "resistance band set": 4.5 },
+    tone: { style: "professional", pass: true, issues: [] },
+    length: { word_count: 18, max_words: 120, within_limit: true },
+    factual_issues: [],
   },
-  created_at: "2026-05-07T00:08:00Z",
-  model: "minimax-text-01",
 };
 
 const corsHeaders = {
@@ -134,15 +135,17 @@ const server = Bun.serve({
       return json(product);
     }
     if (url.pathname === `/api/v1/products/${product.id}/ai-suggestions` && req.method === "GET") {
-      return json({ suggestions: [aiSuggestion] });
+      return json(aiSuggestion);
     }
     if (url.pathname === `/api/v1/products/${product.id}/generate-description` && req.method === "POST") {
       return json({
-        suggestion: {
-          ...aiSuggestion,
-          id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
-          description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
-          created_at: "2026-05-07T00:12:00Z",
+        ...aiSuggestion,
+        description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
+        score: 91,
+        evaluation: {
+          ...aiSuggestion.evaluation,
+          score: 91,
+          readability_score: 88,
         },
       });
     }
