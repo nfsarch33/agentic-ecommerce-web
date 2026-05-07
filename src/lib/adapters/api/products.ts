@@ -34,6 +34,7 @@ export class ProductsApiError extends Error {
 
 interface RawProduct {
   id?: unknown;
+  sku?: unknown;
   title?: unknown;
   slug?: unknown;
   price?: { amount?: unknown; currency?: unknown };
@@ -49,6 +50,7 @@ const knownCurrencies: ReadonlySet<Currency> = new Set<Currency>(["AUD", "USD", 
 
 function parseProduct(raw: RawProduct): Product {
   if (typeof raw.id !== "string") throw new ProductsApiError("product.id must be string");
+  if (typeof raw.sku !== "string") throw new ProductsApiError("product.sku must be string");
   if (typeof raw.title !== "string") throw new ProductsApiError("product.title must be string");
   if (typeof raw.slug !== "string") throw new ProductsApiError("product.slug must be string");
   if (typeof raw.stock !== "number") throw new ProductsApiError("product.stock must be number");
@@ -64,6 +66,7 @@ function parseProduct(raw: RawProduct): Product {
   try {
     return Product.fromInput({
       id: raw.id,
+      sku: raw.sku,
       title: raw.title,
       slug: raw.slug,
       price: { amount: price.amount, currency: price.currency as Currency },

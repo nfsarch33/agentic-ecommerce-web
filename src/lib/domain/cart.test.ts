@@ -8,14 +8,16 @@ import {
 } from "./cart";
 
 const roller: CartAddItem = {
-  productId: "p_roller",
+  productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  sku: "ROLLER-001",
   title: "Foam roller",
   slug: "foam-roller",
   unitPrice: { amount: 3500, currency: "AUD" },
 };
 
 const mat: CartAddItem = {
-  productId: "p_mat",
+  productId: "118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  sku: "MAT-001",
   title: "Yoga mat",
   slug: "yoga-mat",
   unitPrice: { amount: 6995, currency: "AUD" },
@@ -26,7 +28,11 @@ describe("cartReducer", () => {
     const state = cartReducer(emptyCartState, { type: "addItem", item: roller });
 
     expect(state.items).toHaveLength(1);
-    expect(state.items[0]).toMatchObject({ productId: "p_roller", quantity: 1 });
+    expect(state.items[0]).toMatchObject({
+      productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "ROLLER-001",
+      quantity: 1,
+    });
   });
 
   it("increments quantity when the same item is added again", () => {
@@ -40,15 +46,15 @@ describe("cartReducer", () => {
     const withRoller = cartReducer(emptyCartState, { type: "addItem", item: roller });
     const withBoth = cartReducer(withRoller, { type: "addItem", item: mat });
 
-    const next = cartReducer(withBoth, { type: "removeItem", productId: "p_roller" });
+    const next = cartReducer(withBoth, { type: "removeItem", productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c" });
 
-    expect(next.items.map((item) => item.productId)).toEqual(["p_mat"]);
+    expect(next.items.map((item) => item.productId)).toEqual(["118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c"]);
   });
 
   it("updates item quantity", () => {
     const state = cartReducer(emptyCartState, { type: "addItem", item: roller });
 
-    const next = cartReducer(state, { type: "updateQuantity", productId: "p_roller", quantity: 4 });
+    const next = cartReducer(state, { type: "updateQuantity", productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c", quantity: 4 });
 
     expect(next.items[0]?.quantity).toBe(4);
   });
@@ -71,7 +77,7 @@ describe("cartReducer", () => {
       CartValidationError,
     );
     expect(() =>
-      cartReducer(emptyCartState, { type: "updateQuantity", productId: "p_roller", quantity: 1.5 }),
+      cartReducer(emptyCartState, { type: "updateQuantity", productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c", quantity: 1.5 }),
     ).toThrow(CartValidationError);
   });
 });

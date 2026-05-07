@@ -15,7 +15,8 @@ vi.mock("next/navigation", () => ({
 const cartWithItem: CartState = {
   items: [
     {
-      productId: "p_roller",
+      productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "ROLLER-001",
       title: "Foam roller",
       slug: "foam-roller",
       quantity: 1,
@@ -25,7 +26,7 @@ const cartWithItem: CartState = {
 };
 
 const createdOrder: Order = {
-  id: "ord_123",
+  id: "218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   customerEmail: "buyer@example.com",
   status: "pending",
   shippingAddress: {
@@ -38,9 +39,9 @@ const createdOrder: Order = {
   },
   items: [
     {
-      productId: "p_roller",
+      productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "ROLLER-001",
       title: "Foam roller",
-      slug: "foam-roller",
       quantity: 1,
       unitPrice: { amount: 3500, currency: "AUD" },
       lineTotal: { amount: 3500, currency: "AUD" },
@@ -48,9 +49,11 @@ const createdOrder: Order = {
   ],
   totals: {
     subtotal: { amount: 3500, currency: "AUD" },
+    shipping: { amount: 0, currency: "AUD" },
     total: { amount: 3500, currency: "AUD" },
   },
   createdAt: "2026-05-07T04:00:00Z",
+  updatedAt: "2026-05-07T04:00:00Z",
 };
 
 describe("CheckoutForm", () => {
@@ -97,13 +100,19 @@ describe("CheckoutForm", () => {
     await userEvent.type(screen.getByLabelText(/postal code/i), "2000");
     await userEvent.click(screen.getByRole("button", { name: /place order/i }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/orders/ord_123"));
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith("/orders/218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c"),
+    );
     expect(createOrderImpl).toHaveBeenCalledWith(
       expect.objectContaining({
         baseUrl: "http://api.test",
         order: expect.objectContaining({
           customerEmail: "buyer@example.com",
-          payment: { provider: "stub", token: "stub-payment-approved" },
+          items: [
+            expect.objectContaining({
+              sku: "ROLLER-001",
+            }),
+          ],
         }),
       }),
     );

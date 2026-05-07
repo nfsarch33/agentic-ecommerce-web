@@ -15,7 +15,8 @@ describe("fetchProducts", () => {
       asResponse({
         products: [
           {
-            id: "p_1",
+            id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+            sku: "ROLLER-001",
             title: "Foam roller",
             slug: "foam-roller",
             price: { amount: 3500, currency: "AUD" },
@@ -23,7 +24,8 @@ describe("fetchProducts", () => {
             description: "Dense black foam.",
           },
           {
-            id: "p_2",
+            id: "118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+            sku: "MAT-001",
             title: "Yoga mat",
             slug: "yoga-mat",
             price: { amount: 6995, currency: "AUD" },
@@ -39,7 +41,8 @@ describe("fetchProducts", () => {
       fetchImpl: mockFetch,
     });
     expect(products).toHaveLength(2);
-    expect(products[0]?.id).toBe("p_1");
+    expect(products[0]?.id).toBe("018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c");
+    expect(products[0]?.sku).toBe("ROLLER-001");
     expect(products[0]?.title).toBe("Foam roller");
     expect(products[0]?.price.amount).toBe(3500);
     expect(products[1]?.stock).toBe(0);

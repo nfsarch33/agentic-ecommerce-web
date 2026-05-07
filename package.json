@@ -39,6 +39,7 @@
     "api:generate": "bun run scripts/generate-api-types.ts",
     "build": "next build",
     "dev": "next dev --turbopack",
+    "e2e:web": "bun e2e/run-with-mock.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
     "lint": "eslint .",
     "start": "next start",

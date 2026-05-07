@@ -21,11 +21,11 @@ export function buildCheckoutOrder(input: BuildCheckoutOrderInput): CreateOrderR
     shippingAddress: input.shippingAddress,
     items: input.cart.items.map((item) => ({
       productId: item.productId,
+      sku: item.sku,
       title: item.title,
       slug: item.slug,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
     })),
-    payment: { provider: "stub", token: "stub-payment-approved" },
   };
 }

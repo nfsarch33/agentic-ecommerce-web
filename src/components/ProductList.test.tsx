@@ -8,14 +8,16 @@ describe("ProductList", () => {
   it("renders one ProductCard per product", () => {
     const products = [
       Product.fromInput({
-        id: "p_1",
+        id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+        sku: "ROLLER-001",
         title: "Foam roller",
         slug: "foam-roller",
         price: { amount: 3500, currency: "AUD" },
         stock: 5,
       }),
       Product.fromInput({
-        id: "p_2",
+        id: "118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+        sku: "MAT-001",
         title: "Yoga mat",
         slug: "yoga-mat",
         price: { amount: 6995, currency: "AUD" },

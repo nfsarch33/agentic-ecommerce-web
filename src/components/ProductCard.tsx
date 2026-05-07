@@ -22,6 +22,7 @@ export function ProductCard({ product }: ProductCardProps) {
         disabled={!inStock}
         item={{
           productId: product.id,
+          sku: product.sku,
           title: product.title,
           slug: product.slug,
           unitPrice: product.price,

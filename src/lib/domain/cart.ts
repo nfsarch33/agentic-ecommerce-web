@@ -2,6 +2,7 @@ import type { Money } from "./product";
 
 export interface CartAddItem {
   readonly productId: string;
+  readonly sku: string;
   readonly title: string;
   readonly slug: string;
   readonly unitPrice: Money;
