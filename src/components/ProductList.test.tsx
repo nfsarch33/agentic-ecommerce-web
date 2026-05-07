@@ -1,0 +1,33 @@
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { ProductList } from "./ProductList";
+import { Product } from "@/lib/domain/product";
+
+describe("ProductList", () => {
+  it("renders one ProductCard per product", () => {
+    const products = [
+      Product.fromInput({
+        id: "p_1",
+        title: "Foam roller",
+        slug: "foam-roller",
+        price: { amount: 3500, currency: "AUD" },
+        stock: 5,
+      }),
+      Product.fromInput({
+        id: "p_2",
+        title: "Yoga mat",
+        slug: "yoga-mat",
+        price: { amount: 6995, currency: "AUD" },
+        stock: 1,
+      }),
+    ];
+    render(<ProductList products={products} />);
+    expect(screen.getByRole("heading", { name: /foam roller/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /yoga mat/i })).toBeInTheDocument();
+  });
+
+  it("renders the empty state when there are no products", () => {
+    render(<ProductList products={[]} />);
+    expect(screen.getByText(/no products available/i)).toBeInTheDocument();
+  });
+});

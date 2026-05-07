@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Light/dark theme tokens. Tailwind v4 derives utility classes from
+   variables under the @theme directive. Keep the surface tiny until
+   we have product designs locked in. */
+@theme {
+  --color-brand-50: #f5f7ff;
+  --color-brand-500: #5b6cff;
+  --color-brand-700: #2c3ed4;
+  --color-surface-muted: #f7f7f8;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  height: 100%;
+}
