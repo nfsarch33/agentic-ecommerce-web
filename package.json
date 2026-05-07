@@ -20,6 +20,8 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.5.0",
     "jsdom": "^26.0.0",
+    "openapi-fetch": "^0.17.0",
+    "openapi-typescript": "^7.13.0",
     "postcss": "^8.5.0",
     "prettier": "^3.4.0",
     "tailwindcss": "^4.0.0",
@@ -34,6 +36,7 @@
   "name": "agentic-ecommerce-web",
   "private": true,
   "scripts": {
+    "api:generate": "bun run scripts/generate-api-types.ts",
     "build": "next build",
     "dev": "next dev --turbopack",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
