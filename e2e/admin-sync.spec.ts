@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./helpers/auth";
 
 test("admin sync dashboard renders status, conflicts, and resolves a conflict", async ({ page }) => {
+  await signInAs(page, "operator");
   await page.goto("/admin/sync");
 
   await expect(page.getByRole("heading", { name: "Sync Dashboard" })).toBeVisible();

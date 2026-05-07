@@ -13,6 +13,7 @@ const product = {
 
 const orderId = "318f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c";
 const orders = new Map<string, unknown>();
+const authSessions = new Map<string, { user: { id: string; email: string; role: "admin" | "operator" | "viewer" }; expires_at: string }>();
 const syncConflict = {
   id: "418f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   product_id: product.id,
@@ -202,6 +203,33 @@ async function createOrder(req: Request): Promise<Response> {
   return json(order, { status: 201 });
 }
 
+async function login(req: Request): Promise<Response> {
+  const body = (await req.json()) as { email?: string };
+  const email = body.email ?? "viewer@example.com";
+  const role = email.startsWith("admin")
+    ? "admin"
+    : email.startsWith("operator")
+      ? "operator"
+      : "viewer";
+  const token = `${role}-token`;
+  const session = {
+    user: { id: `user_${role}`, email, role },
+    expires_at: "2026-05-07T10:00:00Z",
+  };
+  authSessions.set(token, session);
+  return json({ access_token: token, session });
+}
+
+function sessionFromAuthorization(req: Request): Response {
+  const authorization = req.headers.get("authorization") ?? "";
+  const token = authorization.replace(/^Bearer\s+/i, "");
+  const session = authSessions.get(token);
+  if (!session) {
+    return json({ error: "unauthenticated" }, { status: 401 });
+  }
+  return json(session);
+}
+
 const apiPort = Number(process.env.E2E_MOCK_API_PORT ?? 18080);
 const server = Bun.serve({
   port: apiPort,
@@ -212,6 +240,15 @@ const server = Bun.serve({
       return new Response(null, { status: 204, headers: corsHeaders });
     }
     if (url.pathname === "/healthz") return json({ status: "ok" });
+    if (url.pathname === "/api/v1/auth/login" && req.method === "POST") {
+      return login(req);
+    }
+    if (url.pathname === "/api/v1/auth/me" && req.method === "GET") {
+      return sessionFromAuthorization(req);
+    }
+    if (url.pathname === "/api/v1/auth/logout" && req.method === "POST") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
     if (url.pathname === "/api/v1/products" && req.method === "GET") {
       return json({ products: [product], total: 1, page: 1, per_page: 20 });
     }

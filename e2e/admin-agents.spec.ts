@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./helpers/auth";
 
 test("admin agents dashboard renders current-contract history and triggers a manual run", async ({ page }) => {
   page.on("dialog", (dialog) => dialog.accept());
 
+  await signInAs(page, "operator");
   await page.goto("/admin/agents");
 
   await expect(page.getByRole("heading", { name: "Agent Dashboard" })).toBeVisible();
