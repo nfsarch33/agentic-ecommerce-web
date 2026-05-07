@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { AIProductDescriptionPanel } from "@/components/AIProductDescriptionPanel";
+import { ProductMediaPanel } from "@/components/ProductMediaPanel";
+import { loadProductMedia } from "@/lib/usecases/media-library";
 import { loadProductContentEditor } from "@/lib/usecases/product-content-editor";
 
 export const dynamic = "force-dynamic";
@@ -23,10 +25,16 @@ export default async function ProductContentPage({ params }: ProductContentPageP
   const { id } = await params;
   const serverBaseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
   const clientBaseUrl = process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? serverBaseUrl;
-  const { product, suggestions } = await loadProductContentEditor({
-    baseUrl: serverBaseUrl,
-    productId: id,
-  });
+  const [{ product, suggestions }, media] = await Promise.all([
+    loadProductContentEditor({
+      baseUrl: serverBaseUrl,
+      productId: id,
+    }),
+    loadProductMedia({
+      baseUrl: serverBaseUrl,
+      productId: id,
+    }),
+  ]);
   const productFields = {
     id: product.id,
     sku: product.sku,
@@ -38,11 +46,14 @@ export default async function ProductContentPage({ params }: ProductContentPageP
   };
 
   return (
-    <AIProductDescriptionPanel
-      apiBaseUrl={clientBaseUrl}
-      product={productFields}
-      initialSuggestions={suggestions}
-      fallbackBffBaseUrl=""
-    />
+    <>
+      <AIProductDescriptionPanel
+        apiBaseUrl={clientBaseUrl}
+        product={productFields}
+        initialSuggestions={suggestions}
+        fallbackBffBaseUrl=""
+      />
+      <ProductMediaPanel apiBaseUrl={clientBaseUrl} productId={id} initialAssets={media.assets} />
+    </>
   );
 }

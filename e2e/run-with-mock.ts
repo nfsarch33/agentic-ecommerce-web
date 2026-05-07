@@ -59,36 +59,30 @@ const aiSuggestion = {
 };
 
 const evidenceSource = {
-  chunk_id: "ev_resistance_band_manual",
-  document_id: "doc_resistance_band_manual",
+  id: "ev_resistance_band_manual",
   title: "Resistance Band Product Manual",
-  source: "s3://rag-docs/resistance-band-manual.md",
-  text: "The set includes five latex bands with progressive tension levels.",
-  score: 0.91,
-  metadata: { page: "2", section: "Specifications", source_type: "manual" },
+  uri: "s3://rag-docs/resistance-band-manual.md",
+  excerpt: "The set includes five latex bands with progressive tension levels.",
+  similarity: 0.91,
+  source_type: "manual",
+  metadata: { page: 2, section: "Specifications" },
 };
 
 const factCheckResult = {
   id: "fc_ai_content_1",
   product_id: product.id,
-  pass: false,
-  confidence: 0.86,
+  suggestion_id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  overall_confidence: 86,
+  status: "supported",
   checked_at: "2026-05-08T01:00:00Z",
-  issues: ["ambiguous claim: Warranty coverage is available."],
   claims: [
     {
-      claim: { text: "The set includes five tension levels." },
+      id: "claim_tension_levels",
       text: "The set includes five tension levels.",
-      confidence: 0.92,
-      status: "supported",
+      confidence: 92,
+      verdict: "supported",
       evidence: [evidenceSource],
-    },
-    {
-      claim: { text: "Warranty coverage is available." },
-      text: "Warranty coverage is available.",
-      confidence: 0.46,
-      status: "ambiguous",
-      evidence: [],
+      explanation: "Product manual confirms the five-level resistance claim.",
     },
   ],
 };
@@ -322,9 +316,103 @@ const workflows: MockWorkflow[] = [
   },
 ];
 
+type MockMediaAsset = {
+  id: string;
+  product_id?: string;
+  source_url?: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  width?: number;
+  height?: number;
+  processing_status: "sourced" | "processing" | "processed" | "validated" | "failed";
+  object_store_location?: {
+    provider: "local" | "s3" | "gcs";
+    bucket: string;
+    key: string;
+    url?: string;
+  };
+  metadata: {
+    alt_text: string;
+    title: string;
+    tags: string[];
+  };
+  qa_result?: {
+    status: "pending" | "passed" | "needs_review" | "failed";
+    score: number;
+    checked_at: string;
+    checks: Array<{
+      code: string;
+      status: "pending" | "passed" | "needs_review" | "failed";
+      message: string;
+    }>;
+  };
+  created_at: string;
+  updated_at: string;
+};
+
+const mediaAssets: MockMediaAsset[] = [
+  {
+    id: "media_hero",
+    product_id: product.id,
+    source_url: "https://supplier.example/hero.png",
+    original_filename: "hero.png",
+    mime_type: "image/png",
+    size_bytes: 450123,
+    width: 2200,
+    height: 1400,
+    processing_status: "validated",
+    object_store_location: {
+      provider: "local",
+      bucket: "media",
+      key: "products/resistance-band/hero.webp",
+      url: "https://cdn.example/products/resistance-band/hero.webp",
+    },
+    metadata: {
+      alt_text: "Resistance band set with five tension levels",
+      title: "Resistance band hero image",
+      tags: ["fitness", "hero"],
+    },
+    qa_result: {
+      status: "passed",
+      score: 92,
+      checked_at: "2026-05-08T01:00:00Z",
+      checks: [
+        { code: "resolution", status: "passed", message: "Image exceeds minimum resolution." },
+      ],
+    },
+    created_at: "2026-05-08T00:00:00Z",
+    updated_at: "2026-05-08T01:00:00Z",
+  },
+  {
+    id: "media_thumb",
+    product_id: product.id,
+    source_url: "https://supplier.example/thumb.jpg",
+    original_filename: "thumb.jpg",
+    mime_type: "image/jpeg",
+    size_bytes: 12000,
+    width: 320,
+    height: 240,
+    processing_status: "failed",
+    metadata: {
+      alt_text: "",
+      title: "Tiny supplier thumbnail",
+      tags: ["supplier"],
+    },
+    qa_result: {
+      status: "failed",
+      score: 24,
+      checked_at: "2026-05-08T01:00:00Z",
+      checks: [{ code: "resolution", status: "failed", message: "Image is below 1200px wide." }],
+    },
+    created_at: "2026-05-08T00:00:00Z",
+    updated_at: "2026-05-08T01:00:00Z",
+  },
+];
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET,POST,OPTIONS",
+  "access-control-allow-methods": "GET,POST,PATCH,OPTIONS",
   "access-control-allow-headers": "content-type,accept",
 };
 
@@ -470,11 +558,14 @@ const server = Bun.serve({
         },
       });
     }
-    if (url.pathname === `/api/v1/products/${product.id}/fact-check-results/latest` && req.method === "GET") {
+    if (
+      url.pathname === `/api/v1/products/${product.id}/fact-check-results/latest` &&
+      req.method === "GET"
+    ) {
       return json({ result: factCheckResult });
     }
-    if (url.pathname === "/api/v1/rag/search" && req.method === "GET") {
-      return json({ query: url.searchParams.get("q") ?? "", results: [evidenceSource] });
+    if (url.pathname === "/api/v1/rag/evidence/search" && req.method === "POST") {
+      return json({ sources: [evidenceSource] });
     }
     if (url.pathname === "/api/v1/workflows" && req.method === "GET") {
       const status = url.searchParams.get("status");
@@ -499,7 +590,9 @@ const server = Bun.serve({
             name: "Check compliance",
             status: "running",
             started_at: "2026-05-07T04:50:00Z",
-            message: body.description ? "Checking operator-approved copy." : "Checking product copy.",
+            message: body.description
+              ? "Checking operator-approved copy."
+              : "Checking product copy.",
             attempt: 1,
           },
         ],
@@ -528,6 +621,111 @@ const server = Bun.serve({
           : activity,
       );
       return json({ workflow: workflowSummary(workflow) }, { status: 202 });
+    }
+    if (url.pathname === "/api/v1/media" && req.method === "GET") {
+      const productId = url.searchParams.get("product_id");
+      const status = url.searchParams.get("status");
+      const list = mediaAssets.filter((asset) => {
+        if (productId && asset.product_id !== productId) return false;
+        if (status && asset.processing_status !== status) return false;
+        return true;
+      });
+      return json({ assets: list });
+    }
+    if (url.pathname === "/api/v1/media/source" && req.method === "POST") {
+      const body = (await req.json()) as {
+        source_url?: string;
+        product_id?: string;
+        file?: { name?: string; type?: string; size?: number };
+        metadata?: { alt_text?: string; title?: string; tags?: string[] };
+      };
+      const filename = body.file?.name ?? body.source_url?.split("/").pop() ?? "sourced-media.png";
+      const asset: MockMediaAsset = {
+        id: `media_${mediaAssets.length + 1}`,
+        product_id: body.product_id,
+        source_url: body.source_url,
+        original_filename: filename,
+        mime_type: body.file?.type ?? "image/png",
+        size_bytes: body.file?.size ?? 180000,
+        width: 1600,
+        height: 1200,
+        processing_status: "sourced",
+        object_store_location: {
+          provider: "local",
+          bucket: "media",
+          key: `products/${body.product_id ?? "library"}/${filename}`,
+          url: body.source_url,
+        },
+        metadata: {
+          alt_text: body.metadata?.alt_text ?? "",
+          title: body.metadata?.title ?? filename,
+          tags: body.metadata?.tags ?? [],
+        },
+        qa_result: {
+          status: "pending",
+          score: 0,
+          checked_at: "2026-05-08T01:05:00Z",
+          checks: [{ code: "queued", status: "pending", message: "Media QA has not run yet." }],
+        },
+        created_at: "2026-05-08T01:05:00Z",
+        updated_at: "2026-05-08T01:05:00Z",
+      };
+      mediaAssets.unshift(asset);
+      return json({ asset }, { status: 202 });
+    }
+    if (url.pathname === "/api/v1/media/process" && req.method === "POST") {
+      const body = (await req.json()) as { media_id?: string };
+      const asset = mediaAssets.find((candidate) => candidate.id === body.media_id);
+      if (!asset) return json({ error: "not_found" }, { status: 404 });
+      asset.processing_status = "processed";
+      asset.updated_at = "2026-05-08T01:07:00Z";
+      return json({ asset }, { status: 202 });
+    }
+    if (
+      url.pathname.startsWith("/api/v1/media/") &&
+      url.pathname.endsWith("/validate") &&
+      req.method === "POST"
+    ) {
+      const mediaId = decodeURIComponent(
+        url.pathname.replace("/api/v1/media/", "").replace("/validate", ""),
+      );
+      const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+      if (!asset) return json({ error: "not_found" }, { status: 404 });
+      asset.processing_status = "validated";
+      asset.qa_result = {
+        status: "passed",
+        score: 94,
+        checked_at: "2026-05-08T01:08:00Z",
+        checks: [{ code: "resolution", status: "passed", message: "Media passed validation." }],
+      };
+      asset.updated_at = "2026-05-08T01:08:00Z";
+      return json({ asset });
+    }
+    if (
+      url.pathname.startsWith("/api/v1/media/") &&
+      url.pathname.endsWith("/metadata") &&
+      req.method === "PATCH"
+    ) {
+      const mediaId = decodeURIComponent(
+        url.pathname.replace("/api/v1/media/", "").replace("/metadata", ""),
+      );
+      const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+      if (!asset) return json({ error: "not_found" }, { status: 404 });
+      const body = (await req.json()) as {
+        metadata?: { alt_text?: string; title?: string; tags?: string[] };
+      };
+      asset.metadata = {
+        alt_text: body.metadata?.alt_text ?? asset.metadata.alt_text,
+        title: body.metadata?.title ?? asset.metadata.title,
+        tags: body.metadata?.tags ?? asset.metadata.tags,
+      };
+      asset.updated_at = "2026-05-08T01:09:00Z";
+      return json({ asset });
+    }
+    if (url.pathname.startsWith("/api/v1/media/") && req.method === "GET") {
+      const mediaId = decodeURIComponent(url.pathname.replace("/api/v1/media/", ""));
+      const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+      return asset ? json(asset) : json({ error: "not_found" }, { status: 404 });
     }
     if (url.pathname === "/api/v1/compliance/rules" && req.method === "GET") {
       return json({ rules: [complianceRule] });

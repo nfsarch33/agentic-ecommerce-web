@@ -11,6 +11,7 @@ interface AdminNavItem {
 const navItems: readonly AdminNavItem[] = [
   { key: "dashboard", href: "/admin", label: "Dashboard" },
   { key: "products", href: "/admin/products", label: "Products" },
+  { key: "media", href: "/admin/media", label: "Media" },
   { key: "orders", href: "/admin/orders", label: "Orders" },
   { key: "sync", href: "/admin/sync", label: "Sync" },
   { key: "agents", href: "/admin/agents", label: "Agents" },

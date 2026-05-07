@@ -32,6 +32,7 @@ const roleRank: Record<Role, number> = {
 const adminNavMinimumRoles: Record<string, Role> = {
   dashboard: "viewer",
   products: "viewer",
+  media: "operator",
   orders: "viewer",
   sync: "operator",
   agents: "operator",

@@ -20,6 +20,7 @@ describe("AdminShell", () => {
     );
 
     expect(screen.getByRole("link", { name: /products/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /media/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /orders/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
     expect(screen.getByText("admin@example.com")).toBeInTheDocument();
