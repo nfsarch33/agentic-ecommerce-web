@@ -11,7 +11,8 @@ import { fetchProductBySlug } from "@/lib/adapters/api/products";
 const mockFetchProductBySlug = vi.mocked(fetchProductBySlug);
 
 const fakeProduct = {
-  id: "p_widget-pro",
+  id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  sku: "WIDGET-PRO",
   title: "Widget Pro",
   slug: "widget-pro",
   price: { amount: 4999, currency: "AUD" as const },

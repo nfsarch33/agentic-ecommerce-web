@@ -11,14 +11,16 @@ function deps(overrides: Partial<ListProductsDeps> = {}): ListProductsDeps {
 
 const sampleProducts = [
   Product.fromInput({
-    id: "p_1",
+    id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+    sku: "ROLLER-001",
     title: "Foam roller",
     slug: "foam-roller",
     price: { amount: 3500, currency: "AUD" },
     stock: 5,
   }),
   Product.fromInput({
-    id: "p_2",
+    id: "118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+    sku: "MAT-001",
     title: "Yoga mat",
     slug: "yoga-mat",
     price: { amount: 6995, currency: "AUD" },
@@ -38,7 +40,7 @@ describe("listProducts use case", () => {
     const fetchImpl = vi.fn().mockResolvedValue(sampleProducts);
     const result = await listProducts({ onlyInStock: true }, deps({ fetchProductsImpl: fetchImpl }));
     expect(result.products).toHaveLength(1);
-    expect(result.products[0]?.id).toBe("p_1");
+    expect(result.products[0]?.id).toBe("018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c");
   });
 
   it("propagates adapter errors", async () => {

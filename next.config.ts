@@ -19,9 +19,7 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: false },
   eslint: { ignoreDuringBuilds: false },
 
-  experimental: {
-    typedRoutes: true,
-  },
+  typedRoutes: true,
 
   poweredByHeader: false,
 };

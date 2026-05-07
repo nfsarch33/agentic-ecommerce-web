@@ -1,6 +1,6 @@
 import type { Money } from "./product";
 
-export type OrderStatus = "pending" | "paid" | "fulfilled" | "shipped" | "completed";
+export type OrderStatus = "pending" | "paid" | "fulfilled" | "shipped" | "completed" | "failed" | "cancelled";
 
 export interface ShippingAddress {
   readonly name: string;
@@ -14,8 +14,8 @@ export interface ShippingAddress {
 
 export interface OrderItem {
   readonly productId: string;
+  readonly sku: string;
   readonly title: string;
-  readonly slug: string;
   readonly quantity: number;
   readonly unitPrice: Money;
   readonly lineTotal: Money;
@@ -23,6 +23,7 @@ export interface OrderItem {
 
 export interface OrderTotals {
   readonly subtotal: Money;
+  readonly shipping: Money;
   readonly total: Money;
 }
 
@@ -34,4 +35,5 @@ export interface Order {
   readonly items: readonly OrderItem[];
   readonly totals: OrderTotals;
   readonly createdAt: string;
+  readonly updatedAt: string;
 }

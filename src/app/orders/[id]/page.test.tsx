@@ -24,9 +24,11 @@ const order: Order = {
   items: [],
   totals: {
     subtotal: { amount: 0, currency: "AUD" },
+    shipping: { amount: 0, currency: "AUD" },
     total: { amount: 0, currency: "AUD" },
   },
   createdAt: "2026-05-07T04:00:00Z",
+  updatedAt: "2026-05-07T04:00:00Z",
 };
 
 describe("OrderConfirmationPage", () => {

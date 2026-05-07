@@ -11,7 +11,8 @@ function makeFetch(status: number, body: unknown): typeof fetch {
 }
 
 const validProduct = {
-  id: "p_widget-pro",
+  id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  sku: "WIDGET-PRO",
   title: "Widget Pro",
   slug: "widget-pro",
   price: { amount: 4999, currency: "AUD" },
@@ -27,7 +28,8 @@ describe("fetchProductBySlug", () => {
       slug: "widget-pro",
       fetchImpl: mockFetch,
     });
-    expect(product.id).toBe("p_widget-pro");
+    expect(product.id).toBe("018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c");
+    expect(product.sku).toBe("WIDGET-PRO");
     expect(product.title).toBe("Widget Pro");
     expect(product.slug).toBe("widget-pro");
     expect(product.price.amount).toBe(4999);

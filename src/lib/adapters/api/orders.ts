@@ -3,6 +3,7 @@ import type { Order, OrderStatus, ShippingAddress } from "@/lib/domain/order";
 
 export interface CreateOrderItem {
   readonly productId: string;
+  readonly sku: string;
   readonly title: string;
   readonly slug: string;
   readonly quantity: number;
@@ -13,10 +14,6 @@ export interface CreateOrderRequest {
   readonly customerEmail: string;
   readonly shippingAddress: ShippingAddress;
   readonly items: readonly CreateOrderItem[];
-  readonly payment: {
-    readonly provider: "stub";
-    readonly token: string;
-  };
 }
 
 export interface CreateOrderOptions {
@@ -55,8 +52,8 @@ interface RawShippingAddress {
 
 interface RawOrderItem {
   readonly product_id?: unknown;
+  readonly sku?: unknown;
   readonly title?: unknown;
-  readonly slug?: unknown;
   readonly quantity?: unknown;
   readonly unit_price?: unknown;
   readonly line_total?: unknown;
@@ -70,9 +67,10 @@ interface RawOrder {
   readonly items?: unknown;
   readonly totals?: unknown;
   readonly created_at?: unknown;
+  readonly updated_at?: unknown;
 }
 
-const statuses = new Set<OrderStatus>(["pending", "paid", "fulfilled", "shipped", "completed"]);
+const statuses = new Set<OrderStatus>(["pending", "paid", "fulfilled", "shipped", "completed", "failed", "cancelled"]);
 const currencies = new Set<Money["currency"]>(["AUD", "USD", "GBP", "EUR"]);
 
 function parseMoney(raw: unknown, label: string): Money {
@@ -117,8 +115,8 @@ function parseOrderItem(raw: unknown): Order["items"][number] {
   }
   return {
     productId: parseString(value?.product_id, "items.product_id"),
+    sku: parseString(value?.sku, "items.sku"),
     title: parseString(value?.title, "items.title"),
-    slug: parseString(value?.slug, "items.slug"),
     quantity: quantity as number,
     unitPrice: parseMoney(value?.unit_price, "items.unit_price"),
     lineTotal: parseMoney(value?.line_total, "items.line_total"),
@@ -134,7 +132,7 @@ function parseOrder(raw: unknown): Order {
   if (!Array.isArray(value?.items)) {
     throw new OrdersApiError("order.items must be an array");
   }
-  const totals = value?.totals as { subtotal?: unknown; total?: unknown } | undefined;
+  const totals = value?.totals as { subtotal?: unknown; shipping?: unknown; total?: unknown } | undefined;
   return {
     id: parseString(value?.id, "order.id"),
     customerEmail: parseString(value?.customer_email, "order.customer_email"),
@@ -143,9 +141,11 @@ function parseOrder(raw: unknown): Order {
     items: value.items.map(parseOrderItem),
     totals: {
       subtotal: parseMoney(totals?.subtotal, "order.totals.subtotal"),
+      shipping: parseMoney(totals?.shipping, "order.totals.shipping"),
       total: parseMoney(totals?.total, "order.totals.total"),
     },
     createdAt: parseString(value?.created_at, "order.created_at"),
+    updatedAt: parseString(value?.updated_at, "order.updated_at"),
   };
 }
 
@@ -163,12 +163,11 @@ function toRawCreateOrder(input: CreateOrderRequest): unknown {
     },
     items: input.items.map((item) => ({
       product_id: item.productId,
+      sku: item.sku,
       title: item.title,
-      slug: item.slug,
       quantity: item.quantity,
       unit_price: item.unitPrice,
     })),
-    payment: input.payment,
   };
 }
 

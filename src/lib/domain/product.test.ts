@@ -27,7 +27,8 @@ describe("Money", () => {
 
   it("rejects negative amounts at construction", () => {
     expect(() => Product.fromInput({
-      id: "p_1",
+      id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "ROLLER-001",
       title: "x",
       slug: "x",
       price: { amount: -1, currency: "AUD" },
@@ -37,30 +38,32 @@ describe("Money", () => {
 });
 
 describe("ProductId", () => {
-  it("accepts the canonical p_<uuid> shape", () => {
-    expect(() => ProductId.parse("p_018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c")).not.toThrow();
+  it("accepts backend UUID product ids", () => {
+    expect(() => ProductId.parse("018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c")).not.toThrow();
   });
 
   it("rejects empty ids", () => {
     expect(() => ProductId.parse("")).toThrow(ProductValidationError);
   });
 
-  it("rejects ids without the p_ prefix", () => {
-    expect(() => ProductId.parse("018f1c8e-3b58")).toThrow(ProductValidationError);
+  it("rejects whitespace-only ids", () => {
+    expect(() => ProductId.parse("   ")).toThrow(ProductValidationError);
   });
 });
 
 describe("Product.fromInput", () => {
   it("builds a valid product", () => {
     const p = Product.fromInput({
-      id: "p_018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "band-001",
       title: "Resistance band set",
       slug: "resistance-band-set",
       price: { amount: 4995, currency: "AUD" },
       stock: 12,
       description: "Pro-grade bands.",
     });
-    expect(p.id).toBe("p_018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c");
+    expect(p.id).toBe("018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c");
+    expect(p.sku).toBe("BAND-001");
     expect(p.title).toBe("Resistance band set");
     expect(p.slug).toBe("resistance-band-set");
     expect(p.price.amount).toBe(4995);
@@ -70,8 +73,20 @@ describe("Product.fromInput", () => {
 
   it("trims title and rejects empty strings", () => {
     expect(() => Product.fromInput({
-      id: "p_x",
+      id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "SKU-001",
       title: "   ",
+      slug: "x",
+      price: { amount: 100, currency: "AUD" },
+      stock: 1,
+    })).toThrow(ProductValidationError);
+  });
+
+  it("rejects empty sku values", () => {
+    expect(() => Product.fromInput({
+      id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "   ",
+      title: "x",
       slug: "x",
       price: { amount: 100, currency: "AUD" },
       stock: 1,
@@ -80,7 +95,8 @@ describe("Product.fromInput", () => {
 
   it("rejects negative stock", () => {
     expect(() => Product.fromInput({
-      id: "p_x",
+      id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "SKU-001",
       title: "x",
       slug: "x",
       price: { amount: 100, currency: "AUD" },
@@ -90,7 +106,8 @@ describe("Product.fromInput", () => {
 
   it("rejects slug with whitespace", () => {
     expect(() => Product.fromInput({
-      id: "p_x",
+      id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "SKU-001",
       title: "x",
       slug: "bad slug",
       price: { amount: 100, currency: "AUD" },
@@ -101,7 +118,8 @@ describe("Product.fromInput", () => {
 
 describe("isInStock", () => {
   const base = Product.fromInput({
-    id: "p_x",
+    id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+    sku: "SKU-001",
     title: "x",
     slug: "x",
     price: { amount: 100, currency: "AUD" },

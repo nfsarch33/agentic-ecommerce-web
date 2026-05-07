@@ -42,15 +42,17 @@ function quote(s: string): string {
 
 export const ProductId = {
   parse(input: string): string {
-    if (!input || !input.startsWith("p_")) {
-      throw new ProductValidationError(`product id must start with 'p_': got ${quote(input)}`);
+    const id = input.trim();
+    if (id === "") {
+      throw new ProductValidationError(`product id must be non-empty: got ${quote(input)}`);
     }
-    return input;
+    return id;
   },
 } as const;
 
 export interface ProductInput {
   readonly id: string;
+  readonly sku: string;
   readonly title: string;
   readonly slug: string;
   readonly price: Money;
@@ -60,6 +62,7 @@ export interface ProductInput {
 
 export interface ProductFields {
   readonly id: string;
+  readonly sku: string;
   readonly title: string;
   readonly slug: string;
   readonly price: Money;
@@ -71,6 +74,7 @@ const slugRE = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
 export class Product implements ProductFields {
   readonly id: string;
+  readonly sku: string;
   readonly title: string;
   readonly slug: string;
   readonly price: Money;
@@ -79,6 +83,7 @@ export class Product implements ProductFields {
 
   private constructor(fields: ProductFields) {
     this.id = fields.id;
+    this.sku = fields.sku;
     this.title = fields.title;
     this.slug = fields.slug;
     this.price = fields.price;
@@ -91,6 +96,10 @@ export class Product implements ProductFields {
     const title = (input.title ?? "").trim();
     if (title === "") {
       throw new ProductValidationError("title must be non-empty");
+    }
+    const sku = (input.sku ?? "").trim().toUpperCase();
+    if (sku === "") {
+      throw new ProductValidationError("sku must be non-empty");
     }
     const slug = (input.slug ?? "").trim();
     if (!slugRE.test(slug)) {
@@ -107,6 +116,7 @@ export class Product implements ProductFields {
     }
     return new Product({
       id,
+      sku,
       title,
       slug,
       price: input.price,

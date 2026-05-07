@@ -20,18 +20,18 @@ const createOrderRequest: CreateOrderRequest = {
   },
   items: [
     {
-      productId: "p_roller",
+      productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "ROLLER-001",
       title: "Foam roller",
       slug: "foam-roller",
       quantity: 2,
       unitPrice: { amount: 3500, currency: "AUD" },
     },
   ],
-  payment: { provider: "stub", token: "stub-payment-approved" },
 };
 
 const rawOrder = {
-  id: "ord_123",
+  id: "218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   customer_email: "buyer@example.com",
   status: "pending",
   shipping_address: {
@@ -44,9 +44,9 @@ const rawOrder = {
   },
   items: [
     {
-      product_id: "p_roller",
+      product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "ROLLER-001",
       title: "Foam roller",
-      slug: "foam-roller",
       quantity: 2,
       unit_price: { amount: 3500, currency: "AUD" },
       line_total: { amount: 7000, currency: "AUD" },
@@ -54,9 +54,11 @@ const rawOrder = {
   ],
   totals: {
     subtotal: { amount: 7000, currency: "AUD" },
+    shipping: { amount: 0, currency: "AUD" },
     total: { amount: 7000, currency: "AUD" },
   },
   created_at: "2026-05-07T04:00:00Z",
+  updated_at: "2026-05-07T04:00:00Z",
 };
 
 describe("createOrder", () => {
@@ -69,7 +71,7 @@ describe("createOrder", () => {
       fetchImpl: mockFetch,
     });
 
-    expect(order.id).toBe("ord_123");
+    expect(order.id).toBe("218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c");
     expect(order.status).toBe("pending");
     expect(order.totals.total.amount).toBe(7000);
     expect(mockFetch).toHaveBeenCalledWith(
@@ -89,14 +91,13 @@ describe("createOrder", () => {
           },
           items: [
             {
-              product_id: "p_roller",
+              product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+              sku: "ROLLER-001",
               title: "Foam roller",
-              slug: "foam-roller",
               quantity: 2,
               unit_price: { amount: 3500, currency: "AUD" },
             },
           ],
-          payment: { provider: "stub", token: "stub-payment-approved" },
         }),
       }),
     );
@@ -118,6 +119,7 @@ describe("fetchOrder", () => {
     const order = await fetchOrder({ baseUrl: "http://api.test", orderId: "ord_123", fetchImpl: mockFetch });
 
     expect(order.customerEmail).toBe("buyer@example.com");
+    expect(order.items[0]?.sku).toBe("ROLLER-001");
     expect(order.items[0]?.lineTotal.amount).toBe(7000);
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/orders/ord_123",

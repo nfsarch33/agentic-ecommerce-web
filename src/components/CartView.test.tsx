@@ -8,14 +8,16 @@ import type { CartState } from "@/lib/domain/cart";
 const cartWithItems: CartState = {
   items: [
     {
-      productId: "p_roller",
+      productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "ROLLER-001",
       title: "Foam roller",
       slug: "foam-roller",
       quantity: 2,
       unitPrice: { amount: 3500, currency: "AUD" },
     },
     {
-      productId: "p_mat",
+      productId: "118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      sku: "MAT-001",
       title: "Yoga mat",
       slug: "yoga-mat",
       quantity: 1,
