@@ -22,9 +22,11 @@ test("shopper checks out from product browse to order confirmation", async ({ pa
   await page.getByLabel(/city/i).fill("Sydney");
   await page.getByLabel(/state or region/i).fill("NSW");
   await page.getByLabel(/postal code/i).fill("2000");
-  await page.getByRole("button", { name: /place order/i }).click();
+  await Promise.all([
+    page.waitForURL(/\/orders\/318f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c$/, { timeout: 20_000 }),
+    page.getByRole("button", { name: /place order/i }).click(),
+  ]);
 
-  await expect(page).toHaveURL(/\/orders\/318f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c$/);
   await expect(page.getByRole("heading", { name: /order confirmed/i })).toBeVisible();
   await expect(page.getByText("shopper@example.com")).toBeVisible();
   await expect(page.getByText(/Resistance Band Set x 1/i)).toBeVisible();
