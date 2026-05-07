@@ -42,6 +42,7 @@
     "api:generate": "bun run scripts/generate-api-types.ts",
     "build": "next build",
     "dev": "next dev --turbopack",
+    "e2e:release": "E2E_RELEASE_FLOW=true playwright test e2e/v100-release-flow.spec.ts",
     "e2e:web": "bun e2e/run-with-mock.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\"",
     "lint": "eslint .",
