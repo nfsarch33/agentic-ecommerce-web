@@ -109,18 +109,18 @@ bun run api:generate
 
 ## Quality gates
 
-| Gate                  | Command                  | Threshold                       |
-|-----------------------|--------------------------|---------------------------------|
-| TypeScript strict     | `bun run typecheck`      | zero errors                     |
-| Unit tests            | `bun run test`           | ≥ 80% lines, branches ≥ 75%     |
-| ESLint (next + ts)    | `bun run lint`           | zero errors                     |
-| Production build      | `bun run build`          | First Load JS < 200 kB enforced |
-| Bundle regression     | `bun run qa:bundle`      | all routes under budget         |
-| Playwright smoke      | `bun run test:e2e`       | green on Chromium               |
-| Stable E2E gate       | `bun run test:e2e:stable` | serial Chromium, 2 retries      |
-| Lighthouse            | `bun run qa:lighthouse`  | performance and SEO ≥ 90        |
-| Security refresh      | `bun run qa:security`    | high/critical gates clean       |
-| v1.0.0 release E2E    | `make release-e2e`       | checkout + admin AI flow green  |
+| Gate               | Command                   | Threshold                             |
+| ------------------ | ------------------------- | ------------------------------------- |
+| TypeScript strict  | `bun run typecheck`       | zero errors                           |
+| Unit tests         | `bun run test`            | ≥ 80% lines, branches ≥ 75%           |
+| ESLint (next + ts) | `bun run lint`            | zero errors                           |
+| Production build   | `bun run build`           | First Load JS < 200 kB enforced       |
+| Bundle regression  | `bun run qa:bundle`       | all routes under budget               |
+| Playwright smoke   | `bun run test:e2e`        | green on Chromium                     |
+| Stable E2E gate    | `bun run test:e2e:stable` | serial Chromium, 2 retries            |
+| Lighthouse         | `bun run qa:lighthouse`   | performance and SEO ≥ 90              |
+| Security refresh   | `bun run qa:security`     | high/critical gates clean             |
+| v2.0.0 release E2E | `make release-e2e`        | checkout + Temporal + MIS + n8n green |
 
 See `docs/v180-frontend-qa.md` for the v1.8.0 Lighthouse, bundle, contract,
 E2E stability, and security refresh runbook.
@@ -153,32 +153,33 @@ bun run test
 bun run build
 ```
 
-### v1.0.0 release E2E
+### v2.0.0 release E2E
 
 `make release-e2e` runs the full release flow against the deterministic Bun
 mock backend in `e2e/run-with-mock.ts`: product browse, cart, checkout, order
-confirmation, admin login, order lookup, mocked AI description generation, and
-a passing compliance check. It intentionally avoids live MiniMax and
-WooCommerce calls; full compose coverage remains a separate backend/infra
-validation step.
+confirmation, admin login, order lookup, mocked AI content workflow completion,
+MIS media validation, Temporal publish timeline, mocked WooCommerce publish, a
+passing compliance check, and local/mock n8n delivery. It intentionally avoids
+live MiniMax, WooCommerce, Slack, SMTP, cloud, and external webhook calls; full
+compose coverage remains a separate backend/infra validation step.
 
 ### Environment variables
 
-| Var                    | Default                       | Notes                                  |
-|------------------------|-------------------------------|----------------------------------------|
-| `MC_API_BASE_URL`      | `http://localhost:8080`       | Server-side Go backend base URL        |
-| `NEXT_PUBLIC_MC_API_BASE_URL` | `MC_API_BASE_URL`       | Browser-reachable Go backend base URL  |
-| `NEXT_PUBLIC_APP_ORIGIN` | `NEXT_PUBLIC_SITE_URL` fallback | Public storefront origin for metadata, readiness, and deployment headers |
-| `NEXT_PUBLIC_MEDIA_CDN_BASE_URL` | _(unset)_             | Public CDN base URL for media assets   |
-| `NEXT_PUBLIC_N8N_URL`  | _(unset)_                     | Admin-only n8n UI link                 |
-| `NEXT_PUBLIC_TEMPORAL_UI_URL` | _(unset)_              | Admin-only Temporal UI link            |
-| `AUTH_COOKIE_SECURE`   | `true` in production          | Secure auth cookie flag                |
-| `AUTH_COOKIE_SAME_SITE` | `lax`                        | Auth cookie SameSite value             |
-| `AUTH_COOKIE_DOMAIN`   | _(unset)_                     | Optional shared auth cookie domain     |
-| `FLEET_AI_BRIDGE_URL`  | _(unset)_                     | Approved AI bridge URL (validated)     |
-| `CSP_CONNECT_SRC`      | _(unset)_                     | Deployment header allowlist for API/BFF/CDN connections |
-| `CSP_REPORT_URI`       | _(unset)_                     | Optional CSP report endpoint           |
-| `PORT`                 | `3000`                        | Next.js dev server port                |
+| Var                              | Default                         | Notes                                                                    |
+| -------------------------------- | ------------------------------- | ------------------------------------------------------------------------ |
+| `MC_API_BASE_URL`                | `http://localhost:8080`         | Server-side Go backend base URL                                          |
+| `NEXT_PUBLIC_MC_API_BASE_URL`    | `MC_API_BASE_URL`               | Browser-reachable Go backend base URL                                    |
+| `NEXT_PUBLIC_APP_ORIGIN`         | `NEXT_PUBLIC_SITE_URL` fallback | Public storefront origin for metadata, readiness, and deployment headers |
+| `NEXT_PUBLIC_MEDIA_CDN_BASE_URL` | _(unset)_                       | Public CDN base URL for media assets                                     |
+| `NEXT_PUBLIC_N8N_URL`            | _(unset)_                       | Admin-only n8n UI link                                                   |
+| `NEXT_PUBLIC_TEMPORAL_UI_URL`    | _(unset)_                       | Admin-only Temporal UI link                                              |
+| `AUTH_COOKIE_SECURE`             | `true` in production            | Secure auth cookie flag                                                  |
+| `AUTH_COOKIE_SAME_SITE`          | `lax`                           | Auth cookie SameSite value                                               |
+| `AUTH_COOKIE_DOMAIN`             | _(unset)_                       | Optional shared auth cookie domain                                       |
+| `FLEET_AI_BRIDGE_URL`            | _(unset)_                       | Approved AI bridge URL (validated)                                       |
+| `CSP_CONNECT_SRC`                | _(unset)_                       | Deployment header allowlist for API/BFF/CDN connections                  |
+| `CSP_REPORT_URI`                 | _(unset)_                       | Optional CSP report endpoint                                             |
+| `PORT`                           | `3000`                          | Next.js dev server port                                                  |
 
 ## Contributing
 

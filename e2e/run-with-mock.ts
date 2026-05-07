@@ -578,6 +578,14 @@ const webhooks: MockWebhook[] = [
   },
 ];
 
+const localN8NDeliveries: Array<{
+  id: string;
+  event_type: string;
+  status: "delivered";
+  target_url: string;
+  occurred_at: string;
+}> = [];
+
 type MockMediaAsset = {
   id: string;
   product_id?: string;
@@ -884,6 +892,13 @@ const server = Bun.serve({
       const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
       webhook.last_delivery_at = "2026-05-08T00:06:00Z";
       webhook.updated_at = "2026-05-08T00:06:00Z";
+      localN8NDeliveries.unshift({
+        id: `n8n_delivery_${localN8NDeliveries.length + 1}`,
+        event_type: body.event_type ?? webhook.event_types[0],
+        status: "delivered",
+        target_url: webhook.url,
+        occurred_at: "2026-05-08T00:06:00Z",
+      });
       return json(
         {
           delivery: {
@@ -898,6 +913,19 @@ const server = Bun.serve({
         },
         { status: 202 },
       );
+    }
+    if (url.pathname === "/__mock/n8n/deliveries" && req.method === "GET") {
+      return json({ deliveries: localN8NDeliveries });
+    }
+    if (url.pathname.startsWith("/mock-n8n/") && req.method === "POST") {
+      localN8NDeliveries.unshift({
+        id: `n8n_delivery_${localN8NDeliveries.length + 1}`,
+        event_type: url.pathname.replace("/mock-n8n/", ""),
+        status: "delivered",
+        target_url: url.pathname,
+        occurred_at: "2026-05-08T00:07:00Z",
+      });
+      return json({ status: "delivered" });
     }
     if (url.pathname.startsWith("/api/v1/webhooks/") && req.method === "DELETE") {
       const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", ""));
@@ -917,27 +945,89 @@ const server = Bun.serve({
       const workflow: MockWorkflow = {
         ...workflowDetail,
         id: `wf_product_publish_${workflows.length + 1}`,
-        status: "running",
+        status: "waiting_review",
         product_id: body.product_id ?? product.id,
         product_title: product.title,
-        current_activity: "Check compliance",
+        current_activity: "Human review",
         started_at: "2026-05-07T04:50:00Z",
-        updated_at: "2026-05-07T04:50:00Z",
+        updated_at: "2026-05-07T04:52:00Z",
         activities: [
           {
             id: "act_compliance_new",
             name: "Check compliance",
-            status: "running",
+            status: "completed",
             started_at: "2026-05-07T04:50:00Z",
+            completed_at: "2026-05-07T04:50:20Z",
             message: body.description
               ? "Checking operator-approved copy."
               : "Checking product copy.",
             attempt: 1,
           },
+          {
+            id: "act_media_new",
+            name: "Validate media",
+            status: "completed",
+            started_at: "2026-05-07T04:50:20Z",
+            completed_at: "2026-05-07T04:50:45Z",
+            message: "MIS media validation passed.",
+            attempt: 1,
+          },
+          {
+            id: "act_review_new",
+            name: "Human review",
+            status: "waiting_review",
+            started_at: "2026-05-07T04:50:45Z",
+            message: "Waiting for operator approval.",
+          },
+          {
+            id: "act_publish_new",
+            name: "Publish to WooCommerce",
+            status: "pending",
+            message: "Mocked WooCommerce publish waits for review approval.",
+          },
         ],
       };
       workflows.unshift(workflow);
       return json({ workflow: workflowSummary(workflow) }, { status: 202 });
+    }
+    if (url.pathname === "/api/v1/workflows/content-generation" && req.method === "POST") {
+      const body = (await req.json()) as { product_id?: string; requested_by?: string };
+      return json(
+        {
+          workflow_id: `content-generation-${body.product_id ?? product.id}-release`,
+          run_id: "run_content_generation_release",
+          status: "completed",
+          task_queue: "ec-workflows",
+          activities: [
+            "content_generation.generate",
+            "content_generation.fact_check",
+            "content_generation.evaluate",
+            "content_generation.record_fact_check",
+          ],
+          requested_by: body.requested_by ?? "release-demo",
+        },
+        { status: 202 },
+      );
+    }
+    if (url.pathname === "/api/v1/workflows/media-processing" && req.method === "POST") {
+      const body = (await req.json()) as { product_id?: string; source_url?: string };
+      return json(
+        {
+          workflow_id: `media-processing-${body.product_id ?? product.id}-release`,
+          run_id: "run_media_processing_release",
+          status: "completed",
+          task_queue: "ec-workflows",
+          activities: [
+            "media_processing.source",
+            "media_processing.process",
+            "media_processing.quality",
+            "media_processing.store",
+            "media_processing.link_product",
+          ],
+          source_url: body.source_url,
+        },
+        { status: 202 },
+      );
     }
     if (url.pathname.startsWith("/api/v1/workflows/") && req.method === "GET") {
       const workflowId = decodeURIComponent(url.pathname.replace("/api/v1/workflows/", ""));
@@ -957,8 +1047,26 @@ const server = Bun.serve({
       workflow.activities = workflow.activities.map((activity) =>
         activity.status === "waiting_review"
           ? { ...activity, status: "completed", completed_at: "2026-05-07T04:55:00Z" }
-          : activity,
+          : activity.name === "Publish to WooCommerce"
+            ? {
+                ...activity,
+                status: "completed",
+                started_at: activity.started_at ?? "2026-05-07T04:54:00Z",
+                completed_at: "2026-05-07T04:55:00Z",
+                message: "Published to mocked WooCommerce.",
+                attempt: activity.attempt ?? 1,
+              }
+            : activity,
       );
+      const target =
+        webhooks.find((candidate) => candidate.active)?.url ?? "http://127.0.0.1/mock-n8n";
+      localN8NDeliveries.unshift({
+        id: `n8n_delivery_${localN8NDeliveries.length + 1}`,
+        event_type: "product.approved",
+        status: "delivered",
+        target_url: target,
+        occurred_at: "2026-05-07T04:55:00Z",
+      });
       return json({ workflow: workflowSummary(workflow) }, { status: 202 });
     }
     if (url.pathname === "/api/v1/media" && req.method === "GET") {
