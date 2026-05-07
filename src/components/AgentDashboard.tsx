@@ -15,10 +15,21 @@ import {
   type FetchAgentRunHistoryInput,
   type TriggerManualAgentRunInput,
 } from "@/lib/usecases/agents";
+import type {
+  AgentSchedule,
+  PricingRecommendation,
+  PricingStrategy,
+  SourcingRecommendation,
+} from "@/lib/domain/agent-automation";
+import { AgentAutomationPanel } from "./AgentAutomationPanel";
 
 export interface AgentDashboardProps {
   readonly apiBaseUrl: string;
   readonly initialAgents: readonly AgentSummary[];
+  readonly initialSourcingRecommendations?: readonly SourcingRecommendation[];
+  readonly initialPricingStrategies?: readonly PricingStrategy[];
+  readonly initialPricingRecommendations?: readonly PricingRecommendation[];
+  readonly initialSchedules?: readonly AgentSchedule[];
   readonly fetchHistoryImpl?: (opts: FetchAgentRunHistoryInput) => Promise<readonly AgentRun[]>;
   readonly triggerRunImpl?: (opts: TriggerManualAgentRunInput) => Promise<AgentRun>;
 }
@@ -61,17 +72,25 @@ function statusClasses(status: AgentSummary["status"]): string {
 export function AgentDashboard({
   apiBaseUrl,
   initialAgents,
+  initialSourcingRecommendations = [],
+  initialPricingStrategies = [],
+  initialPricingRecommendations = [],
+  initialSchedules = [],
   fetchHistoryImpl = fetchAgentRunHistory,
   triggerRunImpl = triggerManualAgentRun,
 }: AgentDashboardProps) {
-  const { agents, error: pollingError, isPolling } = useAgentStatusPolling({
+  const {
+    agents,
+    error: pollingError,
+    isPolling,
+  } = useAgentStatusPolling({
     apiBaseUrl,
     initialAgents,
   });
   const [expandedAgentIds, setExpandedAgentIds] = useState<ReadonlySet<string>>(new Set());
-  const [historyByAgentId, setHistoryByAgentId] = useState<ReadonlyMap<string, readonly AgentRun[]>>(
-    new Map(),
-  );
+  const [historyByAgentId, setHistoryByAgentId] = useState<
+    ReadonlyMap<string, readonly AgentRun[]>
+  >(new Map());
   const [loadingHistoryId, setLoadingHistoryId] = useState<string | null>(null);
   const [pendingRunAgentId, setPendingRunAgentId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -134,8 +153,8 @@ export function AgentDashboard({
         <p className="text-sm font-medium uppercase tracking-wide text-gray-500">Admin</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Agent Dashboard</h1>
         <p className="mt-2 max-w-3xl text-sm text-gray-600">
-          Monitor sourcing, content, pricing, and compliance agents. SSE can replace polling after the backend
-          exposes a stable event stream; for now status refreshes every 5 seconds.
+          Monitor sourcing, content, pricing, and compliance agents. SSE can replace polling after
+          the backend exposes a stable event stream; for now status refreshes every 5 seconds.
         </p>
       </header>
 
@@ -143,7 +162,9 @@ export function AgentDashboard({
         <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500">Agents</h2>
           <p className="mt-2 text-2xl font-semibold">{agents.length}</p>
-          <p className="mt-1 text-xs text-gray-500">{isPolling ? "Refreshing..." : "Polling every 5s"}</p>
+          <p className="mt-1 text-xs text-gray-500">
+            {isPolling ? "Refreshing..." : "Polling every 5s"}
+          </p>
         </article>
         <article className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <h2 className="text-sm font-medium text-gray-500">Running</h2>
@@ -172,8 +193,8 @@ export function AgentDashboard({
 
       {agents.length === 0 ? (
         <p className="rounded-lg border border-dashed border-gray-300 p-6 text-sm text-gray-600">
-          No agents are registered yet. The backend orchestrator should expose agents through
-          GET /api/v1/agents.
+          No agents are registered yet. The backend orchestrator should expose agents through GET
+          /api/v1/agents.
         </p>
       ) : (
         <section className="grid gap-5" aria-label="Agent status cards">
@@ -181,7 +202,10 @@ export function AgentDashboard({
             const expanded = expandedAgentIds.has(agent.id);
             const history = historyByAgentId.get(agent.id) ?? [];
             return (
-              <article key={agent.id} className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+              <article
+                key={agent.id}
+                className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm"
+              >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
@@ -192,29 +216,43 @@ export function AgentDashboard({
                       {agent.description ?? "No description has been provided for this agent."}
                     </p>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses(agent.status)}`}>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClasses(agent.status)}`}
+                  >
                     {agent.status}
                   </span>
                 </div>
 
                 <dl className="mt-5 grid gap-3 sm:grid-cols-4">
                   <div className="rounded-md bg-gray-50 p-3">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Last run</dt>
-                    <dd className="mt-1 text-sm font-semibold text-gray-900">{formatTimestamp(agent.lastRunAt)}</dd>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Last run
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-gray-900">
+                      {formatTimestamp(agent.lastRunAt)}
+                    </dd>
                   </div>
                   <div className="rounded-md bg-gray-50 p-3">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Next run</dt>
-                    <dd className="mt-1 text-sm font-semibold text-gray-900">{formatTimestamp(agent.nextRunAt)}</dd>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Next run
+                    </dt>
+                    <dd className="mt-1 text-sm font-semibold text-gray-900">
+                      {formatTimestamp(agent.nextRunAt)}
+                    </dd>
                   </div>
                   <div className="rounded-md bg-gray-50 p-3">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Queue</dt>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Queue
+                    </dt>
                     <dd className="mt-1 flex flex-wrap gap-x-2 text-sm font-semibold text-gray-900">
                       <span>{agent.inFlightRuns} active</span>
                       <span>{agent.queuedRuns} queued</span>
                     </dd>
                   </div>
                   <div className="rounded-md bg-gray-50 p-3">
-                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Reliability</dt>
+                    <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Reliability
+                    </dt>
                     <dd className="mt-1 text-sm font-semibold text-gray-900">
                       {Math.round(agent.successRate * 100)}% success
                     </dd>
@@ -243,34 +281,51 @@ export function AgentDashboard({
                 </div>
 
                 {expanded && (
-                  <section className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4" aria-label={`${agent.name} run history`}>
+                  <section
+                    className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
+                    aria-label={`${agent.name} run history`}
+                  >
                     <h3 className="text-lg font-semibold">Run history</h3>
                     {loadingHistoryId === agent.id ? (
                       <p className="mt-3 text-sm text-gray-600">Loading run history...</p>
                     ) : history.length === 0 ? (
-                      <p className="mt-3 text-sm text-gray-600">No runs have been recorded for this agent yet.</p>
+                      <p className="mt-3 text-sm text-gray-600">
+                        No runs have been recorded for this agent yet.
+                      </p>
                     ) : (
                       <div className="mt-4 space-y-4">
                         {history.map((run) => (
-                          <details key={run.id} className="rounded-md border border-gray-200 bg-white p-4" open>
+                          <details
+                            key={run.id}
+                            className="rounded-md border border-gray-200 bg-white p-4"
+                            open
+                          >
                             <summary className="cursor-pointer text-sm font-semibold text-gray-900">
                               {run.status} · {run.trigger} · {formatTimestamp(run.createdAt)}
                             </summary>
                             <dl className="mt-3 grid gap-3 sm:grid-cols-3">
                               <div>
-                                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Started</dt>
+                                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                                  Started
+                                </dt>
                                 <dd className="mt-1 text-sm">{formatTimestamp(run.startedAt)}</dd>
                               </div>
                               <div>
-                                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Finished</dt>
+                                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                                  Finished
+                                </dt>
                                 <dd className="mt-1 text-sm">{formatTimestamp(run.finishedAt)}</dd>
                               </div>
                               <div>
-                                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Duration</dt>
+                                <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                                  Duration
+                                </dt>
                                 <dd className="mt-1 text-sm">{formatDuration(run.durationMs)}</dd>
                               </div>
                             </dl>
-                            {run.summary && <p className="mt-3 text-sm text-gray-700">{run.summary}</p>}
+                            {run.summary && (
+                              <p className="mt-3 text-sm text-gray-700">{run.summary}</p>
+                            )}
                             {run.error && (
                               <p className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                                 {run.error}
@@ -301,6 +356,14 @@ export function AgentDashboard({
           })}
         </section>
       )}
+
+      <AgentAutomationPanel
+        apiBaseUrl={apiBaseUrl}
+        initialSourcingRecommendations={initialSourcingRecommendations}
+        initialPricingStrategies={initialPricingStrategies}
+        initialPricingRecommendations={initialPricingRecommendations}
+        initialSchedules={initialSchedules}
+      />
     </main>
   );
 }

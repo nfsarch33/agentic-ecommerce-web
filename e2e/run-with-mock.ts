@@ -207,6 +207,120 @@ const agentRun: MockAgentRun = {
   created_at: "2026-05-07T04:20:00Z",
 };
 const agentRuns: MockAgentRun[] = [agentRun];
+const sourcingRecommendation = {
+  id: "rec_1",
+  product_id: product.id,
+  product_title: product.title,
+  status: "pending",
+  candidates: [
+    {
+      id: "candidate_1",
+      supplier_name: "Sydney Fitness Supply",
+      product_name: product.title,
+      unit_cost_cents: 1120,
+      currency: "AUD",
+      min_order_quantity: 25,
+      lead_time_days: 6,
+      reliability_score: 0.92,
+      margin_percent: 55,
+      supplier_url: "https://supplier.example/bands",
+      notes: "Local fulfilment and strong reviews.",
+    },
+  ],
+  recommended_candidate_id: "candidate_1",
+  rationale: "Best margin with local delivery.",
+  confidence: 0.87,
+  workflow_id: "wf_sourcing_1",
+  created_at: "2026-05-08T01:00:00Z",
+  updated_at: "2026-05-08T01:05:00Z",
+} as {
+  id: string;
+  product_id: string;
+  product_title: string;
+  status: "pending" | "approved" | "rejected" | "adjusted";
+  candidates: Array<{
+    id: string;
+    supplier_name: string;
+    product_name: string;
+    unit_cost_cents: number;
+    currency: string;
+    min_order_quantity: number;
+    lead_time_days: number;
+    reliability_score: number;
+    margin_percent: number;
+    supplier_url?: string;
+    notes?: string;
+  }>;
+  recommended_candidate_id: string;
+  rationale: string;
+  confidence: number;
+  workflow_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+const pricingStrategy = {
+  id: "pricing_margin_default",
+  name: "Margin guardrail",
+  strategy: "margin_based",
+  enabled: true,
+  target_margin_percent: 48,
+  min_margin_percent: 35,
+  max_price_cents: 3995,
+  min_price_cents: 1995,
+  updated_at: "2026-05-08T01:10:00Z",
+} as {
+  id: string;
+  name: string;
+  strategy: "margin_based" | "competition_based" | "demand_based";
+  enabled: boolean;
+  target_margin_percent: number;
+  min_margin_percent: number;
+  max_price_cents?: number;
+  min_price_cents?: number;
+  updated_at: string;
+};
+
+const pricingRecommendation = {
+  id: "price_rec_1",
+  product_id: product.id,
+  product_title: product.title,
+  current_price_cents: 2495,
+  recommended_price_cents: 2795,
+  currency: "AUD",
+  expected_margin_percent: 52,
+  strategy_id: pricingStrategy.id,
+  rationale: "Competitor median moved higher.",
+  status: "pending",
+  workflow_id: "wf_pricing_1",
+  created_at: "2026-05-08T01:11:00Z",
+};
+
+const agentSchedule = {
+  id: "schedule_sourcing_daily",
+  agent_id: agentSummary.id,
+  agent_name: agentSummary.name,
+  enabled: true,
+  frequency: "daily",
+  cron_expression: "0 8 * * *",
+  timezone: "Australia/Melbourne",
+  parameters: { category: "fitness", maxCandidates: 5 },
+  next_run_at: "2026-05-09T08:00:00+10:00",
+  workflow_id: "wf_schedule_1",
+  updated_at: "2026-05-08T01:15:00Z",
+} as {
+  id: string;
+  agent_id: string;
+  agent_name: string;
+  enabled: boolean;
+  frequency: "hourly" | "daily" | "weekly" | "custom";
+  cron_expression?: string;
+  timezone: string;
+  parameters: Record<string, unknown>;
+  next_run_at?: string;
+  workflow_id?: string;
+  updated_at: string;
+};
 const recentEvents = [
   {
     id: "evt_compliance_1",
@@ -328,27 +442,45 @@ type MockWebhook = {
   id: string;
   url: string;
   event_types: Array<
+    | "product.approved"
+    | "order.placed"
     | "product.created"
     | "product.updated"
-    | "order.placed"
-    | "sync.completed"
-    | "agent.run.completed"
     | "compliance.checked"
   >;
-  secret_ref?: string;
-  secret_hash: string;
-  enabled: boolean;
+  description?: string;
+  secret_configured: boolean;
+  active: boolean;
   created_at: string;
+  updated_at: string;
+  last_delivery_at?: string;
+  failure_count?: number;
 };
 
 const webhooks: MockWebhook[] = [
   {
+    id: "wh_existing_product_approved",
+    url: "https://hooks.n8n.example/webhook/product-approved",
+    event_types: ["product.approved"],
+    description: "Product approval Slack alert",
+    secret_configured: true,
+    active: true,
+    created_at: "2026-05-08T00:00:00Z",
+    updated_at: "2026-05-08T00:01:00Z",
+    last_delivery_at: "2026-05-08T00:02:00Z",
+    failure_count: 0,
+  },
+  {
     id: "wh_existing_order",
     url: "https://hooks.n8n.example/webhook/order-placed",
     event_types: ["order.placed"],
-    secret_hash: "sha256:test",
-    enabled: true,
+    description: "Order confirmation email",
+    secret_configured: true,
+    active: true,
     created_at: "2026-05-08T00:00:00Z",
+    updated_at: "2026-05-08T00:01:00Z",
+    last_delivery_at: "2026-05-08T00:02:00Z",
+    failure_count: 0,
   },
 ];
 
@@ -613,15 +745,19 @@ const server = Bun.serve({
       const body = (await req.json()) as {
         url?: string;
         event_types?: MockWebhook["event_types"];
+        description?: string;
         secret?: string;
       };
       const webhook: MockWebhook = {
         id: `wh_${webhooks.length + 1}`,
-        url: body.url ?? "https://hooks.n8n.example/webhook/product-created",
-        event_types: body.event_types ?? ["product.created"],
-        secret_hash: body.secret ? "sha256:test" : "",
-        enabled: true,
+        url: body.url ?? "https://hooks.n8n.example/webhook/product-approved",
+        event_types: body.event_types ?? ["product.approved"],
+        description: body.description,
+        secret_configured: Boolean(body.secret),
+        active: true,
         created_at: "2026-05-08T00:05:00Z",
+        updated_at: "2026-05-08T00:05:00Z",
+        failure_count: 0,
       };
       webhooks.unshift(webhook);
       return json(webhook, { status: 201 });
@@ -637,17 +773,18 @@ const server = Bun.serve({
       const webhook = webhooks.find((candidate) => candidate.id === webhookId);
       if (!webhook) return json({ error: "not_found" }, { status: 404 });
       const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
+      webhook.last_delivery_at = "2026-05-08T00:06:00Z";
+      webhook.updated_at = "2026-05-08T00:06:00Z";
       return json(
         {
           delivery: {
             id: `del_${webhook.id}`,
             webhook_id: webhook.id,
-            event_id: "evt_test",
             event_type: body.event_type ?? webhook.event_types[0],
-            success: true,
-            status: 204,
-            attempts: 1,
-            created_at: "2026-05-08T00:06:00Z",
+            status: "delivered",
+            response_status: 200,
+            attempt: 1,
+            occurred_at: "2026-05-08T00:06:00Z",
           },
         },
         { status: 202 },
@@ -850,6 +987,72 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/v1/agents" && req.method === "GET") {
       return json({ agents: [agentSummary] });
+    }
+    if (url.pathname === "/api/v1/agents/sourcing/recommendations" && req.method === "GET") {
+      return json({ recommendations: [sourcingRecommendation] });
+    }
+    if (
+      url.pathname ===
+        `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
+      req.method === "POST"
+    ) {
+      const body = (await req.json()) as {
+        decision?: "approve" | "reject" | "adjust";
+        adjusted_unit_cost_cents?: number;
+      };
+      sourcingRecommendation.status =
+        body.decision === "approve"
+          ? "approved"
+          : body.decision === "reject"
+            ? "rejected"
+            : "adjusted";
+      if (body.adjusted_unit_cost_cents !== undefined) {
+        sourcingRecommendation.candidates[0].unit_cost_cents = body.adjusted_unit_cost_cents;
+      }
+      sourcingRecommendation.updated_at = "2026-05-08T01:20:00Z";
+      return json({ recommendation: sourcingRecommendation }, { status: 202 });
+    }
+    if (url.pathname === "/api/v1/agents/pricing/strategies" && req.method === "GET") {
+      return json({ strategies: [pricingStrategy] });
+    }
+    if (
+      url.pathname === `/api/v1/agents/pricing/strategies/${pricingStrategy.id}` &&
+      req.method === "PATCH"
+    ) {
+      const body = (await req.json()) as {
+        enabled?: boolean;
+        target_margin_percent?: number;
+        min_margin_percent?: number;
+      };
+      pricingStrategy.enabled = body.enabled ?? pricingStrategy.enabled;
+      pricingStrategy.target_margin_percent =
+        body.target_margin_percent ?? pricingStrategy.target_margin_percent;
+      pricingStrategy.min_margin_percent =
+        body.min_margin_percent ?? pricingStrategy.min_margin_percent;
+      pricingStrategy.updated_at = "2026-05-08T01:21:00Z";
+      return json({ strategy: pricingStrategy });
+    }
+    if (url.pathname === "/api/v1/agents/pricing/recommendations" && req.method === "GET") {
+      return json({ recommendations: [pricingRecommendation] });
+    }
+    if (url.pathname === "/api/v1/agents/schedules" && req.method === "GET") {
+      return json({ schedules: [agentSchedule] });
+    }
+    if (url.pathname === `/api/v1/agents/schedules/${agentSchedule.id}` && req.method === "PATCH") {
+      const body = (await req.json()) as {
+        enabled?: boolean;
+        frequency?: "hourly" | "daily" | "weekly" | "custom";
+        cron_expression?: string;
+        timezone?: string;
+        parameters?: Record<string, unknown>;
+      };
+      agentSchedule.enabled = body.enabled ?? agentSchedule.enabled;
+      agentSchedule.frequency = body.frequency ?? agentSchedule.frequency;
+      agentSchedule.cron_expression = body.cron_expression ?? agentSchedule.cron_expression;
+      agentSchedule.timezone = body.timezone ?? agentSchedule.timezone;
+      agentSchedule.parameters = body.parameters ?? agentSchedule.parameters;
+      agentSchedule.updated_at = "2026-05-08T01:22:00Z";
+      return json({ schedule: agentSchedule });
     }
     if (url.pathname === "/api/v1/events/recent" && req.method === "GET") {
       const limit = Number(url.searchParams.get("limit") ?? "20");

@@ -1,10 +1,12 @@
 export type WebhookEventType =
+  | "product.approved"
+  | "order.placed"
   | "product.created"
   | "product.updated"
-  | "order.placed"
   | "sync.completed"
   | "agent.run.completed"
-  | "compliance.checked";
+  | "compliance.checked"
+  | "workflow.completed";
 
 export type WebhookDeliveryStatus = "pending" | "delivered" | "failed";
 export type AutomationStatusValue = "active" | "paused" | "failing" | "not_configured";
@@ -51,12 +53,14 @@ export class WebhookDomainError extends Error {
 }
 
 export const supportedWebhookEventTypes: readonly WebhookEventType[] = [
+  "product.approved",
+  "order.placed",
   "product.created",
   "product.updated",
-  "order.placed",
   "sync.completed",
   "agent.run.completed",
   "compliance.checked",
+  "workflow.completed",
 ];
 
 const eventTypes = new Set<WebhookEventType>(supportedWebhookEventTypes);
@@ -67,10 +71,10 @@ const exampleAutomations: readonly Omit<
   "status" | "target" | "lastDeliveryAt" | "lastDeliveryStatus"
 >[] = [
   {
-    id: "product-created-slack",
-    name: "Product created -> Slack notification",
-    eventType: "product.created",
-    description: "Posts a product event to a Slack channel through n8n.",
+    id: "product-approved-slack",
+    name: "Product approved -> Slack notification",
+    eventType: "product.approved",
+    description: "Posts an approval event to a Slack channel through n8n.",
   },
   {
     id: "order-placed-email",
@@ -138,9 +142,11 @@ export function createWebhookRegistration(input: WebhookRegistration): WebhookRe
     ),
     description: parseOptionalString(input.description, "webhook.description"),
     secretConfigured: parseBoolean(input.secretConfigured, "webhook.secretConfigured"),
-    active: parseBoolean(input.active, "webhook.active"),
+    active: input.active === undefined ? true : parseBoolean(input.active, "webhook.active"),
     createdAt: parseString(input.createdAt, "webhook.createdAt"),
-    updatedAt: parseOptionalString(input.updatedAt, "webhook.updatedAt"),
+    updatedAt:
+      parseOptionalString(input.updatedAt, "webhook.updatedAt") ??
+      parseString(input.createdAt, "webhook.createdAt"),
     lastDeliveryAt: parseOptionalString(input.lastDeliveryAt, "webhook.lastDeliveryAt"),
     failureCount: parseOptionalNumber(input.failureCount, "webhook.failureCount"),
   };
@@ -162,6 +168,8 @@ export function createWebhookDelivery(input: WebhookDelivery): WebhookDelivery {
 
 export function webhookEventTypeLabel(eventType: WebhookEventType): string {
   switch (eventType) {
+    case "product.approved":
+      return "Product approved";
     case "order.placed":
       return "Order placed";
     case "product.created":
@@ -174,6 +182,8 @@ export function webhookEventTypeLabel(eventType: WebhookEventType): string {
       return "Agent run completed";
     case "compliance.checked":
       return "Compliance checked";
+    case "workflow.completed":
+      return "Workflow completed";
   }
 }
 

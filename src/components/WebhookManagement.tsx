@@ -42,7 +42,13 @@ const toneClasses: Record<StatusTone, string> = {
 };
 
 const eventOptions = supportedWebhookEventTypes.filter((eventType) =>
-  ["product.created", "product.updated", "order.placed", "compliance.checked"].includes(eventType),
+  [
+    "product.approved",
+    "product.created",
+    "product.updated",
+    "order.placed",
+    "compliance.checked",
+  ].includes(eventType),
 );
 
 function StatusBadge({ label, tone }: { readonly label: string; readonly tone: StatusTone }) {

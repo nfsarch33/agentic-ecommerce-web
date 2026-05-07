@@ -39,13 +39,41 @@ export class WebhooksApiError extends Error {
   }
 }
 
-type RawCreateWebhookRequest = components["schemas"]["CreateWebhookRequest"];
-type RawWebhookRegistration = components["schemas"]["WebhookRegistration"];
-type RawWebhookDelivery = components["schemas"]["WebhookDeliveryResult"];
+type RawCreateWebhookRequest = Omit<
+  components["schemas"]["CreateWebhookRequest"],
+  "event_types"
+> & {
+  event_types: WebhookEventType[];
+  description?: string;
+  secret?: string;
+  enabled?: boolean;
+};
+type RawWebhookRegistration = components["schemas"]["WebhookRegistration"] & {
+  description?: unknown;
+  secret_configured?: unknown;
+  active?: unknown;
+  updated_at?: unknown;
+  last_delivery_at?: unknown;
+  failure_count?: unknown;
+};
+type RawWebhookDelivery = components["schemas"]["WebhookDeliveryResult"] & {
+  response_status?: unknown;
+  attempt?: unknown;
+  occurred_at?: unknown;
+  next_retry_at?: unknown;
+};
 
 function apiUrl(baseUrl: string, path: string): string {
   if (!baseUrl) throw new WebhooksApiError("webhooks API: baseUrl is required");
   return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
+
+function optionalString(value: unknown): string | undefined {
+  return typeof value === "string" && value !== "" ? value : undefined;
+}
+
+function optionalNumber(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
 }
 
 function mapWebhook(raw: RawWebhookRegistration): WebhookRegistration {
@@ -57,9 +85,15 @@ function mapWebhook(raw: RawWebhookRegistration): WebhookRegistration {
     id: String(raw.id ?? ""),
     url: String(raw.url ?? ""),
     eventTypes: raw.event_types.map((eventType) => String(eventType) as WebhookEventType),
-    secretConfigured: typeof raw.secret_hash === "string" && raw.secret_hash !== "",
-    active: raw.enabled,
+    description: optionalString(raw.description),
+    secretConfigured:
+      Boolean(raw.secret_configured) ||
+      (typeof raw.secret_hash === "string" && raw.secret_hash !== ""),
+    active: raw.active !== false && raw.enabled !== false,
     createdAt: String(raw.created_at ?? ""),
+    updatedAt: String(raw.updated_at ?? raw.created_at ?? ""),
+    lastDeliveryAt: optionalString(raw.last_delivery_at),
+    failureCount: optionalNumber(raw.failure_count),
   });
 }
 
@@ -68,11 +102,16 @@ function mapDelivery(raw: RawWebhookDelivery): WebhookDelivery {
     id: String(raw.id ?? ""),
     webhookId: String(raw.webhook_id ?? ""),
     eventType: String(raw.event_type ?? "") as WebhookEventType,
-    status: raw.success ? "delivered" : "failed",
-    responseStatus: raw.status,
-    attempt: raw.attempts,
-    occurredAt: String(raw.created_at ?? ""),
-    error: raw.error,
+    status: (typeof raw.status === "string"
+      ? raw.status
+      : raw.success
+        ? "delivered"
+        : "failed") as WebhookDelivery["status"],
+    responseStatus: optionalNumber(raw.response_status) ?? optionalNumber(raw.status),
+    attempt: optionalNumber(raw.attempt) ?? optionalNumber(raw.attempts) ?? 1,
+    occurredAt: String(raw.occurred_at ?? raw.created_at ?? ""),
+    nextRetryAt: optionalString(raw.next_retry_at),
+    error: optionalString(raw.error),
   });
 }
 
