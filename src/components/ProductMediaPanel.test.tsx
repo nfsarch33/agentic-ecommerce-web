@@ -42,6 +42,12 @@ const asset: MediaAsset = {
 };
 
 describe("ProductMediaPanel", () => {
+  it("shows an empty state before product media is linked", () => {
+    render(<ProductMediaPanel apiBaseUrl="https://api.example" productId="p_1" initialAssets={[]} />);
+
+    expect(screen.getByText(/no product media linked yet/i)).toBeInTheDocument();
+  });
+
   it("shows product media with QA indicators and validation action", async () => {
     const user = userEvent.setup();
     const validateMediaAssetImpl = vi.fn().mockResolvedValue({

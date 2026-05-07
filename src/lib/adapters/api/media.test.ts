@@ -12,37 +12,26 @@ const rawAsset = {
   id: "media_hero",
   product_id: "p_1",
   source_url: "https://supplier.example/hero.png",
-  original_filename: "hero.png",
-  mime_type: "image/png",
-  size_bytes: 450_123,
-  width: 2200,
-  height: 1400,
-  processing_status: "validated",
-  object_store_location: {
-    provider: "local",
-    bucket: "media",
+  alt_text: "Resistance band set with five tension levels",
+  metadata: {
+    mime_type: "image/png",
+    content_length: 450_123,
+    checksum_sha256: "a".repeat(64),
+    width: 2200,
+    height: 1400,
+  },
+  quality: {
+    pass: true,
+    score: 92,
+    issues: [],
+  },
+  storage: {
     key: "products/p_1/hero.webp",
     url: "https://cdn.example/products/p_1/hero.webp",
-  },
-  metadata: {
-    alt_text: "Resistance band set with five tension levels",
-    title: "Resistance band hero image",
-    tags: ["fitness", "hero"],
-  },
-  qa_result: {
-    status: "passed",
-    score: 92,
-    checked_at: "2026-05-08T01:00:00Z",
-    checks: [
-      {
-        code: "resolution",
-        status: "passed",
-        message: "Image exceeds minimum resolution.",
-      },
-    ],
+    content_type: "image/png",
+    size_bytes: 450_123,
   },
   created_at: "2026-05-08T00:00:00Z",
-  updated_at: "2026-05-08T01:00:00Z",
 };
 
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
@@ -86,7 +75,7 @@ describe("media API adapter", () => {
   });
 
   it("sources remote media with metadata", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ asset: rawAsset }, { status: 202 }));
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(rawAsset, { status: 201 }));
 
     const asset = await sourceMedia({
       baseUrl: "https://api.example",
@@ -105,48 +94,41 @@ describe("media API adapter", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
-          source_url: "https://supplier.example/hero.png",
+          url: "https://supplier.example/hero.png",
           product_id: "p_1",
-          metadata: {
-            alt_text: "Resistance band set with five tension levels",
-            title: "Hero",
-            tags: ["fitness"],
-          },
+          alt_text: "Resistance band set with five tension levels",
         }),
       }),
     );
     expect(asset.id).toBe("media_hero");
   });
 
-  it("sends file metadata when a real upload stream is not available", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ asset: rawAsset }, { status: 202 }));
+  it("rejects file-only sourcing because the backend media source API requires a URL", async () => {
+    const fetchImpl = vi.fn();
 
-    await sourceMedia({
-      baseUrl: "https://api.example",
-      file: {
-        name: "hero.png",
-        type: "image/png",
-        size: 450_123,
-        width: 2200,
-        height: 1400,
-      },
-      metadata: { altText: "Resistance band set", title: "Hero", tags: [] },
-      fetchImpl,
-    });
-
-    expect(fetchImpl).toHaveBeenCalledWith(
-      "https://api.example/api/v1/media/source",
-      expect.objectContaining({
-        body: expect.stringContaining('"file":{"name":"hero.png","type":"image/png","size":450123'),
+    await expect(
+      sourceMedia({
+        baseUrl: "https://api.example",
+        file: {
+          name: "hero.png",
+          type: "image/png",
+          size: 450_123,
+          width: 2200,
+          height: 1400,
+        },
+        metadata: { altText: "Resistance band set", title: "Hero", tags: [] },
+        fetchImpl,
       }),
-    );
+    ).rejects.toThrow(/sourceUrl is required/);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it("processes, validates, fetches, and updates media assets", async () => {
     const fetchImpl = vi
       .fn()
-      .mockResolvedValueOnce(jsonResponse({ asset: rawAsset }, { status: 202 }))
-      .mockResolvedValueOnce(jsonResponse({ asset: rawAsset }))
+      .mockResolvedValueOnce(jsonResponse(rawAsset))
+      .mockResolvedValueOnce(jsonResponse({ pass: true, score: 94, issues: [] }))
+      .mockResolvedValueOnce(jsonResponse(rawAsset))
       .mockResolvedValueOnce(jsonResponse(rawAsset))
       .mockResolvedValueOnce(jsonResponse({ asset: rawAsset }));
 
@@ -177,6 +159,11 @@ describe("media API adapter", () => {
     );
     expect(fetchImpl).toHaveBeenNthCalledWith(
       4,
+      "https://api.example/api/v1/media/media_hero",
+      expect.objectContaining({ method: "GET" }),
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      5,
       "https://api.example/api/v1/media/media_hero/metadata",
       expect.objectContaining({ method: "PATCH" }),
     );
@@ -197,7 +184,7 @@ describe("media API adapter", () => {
         metadata: { altText: "", title: "Untitled", tags: [] },
         fetchImpl: vi.fn(),
       }),
-    ).rejects.toThrow(/sourceUrl or file/);
+    ).rejects.toThrow(/sourceUrl is required/);
 
     await expect(
       fetchMediaAssets({
