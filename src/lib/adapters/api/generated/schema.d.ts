@@ -116,6 +116,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/products/{id}/compliance-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run product content compliance checks
+         * @description Runs deterministic compliance rules before product publish. This endpoint does not call live AI services.
+         */
+        post: operations["checkProductCompliance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{id}/seo-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate deterministic SEO suggestions
+         * @description Generates SEO title, meta description, slug, keyword density, and score without live AI calls.
+         */
+        post: operations["suggestProductSEO"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List built-in compliance rules */
+        get: operations["listComplianceRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders": {
         parameters: {
             query?: never;
@@ -493,6 +550,57 @@ export interface components {
             pass: boolean;
             tokens_used: number;
             evaluation: components["schemas"]["ContentEvaluation"];
+        };
+        ComplianceCheckRequest: {
+            keywords?: string[];
+            seo_title?: string;
+            meta_description?: string;
+            /** @default 70 */
+            seo_score_min: number;
+            legal_disclaimer?: string;
+        };
+        ComplianceCheckResponse: {
+            /** Format: uuid */
+            product_id: string;
+            pass: boolean;
+            score: number;
+            reasons: string[];
+            rule_ids: string[];
+            severity: components["schemas"]["ComplianceSeverity"];
+            results: components["schemas"]["ComplianceRuleResult"][];
+        };
+        ComplianceRuleResult: {
+            id: string;
+            pass: boolean;
+            score: number;
+            severity: components["schemas"]["ComplianceSeverity"];
+            reasons: string[];
+        };
+        ComplianceRuleDescriptor: {
+            id: string;
+            description: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+        };
+        ComplianceRulesResponse: {
+            rules: components["schemas"]["ComplianceRuleDescriptor"][];
+        };
+        /** @enum {string} */
+        ComplianceSeverity: "info" | "warning" | "error" | "critical";
+        SEOSuggestionRequest: {
+            keywords?: string[];
+        };
+        SEOSuggestionResponse: {
+            /** Format: uuid */
+            product_id: string;
+            title: string;
+            meta_description: string;
+            slug: string;
+            score: number;
+            keyword_density: {
+                [key: string]: number;
+            };
+            pass: boolean;
+            reasons: string[];
         };
         ContentEvaluation: {
             score: number;
@@ -1075,6 +1183,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    checkProductCompliance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ComplianceCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Compliance check result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCheckResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    suggestProductSEO: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SEOSuggestionRequest"];
+            };
+        };
+        responses: {
+            /** @description SEO suggestion result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SEOSuggestionResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listComplianceRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Built-in compliance rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceRulesResponse"];
                 };
             };
         };

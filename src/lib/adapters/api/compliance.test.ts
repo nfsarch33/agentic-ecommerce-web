@@ -14,37 +14,34 @@ function jsonResponse(body: unknown, init: ResponseInit = { status: 200 }): Resp
 }
 
 const rawRule = {
-  id: "rule_title_claims",
-  code: "title.claims",
-  name: "No exaggerated claims",
-  description: "Product copy must avoid unsupported superlatives.",
-  category: "content",
+  id: "prohibited_words",
+  description: "Product copy must not contain prohibited medical or deceptive claims.",
   severity: "critical",
-  enabled: true,
 };
 
 const rawResult = {
   product_id: "p_1",
-  status: "failed",
+  pass: false,
   score: 62,
-  checked_at: "2026-05-07T04:00:00Z",
-  rules: [
+  reasons: ["prohibited phrase present: guaranteed cure"],
+  rule_ids: ["prohibited_words", "seo_minimum_score"],
+  severity: "critical",
+  results: [
     {
-      rule: rawRule,
-      status: "failed",
+      id: "prohibited_words",
+      pass: false,
+      score: 0,
       severity: "critical",
-      reason: "Title claims the product is guaranteed to cure pain.",
+      reasons: ["Title claims the product is guaranteed to cure pain."],
+    },
+    {
+      id: "seo_minimum_score",
+      pass: false,
+      score: 71,
+      severity: "error",
+      reasons: ["seo score below minimum"],
     },
   ],
-  seo_score: {
-    overall: 71,
-    title: 80,
-    meta_description: 70,
-    slug: 85,
-    keyword_density: 60,
-    image_alt_text: 60,
-    recommendations: ["Use the target keyword in the meta description."],
-  },
 };
 
 describe("fetchComplianceRules", () => {
@@ -55,6 +52,8 @@ describe("fetchComplianceRules", () => {
 
     expect(rules).toHaveLength(1);
     expect(rules[0]?.severity).toBe("critical");
+    expect(rules[0]?.code).toBe("prohibited_words");
+    expect(rules[0]?.name).toBe("Prohibited Words");
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/compliance/rules",
       expect.objectContaining({ method: "GET" }),
@@ -76,7 +75,7 @@ describe("fetchComplianceRules", () => {
       fetchImpl: vi.fn().mockResolvedValue(jsonResponse([rawRule])),
     });
 
-    expect(rules[0]?.id).toBe("rule_title_claims");
+    expect(rules[0]?.id).toBe("prohibited_words");
   });
 
   it("wraps HTTP and network failures", async () => {
@@ -98,7 +97,7 @@ describe("fetchComplianceRules", () => {
 
 describe("checkProductCompliance", () => {
   it("posts a product compliance check and parses rule and SEO results", async () => {
-    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ result: rawResult }, { status: 202 }));
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse(rawResult));
 
     const result = await checkProductCompliance({
       baseUrl: "http://api.test",
@@ -116,7 +115,7 @@ describe("checkProductCompliance", () => {
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({ "content-type": "application/json" }),
-        body: JSON.stringify({ include_seo: true }),
+        body: JSON.stringify({ seo_score_min: 70 }),
       }),
     );
   });
@@ -143,7 +142,14 @@ describe("checkProductCompliance", () => {
         checkedAt: "2026-05-07T04:00:00Z",
         ruleResults: [
           {
-            rule: { ...rawRule, severity: "warning" },
+            rule: {
+              ...rawRule,
+              code: "prohibited_words",
+              name: "Prohibited words",
+              category: "content",
+              enabled: true,
+              severity: "warning",
+            },
             status: "needs_review",
             severity: "warning",
             reason: "Meta description is close to the minimum length.",
@@ -163,7 +169,7 @@ describe("checkProductCompliance", () => {
     expect(result.seoScore).toBeUndefined();
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/products/p_1/compliance-check",
-      expect.objectContaining({ body: JSON.stringify({ include_seo: false }) }),
+      expect.objectContaining({ body: JSON.stringify({ seo_score_min: 70 }) }),
     );
   });
 });
@@ -172,8 +178,14 @@ describe("requestSeoSuggestions", () => {
   it("posts to the optional SEO suggestions endpoint and parses score guidance", async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       jsonResponse({
-        score: rawResult.seo_score,
-        suggestions: ["Shorten the SEO title.", "Add alt text to the hero image."],
+        product_id: "p_1",
+        title: "Premium Resistance Band Set for Home Workouts",
+        meta_description: "Premium resistance band set for strength training at home.",
+        slug: "premium-resistance-band-set",
+        score: 71,
+        keyword_density: { "resistance band set": 10.71 },
+        pass: false,
+        reasons: ["seo score below minimum"],
       }),
     );
 
@@ -186,12 +198,14 @@ describe("requestSeoSuggestions", () => {
 
     expect(response.available).toBe(true);
     expect(response.score?.overall).toBe(71);
-    expect(response.suggestions).toContain("Shorten the SEO title.");
+    expect(response.suggestions).toContain(
+      "SEO title: Premium Resistance Band Set for Home Workouts",
+    );
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/products/p_1/seo-suggestions",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ target_keywords: ["resistance bands"] }),
+        body: JSON.stringify({ keywords: ["resistance bands"] }),
       }),
     );
   });
@@ -210,10 +224,21 @@ describe("requestSeoSuggestions", () => {
     const response = await requestSeoSuggestions({
       baseUrl: "http://api.test",
       productId: "p_1",
-      fetchImpl: vi.fn().mockResolvedValue(jsonResponse({ score: rawResult.seo_score })),
+      fetchImpl: vi.fn().mockResolvedValue(
+        jsonResponse({
+          product_id: "p_1",
+          title: "Premium Resistance Band Set",
+          meta_description: "Premium resistance band set for home workouts.",
+          slug: "premium-resistance-band-set",
+          score: 100,
+          keyword_density: {},
+          pass: true,
+          reasons: [],
+        }),
+      ),
     });
 
     expect(response.available).toBe(true);
-    expect(response.suggestions).toEqual([]);
+    expect(response.suggestions).toContain("Slug: premium-resistance-band-set");
   });
 });

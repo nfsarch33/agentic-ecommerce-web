@@ -1,5 +1,5 @@
 export type ComplianceRuleCategory = "content" | "seo" | "media" | "legal";
-export type ComplianceSeverity = "info" | "warning" | "critical";
+export type ComplianceSeverity = "info" | "warning" | "error" | "critical";
 export type ComplianceStatus = "passed" | "failed" | "needs_review";
 export type RuleCheckStatus = ComplianceStatus;
 export type AltTextStatus = "missing" | "too_short" | "valid";
@@ -106,7 +106,7 @@ export class ComplianceValidationError extends Error {
   override readonly name = "ComplianceValidationError";
 }
 
-const severities = new Set<ComplianceSeverity>(["info", "warning", "critical"]);
+const severities = new Set<ComplianceSeverity>(["info", "warning", "error", "critical"]);
 const categories = new Set<ComplianceRuleCategory>(["content", "seo", "media", "legal"]);
 const statuses = new Set<ComplianceStatus>(["passed", "failed", "needs_review"]);
 
@@ -204,7 +204,9 @@ export function createComplianceResult(input: ComplianceResultInput): Compliance
   };
 }
 
-export function complianceResultLabel(result: Pick<ComplianceResult, "status">): "Pass" | "Fail" | "Review" {
+export function complianceResultLabel(
+  result: Pick<ComplianceResult, "status">,
+): "Pass" | "Fail" | "Review" {
   if (result.status === "passed") return "Pass";
   if (result.status === "failed") return "Fail";
   return "Review";
