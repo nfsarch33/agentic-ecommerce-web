@@ -38,6 +38,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prometheus metrics */
+        get: operations["getMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bootstrap admin login
+         * @description Development/admin bootstrap login. Credentials must be supplied via
+         *     runtime configuration; the API contract intentionally uses placeholders
+         *     and does not define real secrets.
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh JWT access token
+         * @description Rotates a configured refresh session and returns a new access token pair.
+         */
+        post: operations["refreshAccessToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current authenticated session */
+        get: operations["getCurrentSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate logout request
+         * @description Stateless JWT logout endpoint for BFF compatibility. Clients clear their own httpOnly session cookie.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products": {
         parameters: {
             query?: never;
@@ -416,6 +512,50 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Supply either username or email plus password. */
+        LoginRequest: {
+            /** @example admin@example.invalid */
+            username?: string;
+            /**
+             * Format: email
+             * @example admin@example.invalid
+             */
+            email?: string;
+            /**
+             * Format: password
+             * @example ${ECOMMERCE_ADMIN_PASSWORD}
+             */
+            password: string;
+        };
+        RefreshTokenRequest: {
+            /** @description Opaque refresh token returned by the login or refresh endpoint. */
+            refresh_token: string;
+        };
+        AuthTokenResponse: {
+            /** @description Short-lived JWT access token. */
+            access_token: string;
+            /** @description Opaque refresh token. Store securely and never log. */
+            refresh_token: string;
+            /** @constant */
+            token_type: "Bearer";
+            /** @description Access token lifetime in seconds. */
+            expires_in: number;
+            /** @enum {string} */
+            role: "admin" | "operator" | "viewer";
+            session: components["schemas"]["AuthSession"];
+        };
+        AuthSession: {
+            user: components["schemas"]["AuthUser"];
+            /** Format: date-time */
+            expires_at: string;
+        };
+        AuthUser: {
+            id: string;
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            role: "admin" | "operator" | "viewer";
+        };
         HealthResponse: {
             /** @constant */
             status: "ok";
@@ -423,12 +563,25 @@ export interface components {
             service: "agentic-ecommerce-mc-api";
         };
         ReadyResponse: {
-            /** @constant */
-            status: "ready";
+            /** @enum {string} */
+            status: "ready" | "not_ready";
             /** @constant */
             service: "agentic-ecommerce-mc-api";
             agents: number;
             agent_worker: components["schemas"]["AgentWorkerReadiness"];
+            checks: {
+                database: components["schemas"]["DependencyReadiness"];
+                redis: components["schemas"]["DependencyReadiness"];
+            };
+        };
+        DependencyReadiness: {
+            /** @enum {string} */
+            status: "ok" | "fail" | "skipped";
+            /** @description True when the dependency is not configured and therefore does not gate readiness. */
+            optional: boolean;
+            latency_ms: number;
+            /** @description Present only for failed checks. The value is intentionally generic to avoid leaking connection details. */
+            error?: string;
         };
         AgentWorkerReadiness: {
             ready: boolean;
@@ -823,6 +976,200 @@ export interface operations {
                     "application/json": components["schemas"]["ReadyResponse"];
                 };
             };
+            /** @description Service is live but not ready because a configured dependency check failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyResponse"];
+                };
+            };
+        };
+    };
+    getMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Prometheus text exposition for build metadata, HTTP RED metrics, sync, agent, compliance, and media placeholders. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Only GET is supported. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description JWT access token and refresh token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokenResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description JWT auth or admin credentials are not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    refreshAccessToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description New JWT access token and refresh token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokenResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid or expired refresh token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description JWT auth is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCurrentSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current session derived from the JWT bearer token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSession"];
+                };
+            };
+            /** @description Missing, invalid, or expired JWT bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bearer token accepted; client may clear its session cookie. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid, or expired JWT bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     listProducts: {
@@ -848,7 +1195,7 @@ export interface operations {
                     "application/json": components["schemas"]["ProductListResponse"];
                 };
             };
-            /** @description Missing or invalid bearer token when ECOMMERCE_API_TOKEN is configured. */
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
             401: {
                 headers: {
                     [name: string]: unknown;
