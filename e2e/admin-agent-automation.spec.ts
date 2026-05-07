@@ -17,6 +17,6 @@ test("admin agents page manages sourcing, pricing, and schedule controls", async
   await page.getByRole("button", { name: /save margin guardrail pricing rule/i }).click();
   await expect(page.getByRole("status")).toContainText("Pricing rule saved.");
 
-  await page.getByLabel(/enable sourcing agent schedule/i).uncheck();
+  await page.getByLabel(/enable sourcing agent schedule/i).click();
   await expect(page.getByRole("status")).toContainText("Sourcing Agent schedule disabled.");
 });

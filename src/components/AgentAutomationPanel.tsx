@@ -437,7 +437,7 @@ export function AgentAutomationPanel({
             <article key={schedule.id} className="rounded-md border border-gray-200 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="font-semibold">{schedule.agentName}</h3>
+                  <p className="font-semibold">{schedule.agentName} schedule</p>
                   <p className="mt-1 text-sm text-gray-600">
                     {scheduleFrequencyLabel(schedule.frequency)} · {schedule.timezone}
                   </p>
