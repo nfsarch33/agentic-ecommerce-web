@@ -5,25 +5,23 @@ import type { AutomationStatus, WebhookDelivery, WebhookRegistration } from "@/l
 import { WebhookManagement } from "./WebhookManagement";
 
 const webhook: WebhookRegistration = {
-  id: "wh_product_approved",
-  url: "https://hooks.n8n.example/webhook/product-approved",
-  eventTypes: ["product.approved"],
-  description: "Notify n8n",
+  id: "wh_product_created",
+  url: "https://hooks.n8n.example/webhook/product-created",
+  eventTypes: ["product.created"],
   secretConfigured: true,
   active: true,
   createdAt: "2026-05-08T00:00:00Z",
-  updatedAt: "2026-05-08T00:01:00Z",
   lastDeliveryAt: "2026-05-08T00:02:00Z",
   failureCount: 0,
 };
 
 const automationStatuses: AutomationStatus[] = [
   {
-    id: "product-approved-slack",
-    name: "Product approved -> Slack notification",
-    eventType: "product.approved",
+    id: "product-created-slack",
+    name: "Product created -> Slack notification",
+    eventType: "product.created",
     status: "active",
-    description: "Posts an approval event to a Slack channel through n8n.",
+    description: "Posts a product event to a Slack channel through n8n.",
     target: "n8n",
     lastDeliveryAt: "2026-05-08T00:02:00Z",
   },
@@ -40,7 +38,7 @@ const automationStatuses: AutomationStatus[] = [
 const delivery: WebhookDelivery = {
   id: "del_test",
   webhookId: webhook.id,
-  eventType: "product.approved",
+  eventType: "product.created",
   status: "delivered",
   responseStatus: 200,
   attempt: 1,
@@ -49,11 +47,19 @@ const delivery: WebhookDelivery = {
 
 describe("WebhookManagement", () => {
   it("renders registrations and example automation status", () => {
-    render(<WebhookManagement apiBaseUrl="http://api.test" webhooks={[webhook]} automationStatuses={automationStatuses} />);
+    render(
+      <WebhookManagement
+        apiBaseUrl="http://api.test"
+        webhooks={[webhook]}
+        automationStatuses={automationStatuses}
+      />,
+    );
 
     expect(screen.getByRole("heading", { level: 1, name: "Webhooks" })).toBeInTheDocument();
-    expect(screen.getByText("https://hooks.n8n.example/webhook/product-approved")).toBeInTheDocument();
-    expect(screen.getByText("Product approved -> Slack notification")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("https://hooks.n8n.example/webhook/product-created").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Product created -> Slack notification")).toBeInTheDocument();
     expect(screen.getByText("Order placed -> email confirmation")).toBeInTheDocument();
     expect(screen.getByText("Not configured")).toBeInTheDocument();
   });
@@ -72,24 +78,26 @@ describe("WebhookManagement", () => {
     );
 
     fireEvent.change(screen.getByLabelText(/destination url/i), {
-      target: { value: " https://hooks.n8n.example/webhook/product-approved " },
+      target: { value: " https://hooks.n8n.example/webhook/product-created " },
     });
-    fireEvent.change(screen.getByLabelText(/description/i), { target: { value: " Notify n8n " } });
-    fireEvent.change(screen.getByLabelText(/signing secret/i), { target: { value: " secret-value " } });
-    await user.click(screen.getByLabelText(/product approved/i));
+    fireEvent.change(screen.getByLabelText(/signing secret/i), {
+      target: { value: " secret-value " },
+    });
+    await user.click(screen.getByLabelText(/product created/i));
     await user.click(screen.getByRole("button", { name: /register webhook/i }));
 
     expect(createWebhookImpl).toHaveBeenCalledWith(
       expect.objectContaining({
         baseUrl: "http://api.test",
-        url: " https://hooks.n8n.example/webhook/product-approved ",
-        eventTypes: ["product.approved"],
-        description: " Notify n8n ",
+        url: " https://hooks.n8n.example/webhook/product-created ",
+        eventTypes: ["product.created"],
         secret: " secret-value ",
       }),
     );
     expect(await screen.findByRole("status")).toHaveTextContent("Webhook registered.");
-    expect(screen.getByText("https://hooks.n8n.example/webhook/product-approved")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("https://hooks.n8n.example/webhook/product-created").length,
+    ).toBeGreaterThan(0);
   });
 
   it("deletes registrations and sends optional test deliveries", async () => {
@@ -107,13 +115,18 @@ describe("WebhookManagement", () => {
       />,
     );
 
-    const card = screen.getByRole("article", { name: /notify n8n/i });
+    const card = screen.getByRole("article", { name: /product-created/i });
     await user.click(within(card).getByRole("button", { name: /send test/i }));
     expect(await screen.findByRole("status")).toHaveTextContent("Test delivery delivered.");
 
     await user.click(within(card).getByRole("button", { name: /delete/i }));
-    expect(deleteWebhookImpl).toHaveBeenCalledWith({ baseUrl: "http://api.test", webhookId: webhook.id });
-    expect(screen.queryByText("https://hooks.n8n.example/webhook/product-approved")).not.toBeInTheDocument();
+    expect(deleteWebhookImpl).toHaveBeenCalledWith({
+      baseUrl: "http://api.test",
+      webhookId: webhook.id,
+    });
+    expect(
+      screen.queryByText("https://hooks.n8n.example/webhook/product-created"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows validation errors before registering incomplete webhooks", async () => {

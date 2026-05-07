@@ -29,7 +29,6 @@ export interface RegisterWebhookInput {
   readonly baseUrl: string;
   readonly url: string;
   readonly eventTypes: readonly WebhookEventType[];
-  readonly description?: string;
   readonly secret?: string;
 }
 
@@ -55,11 +54,6 @@ function requiredText(input: string, label: string): string {
   const value = input.trim();
   if (value === "") throw new Error(`${label} is required`);
   return value;
-}
-
-function optionalText(input: string | undefined): string | undefined {
-  const value = input?.trim();
-  return value ? value : undefined;
 }
 
 function requireEventTypes(eventTypes: readonly WebhookEventType[]): readonly WebhookEventType[] {
@@ -90,8 +84,7 @@ export async function registerWebhook(
     baseUrl: input.baseUrl,
     url: requiredText(input.url, "url"),
     eventTypes: requireEventTypes(input.eventTypes),
-    description: optionalText(input.description),
-    secret: optionalText(input.secret),
+    secret: requiredText(input.secret ?? "", "signing secret"),
   });
 }
 

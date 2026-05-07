@@ -5,6 +5,7 @@ import {
   type WebhookEventType,
   type WebhookRegistration,
 } from "@/lib/domain/webhook";
+import type { components } from "./generated/schema";
 
 export interface WebhookApiOptions {
   readonly baseUrl: string;
@@ -15,8 +16,8 @@ export interface WebhookApiOptions {
 export interface CreateWebhookOptions extends WebhookApiOptions {
   readonly url: string;
   readonly eventTypes: readonly WebhookEventType[];
-  readonly description?: string;
   readonly secret?: string;
+  readonly enabled?: boolean;
 }
 
 export interface DeleteWebhookOptions extends WebhookApiOptions {
@@ -38,42 +39,13 @@ export class WebhooksApiError extends Error {
   }
 }
 
-interface RawWebhookRegistration {
-  readonly id?: unknown;
-  readonly url?: unknown;
-  readonly event_types?: unknown;
-  readonly description?: unknown;
-  readonly secret_configured?: unknown;
-  readonly active?: unknown;
-  readonly created_at?: unknown;
-  readonly updated_at?: unknown;
-  readonly last_delivery_at?: unknown;
-  readonly failure_count?: unknown;
-}
-
-interface RawWebhookDelivery {
-  readonly id?: unknown;
-  readonly webhook_id?: unknown;
-  readonly event_type?: unknown;
-  readonly status?: unknown;
-  readonly response_status?: unknown;
-  readonly attempt?: unknown;
-  readonly occurred_at?: unknown;
-  readonly next_retry_at?: unknown;
-  readonly error?: unknown;
-}
+type RawCreateWebhookRequest = components["schemas"]["CreateWebhookRequest"];
+type RawWebhookRegistration = components["schemas"]["WebhookRegistration"];
+type RawWebhookDelivery = components["schemas"]["WebhookDeliveryResult"];
 
 function apiUrl(baseUrl: string, path: string): string {
   if (!baseUrl) throw new WebhooksApiError("webhooks API: baseUrl is required");
   return `${baseUrl.replace(/\/$/, "")}${path}`;
-}
-
-function optionalString(value: unknown): string | undefined {
-  return typeof value === "string" && value !== "" ? value : undefined;
-}
-
-function optionalNumber(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
 }
 
 function mapWebhook(raw: RawWebhookRegistration): WebhookRegistration {
@@ -85,13 +57,9 @@ function mapWebhook(raw: RawWebhookRegistration): WebhookRegistration {
     id: String(raw.id ?? ""),
     url: String(raw.url ?? ""),
     eventTypes: raw.event_types.map((eventType) => String(eventType) as WebhookEventType),
-    description: optionalString(raw.description),
-    secretConfigured: Boolean(raw.secret_configured),
-    active: raw.active !== false,
+    secretConfigured: typeof raw.secret_hash === "string" && raw.secret_hash !== "",
+    active: raw.enabled,
     createdAt: String(raw.created_at ?? ""),
-    updatedAt: String(raw.updated_at ?? ""),
-    lastDeliveryAt: optionalString(raw.last_delivery_at),
-    failureCount: optionalNumber(raw.failure_count),
   });
 }
 
@@ -100,12 +68,11 @@ function mapDelivery(raw: RawWebhookDelivery): WebhookDelivery {
     id: String(raw.id ?? ""),
     webhookId: String(raw.webhook_id ?? ""),
     eventType: String(raw.event_type ?? "") as WebhookEventType,
-    status: String(raw.status ?? "") as WebhookDelivery["status"],
-    responseStatus: optionalNumber(raw.response_status),
-    attempt: optionalNumber(raw.attempt) ?? 1,
-    occurredAt: String(raw.occurred_at ?? ""),
-    nextRetryAt: optionalString(raw.next_retry_at),
-    error: optionalString(raw.error),
+    status: raw.success ? "delivered" : "failed",
+    responseStatus: raw.status,
+    attempt: raw.attempts,
+    occurredAt: String(raw.created_at ?? ""),
+    error: raw.error,
   });
 }
 
@@ -142,15 +109,16 @@ export async function createWebhook(opts: CreateWebhookOptions): Promise<Webhook
   const fetchImpl = opts.fetchImpl ?? fetch;
   let res: Response;
   try {
+    const body: RawCreateWebhookRequest = {
+      url: opts.url,
+      event_types: [...opts.eventTypes],
+      secret: opts.secret ?? "",
+      enabled: opts.enabled ?? true,
+    };
     res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/webhooks"), {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json" },
-      body: JSON.stringify({
-        url: opts.url,
-        event_types: opts.eventTypes,
-        ...(opts.description ? { description: opts.description } : {}),
-        ...(opts.secret ? { secret: opts.secret } : {}),
-      }),
+      body: JSON.stringify(body),
       signal: opts.signal,
     });
   } catch (err) {
@@ -158,11 +126,8 @@ export async function createWebhook(opts: CreateWebhookOptions): Promise<Webhook
   }
   if (!res.ok) throw new WebhooksApiError(`createWebhook: HTTP ${res.status}`);
 
-  const body = (await readJson(res, "createWebhook")) as { webhook?: unknown };
-  if (!body.webhook) {
-    throw new WebhooksApiError("createWebhook: response body must include webhook");
-  }
-  return mapWebhook(body.webhook as RawWebhookRegistration);
+  const body = (await readJson(res, "createWebhook")) as RawWebhookRegistration;
+  return mapWebhook(body);
 }
 
 export async function deleteWebhook(opts: DeleteWebhookOptions): Promise<void> {

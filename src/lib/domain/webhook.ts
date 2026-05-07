@@ -1,12 +1,10 @@
 export type WebhookEventType =
-  | "product.approved"
-  | "order.placed"
   | "product.created"
   | "product.updated"
+  | "order.placed"
   | "sync.completed"
   | "agent.run.completed"
-  | "compliance.checked"
-  | "workflow.completed";
+  | "compliance.checked";
 
 export type WebhookDeliveryStatus = "pending" | "delivered" | "failed";
 export type AutomationStatusValue = "active" | "paused" | "failing" | "not_configured";
@@ -20,7 +18,7 @@ export interface WebhookRegistration {
   readonly secretConfigured: boolean;
   readonly active: boolean;
   readonly createdAt: string;
-  readonly updatedAt: string;
+  readonly updatedAt?: string;
   readonly lastDeliveryAt?: string;
   readonly failureCount?: number;
 }
@@ -53,25 +51,26 @@ export class WebhookDomainError extends Error {
 }
 
 export const supportedWebhookEventTypes: readonly WebhookEventType[] = [
-  "product.approved",
-  "order.placed",
   "product.created",
   "product.updated",
+  "order.placed",
   "sync.completed",
   "agent.run.completed",
   "compliance.checked",
-  "workflow.completed",
 ];
 
 const eventTypes = new Set<WebhookEventType>(supportedWebhookEventTypes);
 const deliveryStatuses = new Set<WebhookDeliveryStatus>(["pending", "delivered", "failed"]);
 
-const exampleAutomations: readonly Omit<AutomationStatus, "status" | "target" | "lastDeliveryAt" | "lastDeliveryStatus">[] = [
+const exampleAutomations: readonly Omit<
+  AutomationStatus,
+  "status" | "target" | "lastDeliveryAt" | "lastDeliveryStatus"
+>[] = [
   {
-    id: "product-approved-slack",
-    name: "Product approved -> Slack notification",
-    eventType: "product.approved",
-    description: "Posts an approval event to a Slack channel through n8n.",
+    id: "product-created-slack",
+    name: "Product created -> Slack notification",
+    eventType: "product.created",
+    description: "Posts a product event to a Slack channel through n8n.",
   },
   {
     id: "order-placed-email",
@@ -134,12 +133,14 @@ export function createWebhookRegistration(input: WebhookRegistration): WebhookRe
   return {
     id: parseString(input.id, "webhook.id"),
     url: parseString(input.url, "webhook.url"),
-    eventTypes: input.eventTypes.map((eventType) => parseEventType(eventType, "webhook.eventTypes")),
+    eventTypes: input.eventTypes.map((eventType) =>
+      parseEventType(eventType, "webhook.eventTypes"),
+    ),
     description: parseOptionalString(input.description, "webhook.description"),
     secretConfigured: parseBoolean(input.secretConfigured, "webhook.secretConfigured"),
     active: parseBoolean(input.active, "webhook.active"),
     createdAt: parseString(input.createdAt, "webhook.createdAt"),
-    updatedAt: parseString(input.updatedAt, "webhook.updatedAt"),
+    updatedAt: parseOptionalString(input.updatedAt, "webhook.updatedAt"),
     lastDeliveryAt: parseOptionalString(input.lastDeliveryAt, "webhook.lastDeliveryAt"),
     failureCount: parseOptionalNumber(input.failureCount, "webhook.failureCount"),
   };
@@ -161,8 +162,6 @@ export function createWebhookDelivery(input: WebhookDelivery): WebhookDelivery {
 
 export function webhookEventTypeLabel(eventType: WebhookEventType): string {
   switch (eventType) {
-    case "product.approved":
-      return "Product approved";
     case "order.placed":
       return "Order placed";
     case "product.created":
@@ -175,8 +174,6 @@ export function webhookEventTypeLabel(eventType: WebhookEventType): string {
       return "Agent run completed";
     case "compliance.checked":
       return "Compliance checked";
-    case "workflow.completed":
-      return "Workflow completed";
   }
 }
 
@@ -204,7 +201,9 @@ export function automationStatusLabel(status: AutomationStatusValue): string {
   }
 }
 
-export function webhookStatusTone(webhook: Pick<WebhookRegistration, "active" | "failureCount">): StatusTone {
+export function webhookStatusTone(
+  webhook: Pick<WebhookRegistration, "active" | "failureCount">,
+): StatusTone {
   if ((webhook.failureCount ?? 0) > 0) return "red";
   return webhook.active ? "green" : "gray";
 }
@@ -222,9 +221,13 @@ export function automationStatusTone(status: AutomationStatusValue): StatusTone 
   }
 }
 
-export function automationStatusesFromWebhooks(webhooks: readonly WebhookRegistration[]): readonly AutomationStatus[] {
+export function automationStatusesFromWebhooks(
+  webhooks: readonly WebhookRegistration[],
+): readonly AutomationStatus[] {
   return exampleAutomations.map((automation) => {
-    const matching = webhooks.filter((webhook) => webhook.eventTypes.includes(automation.eventType));
+    const matching = webhooks.filter((webhook) =>
+      webhook.eventTypes.includes(automation.eventType),
+    );
     const active = matching.filter((webhook) => webhook.active);
     const latestDelivery = active.find((webhook) => webhook.lastDeliveryAt);
     const status: AutomationStatusValue =
@@ -241,7 +244,8 @@ export function automationStatusesFromWebhooks(webhooks: readonly WebhookRegistr
       status,
       target: active[0]?.url ?? matching[0]?.url ?? "n8n",
       lastDeliveryAt: latestDelivery?.lastDeliveryAt,
-      lastDeliveryStatus: status === "failing" ? "failed" : latestDelivery ? "delivered" : undefined,
+      lastDeliveryStatus:
+        status === "failing" ? "failed" : latestDelivery ? "delivered" : undefined,
     };
   });
 }

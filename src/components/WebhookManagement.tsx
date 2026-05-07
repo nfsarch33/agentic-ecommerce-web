@@ -42,11 +42,15 @@ const toneClasses: Record<StatusTone, string> = {
 };
 
 const eventOptions = supportedWebhookEventTypes.filter((eventType) =>
-  ["product.approved", "order.placed", "product.created", "product.updated", "compliance.checked"].includes(eventType),
+  ["product.created", "product.updated", "order.placed", "compliance.checked"].includes(eventType),
 );
 
 function StatusBadge({ label, tone }: { readonly label: string; readonly tone: StatusTone }) {
-  return <span className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${toneClasses[tone]}`}>{label}</span>;
+  return (
+    <span className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${toneClasses[tone]}`}>
+      {label}
+    </span>
+  );
 }
 
 function formatTimestamp(iso: string | undefined): string {
@@ -73,7 +77,6 @@ export function WebhookManagement({
   const [items, setItems] = useState<readonly WebhookRegistration[]>(webhooks);
   const [statuses, setStatuses] = useState<readonly AutomationStatus[]>(automationStatuses);
   const [url, setUrl] = useState("");
-  const [description, setDescription] = useState("");
   const [secret, setSecret] = useState("");
   const [selectedEvents, setSelectedEvents] = useState<readonly WebhookEventType[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -93,7 +96,9 @@ export function WebhookManagement({
 
   function toggleEvent(eventType: WebhookEventType): void {
     setSelectedEvents((current) =>
-      current.includes(eventType) ? current.filter((candidate) => candidate !== eventType) : [...current, eventType],
+      current.includes(eventType)
+        ? current.filter((candidate) => candidate !== eventType)
+        : [...current, eventType],
     );
   }
 
@@ -108,6 +113,10 @@ export function WebhookManagement({
       setError("Select at least one event type.");
       return;
     }
+    if (secret.trim() === "") {
+      setError("Signing secret is required.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -115,12 +124,10 @@ export function WebhookManagement({
         baseUrl: apiBaseUrl,
         url,
         eventTypes: selectedEvents,
-        description,
         secret,
       });
       updateItems([webhook, ...items]);
       setUrl("");
-      setDescription("");
       setSecret("");
       setSelectedEvents([]);
       setMessage("Webhook registered.");
@@ -156,7 +163,11 @@ export function WebhookManagement({
     }
     setIsSubmitting(true);
     try {
-      const delivery = await sendTestWebhookImpl({ baseUrl: apiBaseUrl, webhookId: webhook.id, eventType });
+      const delivery = await sendTestWebhookImpl({
+        baseUrl: apiBaseUrl,
+        webhookId: webhook.id,
+        eventType,
+      });
       setMessage(`Test delivery ${webhookDeliveryStatusLabel(delivery.status).toLowerCase()}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send test webhook.");
@@ -168,11 +179,13 @@ export function WebhookManagement({
   return (
     <main className="mx-auto max-w-7xl px-6 py-12">
       <header className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">n8n automation bridge</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          n8n automation bridge
+        </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Webhooks</h1>
         <p className="mt-2 max-w-3xl text-sm text-gray-600">
-          Register outbound webhook destinations for backend events, then connect those endpoints to n8n HTTP trigger
-          workflows for notifications and fulfilment automation.
+          Register outbound webhook destinations for backend events, then connect those endpoints to
+          n8n HTTP trigger workflows for notifications and fulfilment automation.
         </p>
       </header>
 
@@ -180,7 +193,9 @@ export function WebhookManagement({
         <div
           role={error ? "alert" : "status"}
           className={`mb-6 rounded-md border p-4 text-sm ${
-            error ? "border-red-200 bg-red-50 text-red-700" : "border-green-200 bg-green-50 text-green-700"
+            error
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-green-200 bg-green-50 text-green-700"
           }`}
         >
           {error ?? message}
@@ -200,7 +215,9 @@ export function WebhookManagement({
               <p className="mt-3 text-xs text-gray-500">
                 Event: {webhookEventTypeLabel(status.eventType)} · Target: {status.target}
               </p>
-              <p className="mt-1 text-xs text-gray-500">Last delivery: {formatTimestamp(status.lastDeliveryAt)}</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Last delivery: {formatTimestamp(status.lastDeliveryAt)}
+              </p>
             </article>
           ))}
         </div>
@@ -208,28 +225,19 @@ export function WebhookManagement({
 
       <section className="mb-8 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
         <h2 className="text-xl font-semibold">Register webhook</h2>
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
-          <div className="lg:col-span-2">
-            <label htmlFor="webhook-destination-url" className="text-sm font-semibold text-gray-900">
+        <div className="mt-5 grid gap-4">
+          <div>
+            <label
+              htmlFor="webhook-destination-url"
+              className="text-sm font-semibold text-gray-900"
+            >
               Destination URL
             </label>
             <input
               id="webhook-destination-url"
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://hooks.n8n.example/webhook/product-approved"
-              className="mt-2 w-full rounded-md border border-gray-300 p-3 text-sm text-gray-900 shadow-sm"
-            />
-          </div>
-          <div>
-            <label htmlFor="webhook-description" className="text-sm font-semibold text-gray-900">
-              Description
-            </label>
-            <input
-              id="webhook-description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Product approval Slack alert"
+              placeholder="https://hooks.n8n.example/webhook/product-created"
               className="mt-2 w-full rounded-md border border-gray-300 p-3 text-sm text-gray-900 shadow-sm"
             />
           </div>
@@ -244,7 +252,9 @@ export function WebhookManagement({
               onChange={(event) => setSecret(event.target.value)}
               className="mt-2 w-full rounded-md border border-gray-300 p-3 text-sm text-gray-900 shadow-sm"
             />
-            <p className="mt-2 text-xs text-gray-500">Stored by the backend for HMAC signing and never returned.</p>
+            <p className="mt-2 text-xs text-gray-500">
+              Stored by the backend for HMAC signing and never returned.
+            </p>
           </div>
         </div>
 
@@ -252,7 +262,10 @@ export function WebhookManagement({
           <legend className="text-sm font-semibold text-gray-900">Events</legend>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {eventOptions.map((eventType) => (
-              <label key={eventType} className="flex items-center gap-3 rounded-md border border-gray-200 p-3 text-sm">
+              <label
+                key={eventType}
+                className="flex items-center gap-3 rounded-md border border-gray-200 p-3 text-sm"
+              >
                 <input
                   type="checkbox"
                   checked={selectedEvents.includes(eventType)}
@@ -279,7 +292,9 @@ export function WebhookManagement({
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold">Registered webhooks</h2>
-            <p className="mt-1 text-sm text-gray-600">Showing {items.length} outbound webhook destination(s).</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Showing {items.length} outbound webhook destination(s).
+            </p>
           </div>
         </div>
 
@@ -308,7 +323,11 @@ export function WebhookManagement({
                 <p className="mt-3 break-all text-sm text-gray-700">{webhook.url}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {webhook.eventTypes.map((eventType) => (
-                    <StatusBadge key={eventType} label={webhookEventTypeLabel(eventType)} tone="blue" />
+                    <StatusBadge
+                      key={eventType}
+                      label={webhookEventTypeLabel(eventType)}
+                      tone="blue"
+                    />
                   ))}
                 </div>
                 <dl className="mt-4 grid gap-2 text-sm text-gray-600 sm:grid-cols-2">

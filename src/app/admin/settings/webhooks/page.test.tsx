@@ -43,22 +43,21 @@ describe("admin webhook settings page", () => {
     mockLoadWebhookSettings.mockResolvedValue({
       webhooks: [
         {
-          id: "wh_product_approved",
-          url: "https://hooks.n8n.example/webhook/product-approved",
-          eventTypes: ["product.approved"],
+          id: "wh_product_created",
+          url: "https://hooks.n8n.example/webhook/product-created",
+          eventTypes: ["product.created"],
           secretConfigured: true,
           active: true,
           createdAt: "2026-05-08T00:00:00Z",
-          updatedAt: "2026-05-08T00:01:00Z",
         },
       ],
       automationStatuses: [
         {
-          id: "product-approved-slack",
-          name: "Product approved -> Slack notification",
-          eventType: "product.approved",
+          id: "product-created-slack",
+          name: "Product created -> Slack notification",
+          eventType: "product.created",
           status: "active",
-          description: "Posts an approval event to Slack through n8n.",
+          description: "Posts a product event to Slack through n8n.",
           target: "n8n",
         },
       ],
@@ -69,7 +68,9 @@ describe("admin webhook settings page", () => {
     expect(mockRequireServerSession).toHaveBeenCalledWith("admin");
     expect(mockLoadWebhookSettings).toHaveBeenCalledWith({ baseUrl: "http://localhost:8080" });
     expect(screen.getByRole("heading", { name: /webhooks/i })).toBeInTheDocument();
-    expect(screen.getByText("https://hooks.n8n.example/webhook/product-approved")).toBeInTheDocument();
+    expect(
+      screen.getByText("https://hooks.n8n.example/webhook/product-created"),
+    ).toBeInTheDocument();
     expect(screen.getByText("API: http://localhost:8080")).toBeInTheDocument();
   });
 });
