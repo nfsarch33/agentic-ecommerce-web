@@ -754,7 +754,7 @@ const server = Bun.serve({
         failure_count: 0,
       };
       webhooks.unshift(webhook);
-      return json({ webhook }, { status: 201 });
+      return json({ ...webhook, webhook }, { status: 201 });
     }
     if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
       const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
