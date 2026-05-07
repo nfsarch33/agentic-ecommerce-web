@@ -8,10 +8,13 @@ import {
 import {
   complianceResultLabel,
   complianceSummary,
+  type ComplianceReportSummary,
   type ComplianceResult,
   type ComplianceRule,
+  type CustomComplianceRule,
 } from "@/lib/domain/compliance";
 import type { ProductFields } from "@/lib/domain/product";
+import { ComplianceReportingPanel } from "./ComplianceReportingPanel";
 import { ImageUploadPreview } from "./ImageUploadPreview";
 import { SeoScoreBreakdown } from "./SeoScoreBreakdown";
 
@@ -21,9 +24,9 @@ export interface ComplianceDashboardProps {
   readonly rules: readonly ComplianceRule[];
   readonly initialResults: readonly ComplianceResult[];
   readonly initialError?: string;
-  readonly checkProductComplianceImpl?: (
-    opts: CheckProductComplianceOptions,
-  ) => Promise<ComplianceResult>;
+  readonly reportSummary?: ComplianceReportSummary;
+  readonly customRules?: readonly CustomComplianceRule[];
+  readonly checkProductComplianceImpl?: (opts: CheckProductComplianceOptions) => Promise<ComplianceResult>;
 }
 
 function resultClasses(result?: ComplianceResult): string {
@@ -45,23 +48,22 @@ export function ComplianceDashboard({
   rules,
   initialResults,
   initialError,
+  reportSummary,
+  customRules = [],
   checkProductComplianceImpl = checkProductCompliance,
 }: ComplianceDashboardProps) {
-  const [resultsByProductId, setResultsByProductId] = useState<
-    ReadonlyMap<string, ComplianceResult>
-  >(() => new Map(initialResults.map((result) => [result.productId, result])));
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    products[0]?.id ?? null,
+  const [resultsByProductId, setResultsByProductId] = useState<ReadonlyMap<string, ComplianceResult>>(
+    () => new Map(initialResults.map((result) => [result.productId, result])),
   );
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(products[0]?.id ?? null);
   const [selectedProductIds, setSelectedProductIds] = useState<ReadonlySet<string>>(new Set());
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(initialError ?? null);
+  const [error, setError] = useState<string | null>(null);
   const [isChecking, setIsChecking] = useState(false);
 
   const results = useMemo(() => Array.from(resultsByProductId.values()), [resultsByProductId]);
   const summary = complianceSummary(results);
-  const selectedProduct =
-    products.find((product) => product.id === selectedProductId) ?? products[0];
+  const selectedProduct = products.find((product) => product.id === selectedProductId) ?? products[0];
   const selectedResult = selectedProduct ? resultsByProductId.get(selectedProduct.id) : undefined;
 
   function toggleProductSelection(productId: string): void {
@@ -106,13 +108,10 @@ export function ComplianceDashboard({
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
       <header className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-          Admin compliance
-        </p>
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">Admin compliance</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Compliance Dashboard</h1>
         <p className="mt-2 max-w-3xl text-sm text-gray-600">
-          Review product copy, SEO readiness, media alt text, and legal rule status before
-          publishing.
+          Review product copy, SEO readiness, media alt text, and legal rule status before publishing.
         </p>
       </header>
 
@@ -139,17 +138,25 @@ export function ComplianceDashboard({
         </article>
       </section>
 
-      {(error || message) && (
+      {(initialError || error || message) && (
         <div
-          role={error ? "alert" : "status"}
+          role={initialError || error ? "alert" : "status"}
           className={`mb-6 rounded-md border p-4 text-sm ${
-            error
+            initialError || error
               ? "border-red-200 bg-red-50 text-red-700"
               : "border-green-200 bg-green-50 text-green-700"
           }`}
         >
-          {error ?? message}
+          {initialError ?? error ?? message}
         </div>
+      )}
+
+      {reportSummary && (
+        <ComplianceReportingPanel
+          apiBaseUrl={apiBaseUrl}
+          reportSummary={reportSummary}
+          customRules={customRules}
+        />
       )}
 
       <section className="mb-8 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
@@ -173,75 +180,60 @@ export function ComplianceDashboard({
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          {products.length === 0 && (
+            <p className="border-b border-gray-200 p-4 text-sm text-gray-600">
+              No products are available for compliance checks.
+            </p>
+          )}
           <table className="w-full border-collapse text-sm">
             <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
               <tr>
-                <th scope="col" className="px-4 py-3">
-                  Select
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  Product
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  Status
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  Score
-                </th>
-                <th scope="col" className="px-4 py-3">
-                  Action
-                </th>
+                <th scope="col" className="px-4 py-3">Select</th>
+                <th scope="col" className="px-4 py-3">Product</th>
+                <th scope="col" className="px-4 py-3">Status</th>
+                <th scope="col" className="px-4 py-3">Score</th>
+                <th scope="col" className="px-4 py-3">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {products.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-600">
-                    No products are available for compliance checks yet.
-                  </td>
-                </tr>
-              ) : (
-                products.map((product) => {
-                  const result = resultsByProductId.get(product.id);
-                  const label = result ? complianceResultLabel(result) : "Unchecked";
-                  return (
-                    <tr key={product.id} className="align-top">
-                      <td className="px-4 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedProductIds.has(product.id)}
-                          onChange={() => toggleProductSelection(product.id)}
-                          aria-label={`Select ${product.title}`}
-                          className="h-4 w-4 rounded border-gray-300 text-[var(--color-brand-500)]"
-                        />
-                      </td>
-                      <td className="px-4 py-4">
-                        <p className="font-semibold text-gray-900">{product.title}</p>
-                        <p className="mt-1 text-xs text-gray-500">{product.sku}</p>
-                      </td>
-                      <td className="px-4 py-4">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${resultClasses(result)}`}
-                        >
-                          {label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 font-semibold text-gray-900">
-                        {result ? `${result.score}/100` : "Not checked"}
-                      </td>
-                      <td className="px-4 py-4">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedProductId(product.id)}
-                          className="cursor-pointer rounded-md border border-gray-300 px-3 py-2 text-xs font-medium text-gray-800 transition-colors duration-200 hover:bg-gray-50"
-                        >
-                          Review {product.title}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+              {products.map((product) => {
+                const result = resultsByProductId.get(product.id);
+                const label = result ? complianceResultLabel(result) : "Unchecked";
+                return (
+                  <tr key={product.id} className="align-top">
+                    <td className="px-4 py-4">
+                      <input
+                        type="checkbox"
+                        checked={selectedProductIds.has(product.id)}
+                        onChange={() => toggleProductSelection(product.id)}
+                        aria-label={`Select ${product.title}`}
+                        className="h-4 w-4 rounded border-gray-300 text-[var(--color-brand-500)]"
+                      />
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="font-semibold text-gray-900">{product.title}</p>
+                      <p className="mt-1 text-xs text-gray-500">{product.sku}</p>
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${resultClasses(result)}`}>
+                        {label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 font-semibold text-gray-900">
+                      {result ? `${result.score}/100` : "Not checked"}
+                    </td>
+                    <td className="px-4 py-4">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProductId(product.id)}
+                        className="cursor-pointer rounded-md border border-gray-300 px-3 py-2 text-xs font-medium text-gray-800 transition-colors duration-200 hover:bg-gray-50"
+                      >
+                        Review {product.title}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -263,20 +255,13 @@ export function ComplianceDashboard({
               <div className="mt-5 space-y-3">
                 {selectedResult && selectedResult.ruleResults.length > 0 ? (
                   selectedResult.ruleResults.map((ruleResult) => (
-                    <article
-                      key={ruleResult.rule.id}
-                      className="rounded-md border border-gray-200 p-4"
-                    >
+                    <article key={ruleResult.rule.id} className="rounded-md border border-gray-200 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
                           <h3 className="font-semibold">{ruleResult.rule.name}</h3>
-                          <p className="mt-1 text-xs text-gray-500">
-                            {ruleResult.rule.description}
-                          </p>
+                          <p className="mt-1 text-xs text-gray-500">{ruleResult.rule.description}</p>
                         </div>
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${severityClasses(ruleResult.severity)}`}
-                        >
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${severityClasses(ruleResult.severity)}`}>
                           {ruleResult.severity}
                         </span>
                       </div>

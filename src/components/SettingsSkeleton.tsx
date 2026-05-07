@@ -1,9 +1,13 @@
+import Link from "next/link";
+
 export type ConfigStatus = "configured" | "not_configured";
 
 export interface SettingsSection {
   readonly name: string;
   readonly status: ConfigStatus;
   readonly description: string;
+  readonly href?: string;
+  readonly actionLabel?: string;
 }
 
 export interface SettingsSkeletonProps {
@@ -33,6 +37,14 @@ export function SettingsSkeleton({ sections }: SettingsSkeletonProps) {
               <div>
                 <h2 className="text-lg font-semibold">{section.name}</h2>
                 <p className="mt-2 text-sm text-gray-600">{section.description}</p>
+                {section.href && (
+                  <Link
+                    href={section.href}
+                    className="mt-3 inline-flex text-sm font-medium text-[var(--color-brand-700)] hover:text-[var(--color-brand-500)]"
+                  >
+                    {section.actionLabel ?? `Open ${section.name}`}
+                  </Link>
+                )}
               </div>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-semibold ${
