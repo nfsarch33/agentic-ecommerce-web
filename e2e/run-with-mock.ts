@@ -327,14 +327,18 @@ const workflows: MockWorkflow[] = [
 type MockWebhook = {
   id: string;
   url: string;
-  event_types: Array<"product.approved" | "order.placed" | "product.created" | "product.updated" | "compliance.checked">;
-  description?: string;
-  secret_configured: boolean;
-  active: boolean;
+  event_types: Array<
+    | "product.created"
+    | "product.updated"
+    | "order.placed"
+    | "sync.completed"
+    | "agent.run.completed"
+    | "compliance.checked"
+  >;
+  secret_ref?: string;
+  secret_hash: string;
+  enabled: boolean;
   created_at: string;
-  updated_at: string;
-  last_delivery_at?: string;
-  failure_count?: number;
 };
 
 const webhooks: MockWebhook[] = [
@@ -342,13 +346,9 @@ const webhooks: MockWebhook[] = [
     id: "wh_existing_order",
     url: "https://hooks.n8n.example/webhook/order-placed",
     event_types: ["order.placed"],
-    description: "Order confirmation email",
-    secret_configured: true,
-    active: true,
+    secret_hash: "sha256:test",
+    enabled: true,
     created_at: "2026-05-08T00:00:00Z",
-    updated_at: "2026-05-08T00:01:00Z",
-    last_delivery_at: "2026-05-08T00:02:00Z",
-    failure_count: 0,
   },
 ];
 
@@ -613,40 +613,41 @@ const server = Bun.serve({
       const body = (await req.json()) as {
         url?: string;
         event_types?: MockWebhook["event_types"];
-        description?: string;
         secret?: string;
       };
       const webhook: MockWebhook = {
         id: `wh_${webhooks.length + 1}`,
-        url: body.url ?? "https://hooks.n8n.example/webhook/generated",
-        event_types: body.event_types ?? ["product.approved"],
-        description: body.description,
-        secret_configured: Boolean(body.secret),
-        active: true,
+        url: body.url ?? "https://hooks.n8n.example/webhook/product-created",
+        event_types: body.event_types ?? ["product.created"],
+        secret_hash: body.secret ? "sha256:test" : "",
+        enabled: true,
         created_at: "2026-05-08T00:05:00Z",
-        updated_at: "2026-05-08T00:05:00Z",
-        failure_count: 0,
       };
       webhooks.unshift(webhook);
-      return json({ webhook }, { status: 201 });
+      return json(webhook, { status: 201 });
     }
-    if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
-      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
+    if (
+      url.pathname.startsWith("/api/v1/webhooks/") &&
+      url.pathname.endsWith("/test") &&
+      req.method === "POST"
+    ) {
+      const webhookId = decodeURIComponent(
+        url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""),
+      );
       const webhook = webhooks.find((candidate) => candidate.id === webhookId);
       if (!webhook) return json({ error: "not_found" }, { status: 404 });
       const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
-      webhook.last_delivery_at = "2026-05-08T00:06:00Z";
-      webhook.updated_at = "2026-05-08T00:06:00Z";
       return json(
         {
           delivery: {
             id: `del_${webhook.id}`,
             webhook_id: webhook.id,
+            event_id: "evt_test",
             event_type: body.event_type ?? webhook.event_types[0],
-            status: "delivered",
-            response_status: 200,
-            attempt: 1,
-            occurred_at: "2026-05-08T00:06:00Z",
+            success: true,
+            status: 204,
+            attempts: 1,
+            created_at: "2026-05-08T00:06:00Z",
           },
         },
         { status: 202 },

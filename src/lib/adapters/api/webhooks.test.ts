@@ -16,26 +16,23 @@ function mockFetch(body: unknown, status = 200): typeof fetch {
 }
 
 const rawWebhook = {
-  id: "wh_product_approved",
-  url: "https://hooks.n8n.example/webhook/product-approved",
-  event_types: ["product.approved", "order.placed"],
-  description: "Notify n8n",
-  secret_configured: true,
-  active: true,
+  id: "wh_product_created",
+  url: "https://hooks.n8n.example/webhook/product-created",
+  event_types: ["product.created", "order.placed"],
+  secret_hash: "sha256:test",
+  enabled: true,
   created_at: "2026-05-08T00:00:00Z",
-  updated_at: "2026-05-08T00:01:00Z",
-  last_delivery_at: "2026-05-08T00:02:00Z",
-  failure_count: 0,
 };
 
 const rawDelivery = {
   id: "del_test",
-  webhook_id: "wh_product_approved",
-  event_type: "product.approved",
-  status: "delivered",
-  response_status: 200,
-  attempt: 1,
-  occurred_at: "2026-05-08T00:03:00Z",
+  webhook_id: "wh_product_created",
+  event_type: "product.created",
+  event_id: "evt_test",
+  success: true,
+  status: 204,
+  attempts: 1,
+  created_at: "2026-05-08T00:03:00Z",
 };
 
 describe("webhooks API adapter", () => {
@@ -47,28 +44,23 @@ describe("webhooks API adapter", () => {
 
     expect(result).toEqual([
       {
-        id: "wh_product_approved",
-        url: "https://hooks.n8n.example/webhook/product-approved",
-        eventTypes: ["product.approved", "order.placed"],
-        description: "Notify n8n",
+        id: "wh_product_created",
+        url: "https://hooks.n8n.example/webhook/product-created",
+        eventTypes: ["product.created", "order.placed"],
         secretConfigured: true,
         active: true,
         createdAt: "2026-05-08T00:00:00Z",
-        updatedAt: "2026-05-08T00:01:00Z",
-        lastDeliveryAt: "2026-05-08T00:02:00Z",
-        failureCount: 0,
       },
     ]);
   });
 
-  it("registers a webhook with event types and optional signing secret", async () => {
-    const fetchImpl = mockFetch({ webhook: rawWebhook }, 201);
+  it("registers a webhook with backend OpenAPI request and response shapes", async () => {
+    const fetchImpl = mockFetch(rawWebhook, 201);
 
     await createWebhook({
       baseUrl: "http://api.test/",
-      url: "https://hooks.n8n.example/webhook/product-approved",
-      eventTypes: ["product.approved"],
-      description: "Notify n8n",
+      url: "https://hooks.n8n.example/webhook/product-created",
+      eventTypes: ["product.created"],
       secret: "secret-value",
       fetchImpl,
     });
@@ -78,17 +70,17 @@ describe("webhooks API adapter", () => {
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
-          url: "https://hooks.n8n.example/webhook/product-approved",
-          event_types: ["product.approved"],
-          description: "Notify n8n",
+          url: "https://hooks.n8n.example/webhook/product-created",
+          event_types: ["product.created"],
           secret: "secret-value",
+          enabled: true,
         }),
       }),
     );
   });
 
-  it("omits optional registration fields when they are blank", async () => {
-    const fetchImpl = mockFetch({ webhook: { ...rawWebhook, description: undefined, secret_configured: false } }, 201);
+  it("sends an empty secret only when callers bypass usecase validation", async () => {
+    const fetchImpl = mockFetch({ ...rawWebhook, secret_hash: "" }, 201);
 
     await createWebhook({
       baseUrl: "http://api.test",
@@ -103,6 +95,8 @@ describe("webhooks API adapter", () => {
         body: JSON.stringify({
           url: "https://hooks.n8n.example/webhook/order-placed",
           event_types: ["order.placed"],
+          secret: "",
+          enabled: true,
         }),
       }),
     );
@@ -110,7 +104,11 @@ describe("webhooks API adapter", () => {
 
   it("deletes and test-delivers webhooks by encoded id", async () => {
     const deleteFetch = mockFetch(null, 204);
-    await deleteWebhook({ baseUrl: "http://api.test", webhookId: "wh/product", fetchImpl: deleteFetch });
+    await deleteWebhook({
+      baseUrl: "http://api.test",
+      webhookId: "wh/product",
+      fetchImpl: deleteFetch,
+    });
     expect(deleteFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/webhooks/wh%2Fproduct",
       expect.objectContaining({ method: "DELETE" }),
@@ -118,20 +116,21 @@ describe("webhooks API adapter", () => {
 
     const delivery = await sendTestWebhook({
       baseUrl: "http://api.test",
-      webhookId: "wh_product_approved",
-      eventType: "product.approved",
+      webhookId: "wh_product_created",
+      eventType: "product.created",
       fetchImpl: mockFetch({ delivery: rawDelivery }, 202),
     });
     expect(delivery.status).toBe("delivered");
+    expect(delivery.responseStatus).toBe(204);
   });
 
   it("throws WebhooksApiError for HTTP failures and invalid response bodies", async () => {
-    await expect(fetchWebhooks({ baseUrl: "http://api.test", fetchImpl: mockFetch({}, 500) })).rejects.toThrow(
-      WebhooksApiError,
-    );
-    await expect(fetchWebhooks({ baseUrl: "http://api.test", fetchImpl: mockFetch({}) })).rejects.toThrow(
-      "response body must include webhooks array",
-    );
+    await expect(
+      fetchWebhooks({ baseUrl: "http://api.test", fetchImpl: mockFetch({}, 500) }),
+    ).rejects.toThrow(WebhooksApiError);
+    await expect(
+      fetchWebhooks({ baseUrl: "http://api.test", fetchImpl: mockFetch({}) }),
+    ).rejects.toThrow("response body must include webhooks array");
     await expect(
       createWebhook({ baseUrl: "", url: "https://hooks.example", eventTypes: ["order.placed"] }),
     ).rejects.toThrow("network error");
@@ -146,8 +145,8 @@ describe("webhooks API adapter", () => {
     await expect(
       sendTestWebhook({
         baseUrl: "http://api.test",
-        webhookId: "wh_product_approved",
-        eventType: "product.approved",
+        webhookId: "wh_product_created",
+        eventType: "product.created",
         fetchImpl: mockFetch({}, 202),
       }),
     ).rejects.toThrow("response body must include delivery");

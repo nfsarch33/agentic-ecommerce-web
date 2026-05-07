@@ -659,6 +659,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List outbound webhook endpoints */
+        get: operations["listWebhooks"];
+        put?: never;
+        /**
+         * Register an outbound webhook endpoint
+         * @description Registers an HTTPS endpoint that receives HMAC-signed event deliveries. The raw secret is accepted only at creation time and is never returned.
+         */
+        post: operations["createWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an outbound webhook endpoint */
+        delete: operations["deleteWebhook"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a signed test event to an outbound webhook endpoint */
+        post: operations["testWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/events/recent": {
         parameters: {
             query?: never;
@@ -899,6 +954,66 @@ export interface components {
         };
         AgentHistoryResponse: {
             runs: components["schemas"]["AgentRun"][];
+        };
+        CreateWebhookRequest: {
+            /**
+             * Format: uri
+             * @description HTTP or HTTPS endpoint that receives signed JSON events.
+             */
+            url: string;
+            event_types: ("agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed")[];
+            /**
+             * Format: password
+             * @description HMAC signing secret. Accepted only on create and never returned by the API.
+             */
+            secret: string;
+            /** @description Optional operator-managed secret reference for future durable secret stores. */
+            secret_ref?: string;
+            /** @default true */
+            enabled: boolean;
+        };
+        TestWebhookRequest: {
+            /**
+             * @description Optional subscribed event type to use for the test delivery. Defaults to the first registered type.
+             * @enum {string}
+             */
+            event_type?: "agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed";
+        };
+        WebhookRegistration: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uri */
+            url: string;
+            event_types: ("agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed")[];
+            secret_ref?: string;
+            /** @description SHA-256 hash fingerprint of the signing secret, never the secret value. */
+            secret_hash: string;
+            enabled: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        WebhookListResponse: {
+            webhooks: components["schemas"]["WebhookRegistration"][];
+        };
+        WebhookDeliveryResult: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            webhook_id: string;
+            event_id: string;
+            /** @enum {string} */
+            event_type: "agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed";
+            success: boolean;
+            /** @description HTTP response status, or 0 when no response was received. */
+            status: number;
+            attempts: number;
+            /** @description Sanitised machine-readable delivery failure reason. */
+            error?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        WebhookTestResponse: {
+            delivery: components["schemas"]["WebhookDeliveryResult"];
         };
         Money: {
             /** @description Amount in the smallest currency unit (for example, cents). */
@@ -3020,6 +3135,222 @@ export interface operations {
             };
             /** @description Agent run not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listWebhooks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registered outbound webhook endpoints. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookListResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have viewer permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Webhook endpoint registered. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookRegistration"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have operator permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description URL, event types, or signing secret is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook endpoint deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have operator permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Webhook endpoint not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    testWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TestWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Test delivery attempted and recorded. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookTestResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have operator permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Webhook endpoint not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested test event type is not subscribed by the webhook. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
