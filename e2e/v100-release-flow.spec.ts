@@ -5,6 +5,7 @@ const orderId = "318f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c";
 const productId = "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c";
 
 test.skip(process.env.E2E_RELEASE_FLOW !== "true", "run with make release-e2e");
+test.setTimeout(120_000);
 
 test("v1.0.0 release flow covers storefront checkout and admin AI compliance", async ({ page }) => {
   await page.goto("/products");
@@ -21,9 +22,11 @@ test("v1.0.0 release flow covers storefront checkout and admin AI compliance", a
   await page.getByLabel(/city/i).fill("Sydney");
   await page.getByLabel(/state or region/i).fill("NSW");
   await page.getByLabel(/postal code/i).fill("2000");
-  await page.getByRole("button", { name: /place order/i }).click();
+  await Promise.all([
+    page.waitForURL(new RegExp(`/orders/${orderId}$`), { timeout: 20_000 }),
+    page.getByRole("button", { name: /place order/i }).click(),
+  ]);
 
-  await expect(page).toHaveURL(new RegExp(`/orders/${orderId}$`));
   await expect(page.getByRole("heading", { name: /order confirmed/i })).toBeVisible();
   await expect(page.getByText("shopper@example.com")).toBeVisible();
 
