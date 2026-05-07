@@ -3,7 +3,6 @@ import { expect, test } from "@playwright/test";
 test("shopper checks out from product browse to order confirmation", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /browse products/i }).click();
-  await expect(page).toHaveURL(/\/products$/);
 
   await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
   await page

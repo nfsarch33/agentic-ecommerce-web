@@ -508,6 +508,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/events/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent backend events */
+        get: operations["listRecentEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -846,6 +863,22 @@ export interface components {
         };
         StatusResponse: {
             status: string;
+        };
+        RecentEventsResponse: {
+            events: components["schemas"]["EventItem"][];
+        };
+        EventItem: {
+            id: string;
+            /** @enum {string} */
+            type: "product.created" | "product.updated" | "order.placed" | "sync.completed" | "agent.run.completed" | "compliance.checked";
+            /** @enum {string} */
+            severity: "info" | "warning" | "error";
+            message: string;
+            /** Format: date-time */
+            occurred_at: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         SyncEvent: {
             /** Format: uuid */
@@ -2183,6 +2216,37 @@ export interface operations {
             };
             /** @description Agent run not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listRecentEvents: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent event activity, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentEventsResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -13,7 +13,10 @@ const product = {
 
 const orderId = "318f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c";
 const orders = new Map<string, unknown>();
-const authSessions = new Map<string, { user: { id: string; email: string; role: "admin" | "operator" | "viewer" }; expires_at: string }>();
+const authSessions = new Map<
+  string,
+  { user: { id: string; email: string; role: "admin" | "operator" | "viewer" }; expires_at: string }
+>();
 const syncConflict = {
   id: "418f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   product_id: product.id,
@@ -167,6 +170,24 @@ const agentRun: MockAgentRun = {
   created_at: "2026-05-07T04:20:00Z",
 };
 const agentRuns: MockAgentRun[] = [agentRun];
+const recentEvents = [
+  {
+    id: "evt_compliance_1",
+    type: "compliance.checked",
+    severity: "warning",
+    message: "Compliance check needs review",
+    occurred_at: "2026-05-07T04:35:00Z",
+    metadata: { tenant_id: "default", source: "mc-api" },
+  },
+  {
+    id: "evt_product_1",
+    type: "product.created",
+    severity: "info",
+    message: "Product was created",
+    occurred_at: "2026-05-07T04:30:00Z",
+    metadata: { tenant_id: "default", source: "mc-api" },
+  },
+] as const;
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -327,6 +348,10 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/v1/agents" && req.method === "GET") {
       return json({ agents: [agentSummary] });
+    }
+    if (url.pathname === "/api/v1/events/recent" && req.method === "GET") {
+      const limit = Number(url.searchParams.get("limit") ?? "20");
+      return json({ events: recentEvents.slice(0, limit) });
     }
     if (url.pathname === `/api/v1/agents/${agentSummary.id}/history` && req.method === "GET") {
       return json({ runs: agentRuns });

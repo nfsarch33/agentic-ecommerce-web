@@ -1,4 +1,5 @@
 import type { EventItem, EventSeverity, EventType } from "@/lib/domain/event";
+import type { components } from "./generated/schema";
 
 export interface FetchRecentEventsOptions {
   readonly baseUrl: string;
@@ -17,18 +18,8 @@ export class EventsApiError extends Error {
   }
 }
 
-interface RawEventItem {
-  readonly id?: unknown;
-  readonly type?: unknown;
-  readonly severity?: unknown;
-  readonly message?: unknown;
-  readonly occurred_at?: unknown;
-  readonly metadata?: unknown;
-}
-
-interface RawEventsResponse {
-  readonly events?: unknown;
-}
+type RawEventItem = components["schemas"]["EventItem"];
+type RawEventsResponse = components["schemas"]["RecentEventsResponse"];
 
 const validEventTypes = new Set<EventType>([
   "product.created",

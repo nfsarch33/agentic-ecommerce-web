@@ -12,6 +12,7 @@ node_modules
 # testing
 /coverage
 /playwright-report
+/reports/lighthouse
 /test-results
 /playwright/.cache
 

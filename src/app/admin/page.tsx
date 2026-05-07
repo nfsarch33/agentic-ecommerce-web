@@ -5,15 +5,30 @@ import { EventActivityFeed } from "@/components/EventActivityFeed";
 
 export const dynamic = "force-dynamic";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
-
 export default async function AdminHomePage() {
   const session = await requireServerSession();
+  const serverBaseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
+  const clientBaseUrl = process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? serverBaseUrl;
   const cards = [
-    { key: "products", title: "Products", href: "/admin/products", description: "Review catalog inventory." },
-    { key: "orders", title: "Orders", href: "/admin/orders", description: "Look up customer orders." },
+    {
+      key: "products",
+      title: "Products",
+      href: "/admin/products",
+      description: "Review catalog inventory.",
+    },
+    {
+      key: "orders",
+      title: "Orders",
+      href: "/admin/orders",
+      description: "Look up customer orders.",
+    },
     { key: "agents", title: "Agents", href: "/admin/agents", description: "Monitor agent runs." },
-    { key: "settings", title: "Settings", href: "/admin/settings", description: "Review server-side config status." },
+    {
+      key: "settings",
+      title: "Settings",
+      href: "/admin/settings",
+      description: "Review server-side config status.",
+    },
   ].filter((card) => canViewAdminNavItem(session.user, card.key));
 
   return (
@@ -22,7 +37,8 @@ export default async function AdminHomePage() {
         <p className="text-sm font-medium uppercase tracking-wide text-gray-500">Admin</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Admin Dashboard</h1>
         <p className="mt-2 max-w-3xl text-sm text-gray-600">
-          Signed in as {session.user.email}. Your {session.user.role} role controls which dashboard tools are visible.
+          Signed in as {session.user.email}. Your {session.user.role} role controls which dashboard
+          tools are visible.
         </p>
       </header>
 
@@ -40,7 +56,7 @@ export default async function AdminHomePage() {
       </section>
 
       <div className="mt-8">
-        <EventActivityFeed apiBaseUrl={API_BASE_URL} />
+        <EventActivityFeed apiBaseUrl={clientBaseUrl} />
       </div>
     </main>
   );
