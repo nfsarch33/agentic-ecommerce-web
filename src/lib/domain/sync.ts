@@ -1,44 +1,54 @@
-export type SyncState = "idle" | "running" | "degraded" | "failed";
-export type SyncResourceType = "product" | "order" | "inventory";
-export type SyncConflictStatus = "open" | "resolved";
-export type SyncConflictResolution = "accept_local" | "accept_remote" | "mark_resolved";
+export type SyncEventType =
+  | "product_imported"
+  | "product_published"
+  | "inventory_reconciled"
+  | "conflict_detected"
+  | "sync_failed";
+export type SyncConflictFieldName = "title" | "price" | "stock" | "description";
+export type SyncConflictStatus = "pending" | "resolved";
+export type SyncConflictResolution = "local" | "remote" | "manual";
+
+export interface SyncEvent {
+  readonly id: string;
+  readonly type: SyncEventType;
+  readonly productId?: string;
+  readonly remoteId?: number;
+  readonly message?: string;
+  readonly metadata?: Record<string, string>;
+  readonly createdAt: string;
+}
 
 export interface SyncStatus {
-  readonly state: SyncState;
-  readonly lastSyncAt?: string;
-  readonly nextSyncAt?: string;
-  readonly syncLagSeconds: number;
-  readonly inFlightJobs: number;
-  readonly queuedEvents: number;
-  readonly conflictCount: number;
-  readonly errorCount: number;
+  readonly totalEvents: number;
+  readonly pendingConflicts: number;
+  readonly lastEvent?: SyncEvent;
   readonly lastError?: string;
   readonly updatedAt: string;
 }
 
+export interface SyncConflictField {
+  readonly field: SyncConflictFieldName;
+  readonly localValue: string;
+  readonly remoteValue: string;
+}
+
 export interface SyncConflict {
   readonly id: string;
-  readonly resourceType: SyncResourceType;
-  readonly resourceId: string;
-  readonly field: string;
-  readonly backendValue: unknown;
-  readonly wooCommerceValue: unknown;
-  readonly localUpdatedAt: string;
-  readonly remoteUpdatedAt: string;
-  readonly detectedAt: string;
+  readonly productId?: string;
+  readonly sku: string;
+  readonly remoteId: number;
   readonly status: SyncConflictStatus;
+  readonly fields: readonly SyncConflictField[];
   readonly resolution?: SyncConflictResolution;
+  readonly note?: string;
+  readonly createdAt: string;
   readonly resolvedAt?: string;
 }
 
 export function isSyncHealthy(status: SyncStatus): boolean {
-  return (
-    (status.state === "idle" || status.state === "running") &&
-    status.conflictCount === 0 &&
-    status.errorCount === 0
-  );
+  return status.pendingConflicts === 0 && !status.lastError;
 }
 
 export function countOpenConflicts(conflicts: readonly SyncConflict[]): number {
-  return conflicts.filter((conflict) => conflict.status === "open").length;
+  return conflicts.filter((conflict) => conflict.status === "pending").length;
 }

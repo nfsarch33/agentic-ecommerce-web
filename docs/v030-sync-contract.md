@@ -1,21 +1,22 @@
 # v0.3.0 Sync API Contract
 
-The frontend implementation targets the backend contract below until the v0.3.0 backend OpenAPI PR is merged and `bun run api:generate` can refresh `src/lib/adapters/api/generated/schema.d.ts`.
+The frontend implementation is generated from the backend `api/openapi.yaml` with `bun run api:generate`.
 
 ## `GET /api/v1/sync/status`
 
-Returns the current sync worker state.
+Returns the current sync worker status.
 
 ```json
 {
-  "state": "idle | running | degraded | failed",
-  "last_sync_at": "2026-05-07T04:30:00Z",
-  "next_sync_at": "2026-05-07T04:35:00Z",
-  "sync_lag_seconds": 18,
-  "in_flight_jobs": 2,
-  "queued_events": 7,
-  "conflict_count": 1,
-  "error_count": 0,
+  "total_events": 3,
+  "pending_conflicts": 1,
+  "last_event": {
+    "id": "event_1",
+    "type": "conflict_detected",
+    "product_id": "p_1",
+    "remote_id": 44,
+    "created_at": "2026-05-07T04:30:00Z"
+  },
   "last_error": null,
   "updated_at": "2026-05-07T04:31:00Z"
 }
@@ -30,21 +31,24 @@ Returns conflicts waiting for manual review.
   "conflicts": [
     {
       "id": "conflict_1",
-      "resource_type": "product",
-      "resource_id": "p_1",
-      "field": "price.amount",
-      "backend_value": 3500,
-      "woocommerce_value": 3999,
-      "local_updated_at": "2026-05-07T04:20:00Z",
-      "remote_updated_at": "2026-05-07T04:25:00Z",
-      "detected_at": "2026-05-07T04:26:00Z",
-      "status": "open"
+      "product_id": "p_1",
+      "sku": "SKU-1",
+      "remote_id": 44,
+      "status": "pending",
+      "fields": [
+        {
+          "field": "price",
+          "local_value": "3500",
+          "remote_value": "3999"
+        }
+      ],
+      "created_at": "2026-05-07T04:26:00Z"
     }
   ]
 }
 ```
 
-`resource_type` is `product`, `order`, or `inventory`. `status` is `open` or `resolved`.
+`status` is `pending` or `resolved`. Conflict fields are `title`, `price`, `stock`, or `description`.
 
 ## `POST /api/v1/sync/conflicts/{id}/resolve`
 
@@ -52,7 +56,7 @@ Request:
 
 ```json
 {
-  "resolution": "accept_local | accept_remote | mark_resolved"
+  "resolution": "local | remote | manual"
 }
 ```
 
@@ -60,20 +64,14 @@ Response:
 
 ```json
 {
-  "conflict": {
-    "id": "conflict_1",
-    "resource_type": "product",
-    "resource_id": "p_1",
-    "field": "price.amount",
-    "backend_value": 3500,
-    "woocommerce_value": 3999,
-    "local_updated_at": "2026-05-07T04:20:00Z",
-    "remote_updated_at": "2026-05-07T04:25:00Z",
-    "detected_at": "2026-05-07T04:26:00Z",
-    "status": "resolved",
-    "resolution": "accept_remote",
-    "resolved_at": "2026-05-07T04:40:00Z"
-  }
+  "id": "conflict_1",
+  "sku": "SKU-1",
+  "remote_id": 44,
+  "status": "resolved",
+  "fields": [],
+  "resolution": "remote",
+  "created_at": "2026-05-07T04:26:00Z",
+  "resolved_at": "2026-05-07T04:40:00Z"
 }
 ```
 

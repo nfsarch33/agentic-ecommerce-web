@@ -13,6 +13,28 @@ const product = {
 
 const orderId = "318f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c";
 const orders = new Map<string, unknown>();
+const syncConflict = {
+  id: "418f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  product_id: product.id,
+  sku: product.sku,
+  remote_id: 44,
+  status: "pending",
+  fields: [
+    { field: "title", local_value: "Resistance Band Set", remote_value: "Resistance Band Pro" },
+    { field: "stock", local_value: "12", remote_value: "7" },
+  ],
+  created_at: "2026-05-07T00:05:00Z",
+} as {
+  id: string;
+  product_id: string;
+  sku: string;
+  remote_id: number;
+  status: "pending" | "resolved";
+  fields: Array<{ field: string; local_value: string; remote_value: string }>;
+  resolution?: "local" | "remote" | "manual";
+  created_at: string;
+  resolved_at?: string;
+};
 
 const corsHeaders = {
   "access-control-allow-origin": "*",
@@ -89,6 +111,30 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/v1/products/resistance-band-set" && req.method === "GET") {
       return json(product);
+    }
+    if (url.pathname === "/api/v1/sync/status" && req.method === "GET") {
+      return json({
+        total_events: 3,
+        pending_conflicts: syncConflict.status === "pending" ? 1 : 0,
+        last_event: {
+          id: "518f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+          type: "conflict_detected",
+          product_id: product.id,
+          remote_id: syncConflict.remote_id,
+          created_at: "2026-05-07T00:05:00Z",
+        },
+        updated_at: "2026-05-07T00:06:00Z",
+      });
+    }
+    if (url.pathname === "/api/v1/sync/conflicts" && req.method === "GET") {
+      return json({ conflicts: [syncConflict] });
+    }
+    if (url.pathname === `/api/v1/sync/conflicts/${syncConflict.id}/resolve` && req.method === "POST") {
+      const body = (await req.json()) as { resolution?: "local" | "remote" | "manual" };
+      syncConflict.status = "resolved";
+      syncConflict.resolution = body.resolution ?? "manual";
+      syncConflict.resolved_at = "2026-05-07T00:10:00Z";
+      return json(syncConflict);
     }
     if (url.pathname === "/api/v1/orders" && req.method === "POST") {
       return createOrder(req);

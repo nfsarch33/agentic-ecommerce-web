@@ -3,12 +3,8 @@ import { loadSyncDashboard } from "./load-sync-dashboard";
 import type { SyncStatus } from "@/lib/domain/sync";
 
 const status: SyncStatus = {
-  state: "idle",
-  syncLagSeconds: 0,
-  inFlightJobs: 0,
-  queuedEvents: 0,
-  conflictCount: 0,
-  errorCount: 0,
+  totalEvents: 0,
+  pendingConflicts: 0,
   updatedAt: "2026-05-07T04:31:00Z",
 };
 

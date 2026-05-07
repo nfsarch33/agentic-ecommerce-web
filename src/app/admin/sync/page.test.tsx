@@ -9,10 +9,16 @@ vi.mock("@/lib/adapters/api/sync", () => ({
 }));
 
 vi.mock("@/components/SyncDashboard", () => ({
-  SyncDashboard: ({ initialStatus, initialConflicts }: { initialStatus: { state: string }; initialConflicts: unknown[] }) => (
+  SyncDashboard: ({
+    initialStatus,
+    initialConflicts,
+  }: {
+    initialStatus: { pendingConflicts: number };
+    initialConflicts: unknown[];
+  }) => (
     <div>
       <h1>Sync Dashboard</h1>
-      <p>Status: {initialStatus.state}</p>
+      <p>Pending: {initialStatus.pendingConflicts}</p>
       <p>Conflicts: {initialConflicts.length}</p>
     </div>
   ),
@@ -26,33 +32,25 @@ const mockFetchSyncConflicts = vi.mocked(fetchSyncConflicts);
 describe("Admin sync page", () => {
   it("loads the initial sync status and conflicts", async () => {
     mockFetchSyncStatus.mockResolvedValue({
-      state: "running",
-      syncLagSeconds: 5,
-      inFlightJobs: 1,
-      queuedEvents: 0,
-      conflictCount: 1,
-      errorCount: 0,
+      totalEvents: 3,
+      pendingConflicts: 1,
       updatedAt: "2026-05-07T04:31:00Z",
     });
     mockFetchSyncConflicts.mockResolvedValue([
       {
         id: "conflict_1",
-        resourceType: "product",
-        resourceId: "p_1",
-        field: "title",
-        backendValue: "Foam roller",
-        wooCommerceValue: "Foam Roller Pro",
-        localUpdatedAt: "2026-05-07T04:20:00Z",
-        remoteUpdatedAt: "2026-05-07T04:25:00Z",
-        detectedAt: "2026-05-07T04:26:00Z",
-        status: "open",
+        sku: "SKU-1",
+        remoteId: 44,
+        fields: [{ field: "title", localValue: "Foam roller", remoteValue: "Foam Roller Pro" }],
+        createdAt: "2026-05-07T04:26:00Z",
+        status: "pending",
       },
     ]);
 
     render(await SyncPage());
 
     expect(screen.getByRole("heading", { name: /sync dashboard/i })).toBeInTheDocument();
-    expect(screen.getByText("Status: running")).toBeInTheDocument();
+    expect(screen.getByText("Pending: 1")).toBeInTheDocument();
     expect(screen.getByText("Conflicts: 1")).toBeInTheDocument();
     expect(mockFetchSyncStatus).toHaveBeenCalledWith(expect.objectContaining({ baseUrl: "http://localhost:8080" }));
     expect(mockFetchSyncConflicts).toHaveBeenCalledWith(expect.objectContaining({ baseUrl: "http://localhost:8080" }));

@@ -1,11 +1,13 @@
 import type {
   SyncConflict,
+  SyncConflictField,
   SyncConflictResolution,
   SyncConflictStatus,
-  SyncResourceType,
-  SyncState,
+  SyncEvent,
+  SyncEventType,
   SyncStatus,
 } from "@/lib/domain/sync";
+import type { components } from "@/lib/adapters/api/generated/schema";
 
 export interface FetchSyncStatusOptions {
   readonly baseUrl: string;
@@ -23,6 +25,7 @@ export interface ResolveSyncConflictOptions {
   readonly baseUrl: string;
   readonly conflictId: string;
   readonly resolution: SyncConflictResolution;
+  readonly note?: string;
   readonly fetchImpl?: typeof fetch;
   readonly signal?: AbortSignal;
 }
@@ -37,46 +40,22 @@ export class SyncApiError extends Error {
   }
 }
 
-interface RawSyncStatus {
-  readonly state?: unknown;
-  readonly last_sync_at?: unknown;
-  readonly next_sync_at?: unknown;
-  readonly sync_lag_seconds?: unknown;
-  readonly in_flight_jobs?: unknown;
-  readonly queued_events?: unknown;
-  readonly conflict_count?: unknown;
-  readonly error_count?: unknown;
-  readonly last_error?: unknown;
-  readonly updated_at?: unknown;
-}
+type RawSyncStatus = components["schemas"]["SyncStatus"];
+type RawSyncEvent = components["schemas"]["SyncEvent"];
+type RawSyncConflict = components["schemas"]["SyncConflict"];
+type RawSyncConflictField = components["schemas"]["SyncConflictField"];
+type RawConflictsResponse = components["schemas"]["ConflictListResponse"];
 
-interface RawSyncConflict {
-  readonly id?: unknown;
-  readonly resource_type?: unknown;
-  readonly resource_id?: unknown;
-  readonly field?: unknown;
-  readonly backend_value?: unknown;
-  readonly woocommerce_value?: unknown;
-  readonly local_updated_at?: unknown;
-  readonly remote_updated_at?: unknown;
-  readonly detected_at?: unknown;
-  readonly status?: unknown;
-  readonly resolution?: unknown;
-  readonly resolved_at?: unknown;
-}
-
-interface RawConflictsResponse {
-  readonly conflicts?: unknown;
-}
-
-interface RawResolveResponse {
-  readonly conflict?: unknown;
-}
-
-const syncStates = new Set<SyncState>(["idle", "running", "degraded", "failed"]);
-const resourceTypes = new Set<SyncResourceType>(["product", "order", "inventory"]);
-const conflictStatuses = new Set<SyncConflictStatus>(["open", "resolved"]);
-const resolutions = new Set<SyncConflictResolution>(["accept_local", "accept_remote", "mark_resolved"]);
+const syncEventTypes = new Set<SyncEventType>([
+  "product_imported",
+  "product_published",
+  "inventory_reconciled",
+  "conflict_detected",
+  "sync_failed",
+]);
+const conflictStatuses = new Set<SyncConflictStatus>(["pending", "resolved"]);
+const resolutions = new Set<SyncConflictResolution>(["local", "remote", "manual"]);
+const conflictFieldNames = new Set<SyncConflictField["field"]>(["title", "price", "stock", "description"]);
 
 function apiUrl(baseUrl: string, path: string): string {
   if (!baseUrl) throw new SyncApiError("sync API: baseUrl is required");
@@ -102,18 +81,11 @@ function parseNumber(value: unknown, label: string): number {
   return value;
 }
 
-function parseState(value: unknown): SyncState {
-  if (typeof value !== "string" || !syncStates.has(value as SyncState)) {
-    throw new SyncApiError("sync.status.state is invalid");
+function parseEventType(value: unknown): SyncEventType {
+  if (typeof value !== "string" || !syncEventTypes.has(value as SyncEventType)) {
+    throw new SyncApiError("sync.event.type is invalid");
   }
-  return value as SyncState;
-}
-
-function parseResourceType(value: unknown): SyncResourceType {
-  if (typeof value !== "string" || !resourceTypes.has(value as SyncResourceType)) {
-    throw new SyncApiError("sync.conflict.resource_type is invalid");
-  }
-  return value as SyncResourceType;
+  return value as SyncEventType;
 }
 
 function parseConflictStatus(value: unknown): SyncConflictStatus {
@@ -121,6 +93,13 @@ function parseConflictStatus(value: unknown): SyncConflictStatus {
     throw new SyncApiError("sync.conflict.status is invalid");
   }
   return value as SyncConflictStatus;
+}
+
+function parseConflictFieldName(value: unknown): SyncConflictField["field"] {
+  if (typeof value !== "string" || !conflictFieldNames.has(value as SyncConflictField["field"])) {
+    throw new SyncApiError("sync.conflict.field is invalid");
+  }
+  return value as SyncConflictField["field"];
 }
 
 function parseResolution(value: unknown): SyncConflictResolution | undefined {
@@ -134,33 +113,49 @@ function parseResolution(value: unknown): SyncConflictResolution | undefined {
 function parseStatus(raw: unknown): SyncStatus {
   const value = raw as RawSyncStatus;
   return {
-    state: parseState(value?.state),
-    lastSyncAt: parseOptionalString(value?.last_sync_at, "sync.status.last_sync_at"),
-    nextSyncAt: parseOptionalString(value?.next_sync_at, "sync.status.next_sync_at"),
-    syncLagSeconds: parseNumber(value?.sync_lag_seconds, "sync.status.sync_lag_seconds"),
-    inFlightJobs: parseNumber(value?.in_flight_jobs, "sync.status.in_flight_jobs"),
-    queuedEvents: parseNumber(value?.queued_events, "sync.status.queued_events"),
-    conflictCount: parseNumber(value?.conflict_count, "sync.status.conflict_count"),
-    errorCount: parseNumber(value?.error_count, "sync.status.error_count"),
+    totalEvents: parseNumber(value?.total_events, "sync.status.total_events"),
+    pendingConflicts: parseNumber(value?.pending_conflicts, "sync.status.pending_conflicts"),
+    lastEvent: value?.last_event ? parseEvent(value.last_event) : undefined,
     lastError: parseOptionalString(value?.last_error, "sync.status.last_error"),
     updatedAt: parseString(value?.updated_at, "sync.status.updated_at"),
   };
 }
 
+function parseEvent(raw: RawSyncEvent): SyncEvent {
+  return {
+    id: parseString(raw?.id, "sync.event.id"),
+    type: parseEventType(raw?.type),
+    productId: parseOptionalString(raw?.product_id, "sync.event.product_id"),
+    remoteId: raw?.remote_id === undefined ? undefined : parseNumber(raw.remote_id, "sync.event.remote_id"),
+    message: parseOptionalString(raw?.message, "sync.event.message"),
+    metadata: raw?.metadata,
+    createdAt: parseString(raw?.created_at, "sync.event.created_at"),
+  };
+}
+
+function parseConflictField(raw: RawSyncConflictField): SyncConflictField {
+  return {
+    field: parseConflictFieldName(raw?.field),
+    localValue: parseString(raw?.local_value, "sync.conflict.field.local_value"),
+    remoteValue: parseString(raw?.remote_value, "sync.conflict.field.remote_value"),
+  };
+}
+
 function parseConflict(raw: unknown): SyncConflict {
   const value = raw as RawSyncConflict;
+  if (!Array.isArray(value?.fields)) {
+    throw new SyncApiError("sync.conflict.fields must be an array");
+  }
   return {
     id: parseString(value?.id, "sync.conflict.id"),
-    resourceType: parseResourceType(value?.resource_type),
-    resourceId: parseString(value?.resource_id, "sync.conflict.resource_id"),
-    field: parseString(value?.field, "sync.conflict.field"),
-    backendValue: value?.backend_value,
-    wooCommerceValue: value?.woocommerce_value,
-    localUpdatedAt: parseString(value?.local_updated_at, "sync.conflict.local_updated_at"),
-    remoteUpdatedAt: parseString(value?.remote_updated_at, "sync.conflict.remote_updated_at"),
-    detectedAt: parseString(value?.detected_at, "sync.conflict.detected_at"),
+    productId: parseOptionalString(value?.product_id, "sync.conflict.product_id"),
+    sku: parseString(value?.sku, "sync.conflict.sku"),
+    remoteId: parseNumber(value?.remote_id, "sync.conflict.remote_id"),
     status: parseConflictStatus(value?.status),
+    fields: value.fields.map(parseConflictField),
     resolution: parseResolution(value?.resolution),
+    note: parseOptionalString(value?.note, "sync.conflict.note"),
+    createdAt: parseString(value?.created_at, "sync.conflict.created_at"),
     resolvedAt: parseOptionalString(value?.resolved_at, "sync.conflict.resolved_at"),
   };
 }
@@ -220,13 +215,12 @@ export async function resolveSyncConflict(opts: ResolveSyncConflictOptions): Pro
       {
         method: "POST",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ resolution: opts.resolution }),
+        body: JSON.stringify({ resolution: opts.resolution, ...(opts.note ? { note: opts.note } : {}) }),
         signal: opts.signal,
       },
     );
   } catch (err) {
     throw new SyncApiError("resolveSyncConflict: network error", err);
   }
-  const raw = (await readJson(res, "resolveSyncConflict")) as RawResolveResponse | RawSyncConflict;
-  return parseConflict("conflict" in raw ? raw.conflict : raw);
+  return parseConflict(await readJson(res, "resolveSyncConflict"));
 }
