@@ -34,6 +34,9 @@
   },
   "license": "Apache-2.0",
   "name": "agentic-ecommerce-web",
+  "overrides": {
+    "postcss": "^8.5.14"
+  },
   "private": true,
   "scripts": {
     "api:generate": "bun run scripts/generate-api-types.ts",
