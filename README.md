@@ -4,7 +4,7 @@ Public Next.js 15 (App Router) frontend for the
 [Agentic Ecommerce](https://github.com/nfsarch33/agentic-ecommerce) Go
 backend.
 
-Current release: **v1.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
+Current release: **v2.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
 
 ## Architecture
 
@@ -14,12 +14,21 @@ flowchart TB
   Next["Next.js App Router\nserver components + client UI"]
   BFF["BFF route handlers\n/api/auth/* and /api/ai-describe"]
   API["Go mc-api\n/api/v1/*"]
+  Admin["Admin surfaces\nworkflows, media, tenant, webhooks"]
+  Temporal["Temporal UI link\noptional admin navigation"]
+  N8N["n8n UI link\noptional admin navigation"]
+  CDN["Media CDN\nS3/GCS-backed assets"]
   Bridge["Approved AI bridge\nOpenAI-compatible proxy"]
   Deploy["Docker image\nCompose, ECS, or Cloud Run"]
 
   Browser --> Next
   Next --> API
   Next --> BFF
+  Next --> Admin
+  Admin --> API
+  Admin -. external link .-> Temporal
+  Admin -. external link .-> N8N
+  Next --> CDN
   BFF --> API
   BFF --> Bridge
   Next -. build artifact .-> Deploy
@@ -28,7 +37,10 @@ flowchart TB
 The Go backend (`agentic-ecommerce`) and this frontend are deliberately
 split. The frontend is OSS so contributors can build storefront UI
 patterns; the backend owns API contracts, business logic, catalog data,
-and worker workflows.
+and worker workflows. v2.0.0 adds admin UX for Temporal workflow status,
+Media Intelligence, tenant-aware settings, compliance reporting, and n8n
+webhook automation while keeping those runtime services owned by the backend
+and infra contracts.
 
 ## Hard network policy
 
@@ -99,6 +111,7 @@ Tests live next to the code they cover (`*.test.ts` / `*.test.tsx`).
 - Backend API source of truth: `agentic-ecommerce/api/openapi.yaml`.
 - Generated frontend schema: `src/lib/adapters/api/generated/schema.d.ts`.
 - Frontend BFF route documentation: `docs/bff-routes.md`.
+- Admin operations documentation: `docs/admin-operations.md`.
 - Deployment guide: `docs/deployment.md`.
 
 Regenerate API types after backend OpenAPI changes:
@@ -120,7 +133,7 @@ bun run api:generate
 | Stable E2E gate       | `bun run test:e2e:stable` | serial Chromium, 2 retries      |
 | Lighthouse            | `bun run qa:lighthouse`  | performance and SEO ≥ 90        |
 | Security refresh      | `bun run qa:security`    | high/critical gates clean       |
-| v1.0.0 release E2E    | `make release-e2e`       | checkout + admin AI flow green  |
+| v2.0.0 release E2E    | `make release-e2e`       | checkout + admin release flow green  |
 
 See `docs/v180-frontend-qa.md` for the v1.8.0 Lighthouse, bundle, contract,
 E2E stability, and security refresh runbook.
@@ -153,14 +166,14 @@ bun run test
 bun run build
 ```
 
-### v1.0.0 release E2E
+### v2.0.0 release E2E
 
-`make release-e2e` runs the full release flow against the deterministic Bun
-mock backend in `e2e/run-with-mock.ts`: product browse, cart, checkout, order
+`make release-e2e` runs the deterministic release flow against the Bun mock
+backend in `e2e/run-with-mock.ts`: product browse, cart, checkout, order
 confirmation, admin login, order lookup, mocked AI description generation, and
-a passing compliance check. It intentionally avoids live MiniMax and
-WooCommerce calls; full compose coverage remains a separate backend/infra
-validation step.
+passing compliance checks. It intentionally avoids live MiniMax, WooCommerce,
+Temporal, n8n, and provider calls; full workflow/media coverage remains part of
+the backend/infra release validation and focused frontend component tests.
 
 ### Environment variables
 
