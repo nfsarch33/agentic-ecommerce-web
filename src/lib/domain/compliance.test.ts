@@ -25,7 +25,7 @@ const rules: ComplianceRule[] = [
     name: "Image alt text",
     description: "Product images need meaningful alt text.",
     category: "media",
-    severity: "warning",
+    severity: "error",
     enabled: true,
   },
 ];
@@ -104,7 +104,7 @@ describe("ComplianceResult", () => {
         {
           rule: rules[1]!,
           status: "passed",
-          severity: "warning",
+          severity: "error",
           reason: "Alt text is descriptive.",
         },
       ],
@@ -170,21 +170,25 @@ describe("MediaAsset", () => {
   });
 
   it("flags very short alt text separately from valid alt text", () => {
-    expect(createMediaAsset({
-      id: "asset_2",
-      fileName: "hero.jpg",
-      mimeType: "image/jpeg",
-      sizeBytes: 1,
-      previewUrl: "blob:http://localhost/hero-2",
-      altText: "short",
-    }).altTextStatus).toBe("too_short");
-    expect(createMediaAsset({
-      id: "asset_3",
-      fileName: "hero.jpg",
-      mimeType: "image/jpeg",
-      sizeBytes: 1,
-      previewUrl: "blob:http://localhost/hero-3",
-      altText: "Resistance band kit on a gym mat",
-    }).altTextStatus).toBe("valid");
+    expect(
+      createMediaAsset({
+        id: "asset_2",
+        fileName: "hero.jpg",
+        mimeType: "image/jpeg",
+        sizeBytes: 1,
+        previewUrl: "blob:http://localhost/hero-2",
+        altText: "short",
+      }).altTextStatus,
+    ).toBe("too_short");
+    expect(
+      createMediaAsset({
+        id: "asset_3",
+        fileName: "hero.jpg",
+        mimeType: "image/jpeg",
+        sizeBytes: 1,
+        previewUrl: "blob:http://localhost/hero-3",
+        altText: "Resistance band kit on a gym mat",
+      }).altTextStatus,
+    ).toBe("valid");
   });
 });

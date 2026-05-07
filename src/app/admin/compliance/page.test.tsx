@@ -10,14 +10,17 @@ vi.mock("@/components/ComplianceDashboard", () => ({
   ComplianceDashboard: ({
     products,
     initialResults,
+    initialError,
   }: {
     products: Array<{ title: string }>;
     initialResults: Array<{ productId: string }>;
+    initialError?: string;
   }) => (
     <div>
       <h1>Compliance Dashboard</h1>
       <p>Products: {products.length}</p>
       <p>Results: {initialResults.length}</p>
+      {initialError && <p role="alert">{initialError}</p>}
       {products.map((product) => (
         <p key={product.title}>{product.title}</p>
       ))}
@@ -47,5 +50,15 @@ describe("Admin compliance page", () => {
     expect(mockLoadComplianceDashboard).toHaveBeenCalledWith(
       expect.objectContaining({ baseUrl: "http://localhost:8080" }),
     );
+  });
+
+  it("renders a failure state when the backend dashboard load fails", async () => {
+    mockLoadComplianceDashboard.mockRejectedValue(new Error("backend unavailable"));
+
+    render(await CompliancePage());
+
+    expect(screen.getByRole("heading", { name: /compliance dashboard/i })).toBeInTheDocument();
+    expect(screen.getByText("Products: 0")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("backend unavailable");
   });
 });

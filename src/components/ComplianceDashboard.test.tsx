@@ -2,7 +2,11 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { Product } from "@/lib/domain/product";
-import { createComplianceResult, createSeoScore, type ComplianceRule } from "@/lib/domain/compliance";
+import {
+  createComplianceResult,
+  createSeoScore,
+  type ComplianceRule,
+} from "@/lib/domain/compliance";
 import { ComplianceDashboard } from "./ComplianceDashboard";
 
 const products = [
@@ -111,7 +115,9 @@ describe("ComplianceDashboard", () => {
 
     await user.click(within(firstRow).getByRole("button", { name: /review resistance band set/i }));
 
-    expect(screen.getByRole("heading", { name: /resistance band set compliance detail/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /resistance band set compliance detail/i }),
+    ).toBeInTheDocument();
     expect(screen.getByText("critical")).toBeInTheDocument();
     expect(screen.getByText(/guaranteed to cure pain/i)).toBeInTheDocument();
     expect(screen.getByText("71/100")).toBeInTheDocument();
@@ -165,9 +171,30 @@ describe("ComplianceDashboard", () => {
     expect(checkProductComplianceImpl).not.toHaveBeenCalled();
   });
 
+  it("renders empty and initial failure states", () => {
+    render(
+      <ComplianceDashboard
+        apiBaseUrl="http://api.test"
+        products={[]}
+        rules={[]}
+        initialResults={[]}
+        initialError="Unable to load compliance dashboard."
+        checkProductComplianceImpl={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/unable to load compliance dashboard/i);
+    expect(
+      screen.getByText(/no products are available for compliance checks/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("0 active rules loaded")).toBeInTheDocument();
+  });
+
   it("can deselect products and surfaces adapter errors", async () => {
     const user = userEvent.setup();
-    const checkProductComplianceImpl = vi.fn().mockRejectedValue(new Error("compliance backend unavailable"));
+    const checkProductComplianceImpl = vi
+      .fn()
+      .mockRejectedValue(new Error("compliance backend unavailable"));
 
     render(
       <ComplianceDashboard

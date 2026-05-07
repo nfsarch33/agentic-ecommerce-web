@@ -55,37 +55,34 @@ const aiSuggestion = {
 };
 
 const complianceRule = {
-  id: "rule_title_claims",
-  code: "title.claims",
-  name: "No exaggerated claims",
+  id: "prohibited_words",
   description: "Product copy must avoid unsupported superlatives.",
-  category: "content",
   severity: "critical",
-  enabled: true,
 };
 
 const complianceResult = {
   product_id: product.id,
-  status: "failed",
+  pass: false,
   score: 62,
-  checked_at: "2026-05-07T04:00:00Z",
-  rules: [
+  reasons: ["Title claims the product is guaranteed to cure pain."],
+  rule_ids: ["prohibited_words", "seo_minimum_score"],
+  severity: "critical",
+  results: [
     {
-      rule: complianceRule,
-      status: "failed",
+      id: "prohibited_words",
+      pass: false,
+      score: 0,
       severity: "critical",
-      reason: "Title claims the product is guaranteed to cure pain.",
+      reasons: ["Title claims the product is guaranteed to cure pain."],
+    },
+    {
+      id: "seo_minimum_score",
+      pass: false,
+      score: 71,
+      severity: "error",
+      reasons: ["seo score below minimum"],
     },
   ],
-  seo_score: {
-    overall: 71,
-    title: 80,
-    meta_description: 70,
-    slug: 85,
-    keyword_density: 60,
-    image_alt_text: 60,
-    recommendations: ["Use the target keyword in the meta description."],
-  },
 };
 
 const agentSummary = {
@@ -227,7 +224,10 @@ const server = Bun.serve({
     if (url.pathname === `/api/v1/products/${product.id}/ai-suggestions` && req.method === "GET") {
       return json({ suggestions: [aiSuggestion] });
     }
-    if (url.pathname === `/api/v1/products/${product.id}/generate-description` && req.method === "POST") {
+    if (
+      url.pathname === `/api/v1/products/${product.id}/generate-description` &&
+      req.method === "POST"
+    ) {
       return json({
         suggestion: {
           ...aiSuggestion,
@@ -240,13 +240,26 @@ const server = Bun.serve({
     if (url.pathname === "/api/v1/compliance/rules" && req.method === "GET") {
       return json({ rules: [complianceRule] });
     }
-    if (url.pathname === `/api/v1/products/${product.id}/compliance-check` && req.method === "POST") {
-      return json({ result: complianceResult }, { status: 202 });
+    if (
+      url.pathname === `/api/v1/products/${product.id}/compliance-check` &&
+      req.method === "POST"
+    ) {
+      return json(complianceResult);
     }
-    if (url.pathname === `/api/v1/products/${product.id}/seo-suggestions` && req.method === "POST") {
+    if (
+      url.pathname === `/api/v1/products/${product.id}/seo-suggestions` &&
+      req.method === "POST"
+    ) {
       return json({
-        score: complianceResult.seo_score,
-        suggestions: complianceResult.seo_score.recommendations,
+        product_id: product.id,
+        title: "Resistance Band Set for Home Workouts",
+        meta_description:
+          "Resistance band set for home workouts and progressive strength training.",
+        slug: "resistance-band-set",
+        score: 71,
+        keyword_density: { "resistance band set": 10.71 },
+        pass: false,
+        reasons: ["seo score below minimum"],
       });
     }
     if (url.pathname === "/api/v1/agents" && req.method === "GET") {
@@ -290,7 +303,10 @@ const server = Bun.serve({
     if (url.pathname === "/api/v1/sync/conflicts" && req.method === "GET") {
       return json({ conflicts: [syncConflict] });
     }
-    if (url.pathname === `/api/v1/sync/conflicts/${syncConflict.id}/resolve` && req.method === "POST") {
+    if (
+      url.pathname === `/api/v1/sync/conflicts/${syncConflict.id}/resolve` &&
+      req.method === "POST"
+    ) {
       const body = (await req.json()) as { resolution?: "local" | "remote" | "manual" };
       syncConflict.status = "resolved";
       syncConflict.resolution = body.resolution ?? "manual";
