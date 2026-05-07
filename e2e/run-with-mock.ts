@@ -750,7 +750,7 @@ const server = Bun.serve({
       };
       const webhook: MockWebhook = {
         id: `wh_${webhooks.length + 1}`,
-        url: body.url ?? "https://hooks.n8n.example/webhook/generated",
+        url: body.url ?? "https://hooks.n8n.example/webhook/product-approved",
         event_types: body.event_types ?? ["product.approved"],
         description: body.description,
         secret_configured: Boolean(body.secret),
@@ -760,7 +760,7 @@ const server = Bun.serve({
         failure_count: 0,
       };
       webhooks.unshift(webhook);
-      return json({ webhook }, { status: 201 });
+      return json(webhook, { status: 201 });
     }
     if (
       url.pathname.startsWith("/api/v1/webhooks/") &&

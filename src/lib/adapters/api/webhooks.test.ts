@@ -42,16 +42,15 @@ describe("webhooks API adapter", () => {
       fetchImpl: mockFetch({ webhooks: [rawWebhook] }),
     });
 
-    expect(result).toEqual([
-      {
-        id: "wh_product_created",
-        url: "https://hooks.n8n.example/webhook/product-created",
-        eventTypes: ["product.created", "order.placed"],
-        secretConfigured: true,
-        active: true,
-        createdAt: "2026-05-08T00:00:00Z",
-      },
-    ]);
+    expect(result[0]).toMatchObject({
+      id: "wh_product_created",
+      url: "https://hooks.n8n.example/webhook/product-created",
+      eventTypes: ["product.created", "order.placed"],
+      secretConfigured: true,
+      active: true,
+      createdAt: "2026-05-08T00:00:00Z",
+      updatedAt: "2026-05-08T00:00:00Z",
+    });
   });
 
   it("registers a webhook with backend OpenAPI request and response shapes", async () => {

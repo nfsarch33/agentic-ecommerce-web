@@ -12,13 +12,14 @@ import {
 } from "./webhook";
 
 const registration = {
-  id: "wh_product_created",
-  url: " https://hooks.n8n.example/webhook/product-created ",
-  eventTypes: ["product.created", "order.placed"],
+  id: "wh_product_approved",
+  url: " https://hooks.n8n.example/webhook/product-approved ",
+  eventTypes: ["product.approved", "order.placed"],
   description: " Notify n8n ",
   secretConfigured: true,
   active: true,
   createdAt: "2026-05-08T00:00:00Z",
+  updatedAt: "2026-05-08T00:01:00Z",
   lastDeliveryAt: "2026-05-08T00:02:00Z",
   failureCount: 0,
 } as const;
@@ -27,11 +28,21 @@ describe("webhook domain", () => {
   it("normalizes webhook registrations and labels supported events", () => {
     const webhook = createWebhookRegistration(registration);
 
-    expect(webhook.url).toBe("https://hooks.n8n.example/webhook/product-created");
+    expect(webhook.url).toBe("https://hooks.n8n.example/webhook/product-approved");
     expect(webhook.description).toBe("Notify n8n");
-    expect(webhook.eventTypes).toEqual(["product.created", "order.placed"]);
-    expect(webhookEventTypeLabel("product.created")).toBe("Product created");
+    expect(webhook.eventTypes).toEqual(["product.approved", "order.placed"]);
+    expect(webhookEventTypeLabel("product.approved")).toBe("Product approved");
     expect(webhookStatusTone(webhook)).toBe("green");
+  });
+
+  it("defaults legacy webhook registrations to active when active is omitted", () => {
+    const webhook = createWebhookRegistration({
+      ...registration,
+      id: "wh_legacy",
+      active: undefined as never,
+    });
+
+    expect(webhook.active).toBe(true);
   });
 
   it("rejects blank URLs and unsupported event types", () => {
@@ -47,8 +58,8 @@ describe("webhook domain", () => {
     expect(
       createWebhookDelivery({
         id: "del_1",
-        webhookId: "wh_product_created",
-        eventType: "product.created",
+        webhookId: "wh_product_approved",
+        eventType: "product.approved",
         status: "delivered",
         responseStatus: 200,
         attempt: 1,
@@ -56,8 +67,8 @@ describe("webhook domain", () => {
       }),
     ).toEqual({
       id: "del_1",
-      webhookId: "wh_product_created",
-      eventType: "product.created",
+      webhookId: "wh_product_approved",
+      eventType: "product.approved",
       status: "delivered",
       responseStatus: 200,
       attempt: 1,
@@ -82,9 +93,9 @@ describe("webhook domain", () => {
 
     expect(statuses).toEqual([
       expect.objectContaining({
-        id: "product-created-slack",
-        name: "Product created -> Slack notification",
-        eventType: "product.created",
+        id: "product-approved-slack",
+        name: "Product approved -> Slack notification",
+        eventType: "product.approved",
         status: "active",
       }),
       expect.objectContaining({
@@ -117,7 +128,7 @@ describe("webhook domain", () => {
       createWebhookRegistration({
         ...registration,
         active: false,
-        eventTypes: ["product.created"],
+        eventTypes: ["product.approved"],
       }),
     ]);
 
