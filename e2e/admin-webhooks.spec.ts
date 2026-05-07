@@ -12,13 +12,12 @@ test("admin webhook settings manages n8n automation webhooks", async ({ page }) 
   await expect(page.getByText("Order placed -> email confirmation")).toBeVisible();
 
   await page.getByLabel(/destination url/i).fill(destinationUrl);
-  await page.getByLabel(/description/i).fill("Product approval Slack alert");
   await page.getByLabel(/signing secret/i).fill("test-secret");
   await page.getByLabel(/product approved/i).check();
   await page.getByRole("button", { name: /register webhook/i }).click();
 
   await expect(page.getByRole("status")).toContainText("Webhook registered.");
-  const registeredWebhook = page.getByRole("article", { name: "Product approval Slack alert" }).first();
+  const registeredWebhook = page.getByRole("article", { name: destinationUrl }).first();
   await expect(registeredWebhook).toBeVisible();
   await expect(registeredWebhook).toContainText(destinationUrl);
 
