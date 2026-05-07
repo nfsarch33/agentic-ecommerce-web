@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  generateDescription,
-  type GenerateDescriptionOptions,
-} from "@/lib/adapters/api/ai-content";
+import { generateDescription, type GenerateDescriptionOptions } from "@/lib/adapters/api/ai-content";
+import { ClaimEvidenceList } from "@/components/ClaimEvidenceList";
+import { RAGSourceViewer } from "@/components/RAGSourceViewer";
 import {
   qualityScoreLabel,
   selectLatestSuggestion,
   type AIProductDescriptionSuggestion,
   type QualityScore,
 } from "@/lib/domain/ai-description";
+import type { FactCheckResult } from "@/lib/domain/fact-check";
 import type { ProductFields } from "@/lib/domain/product";
 import { defaultDescriptionPrompt } from "@/lib/usecases/product-content-editor";
 import { startProductPublish, type StartProductPublishInput } from "@/lib/usecases/workflows";
@@ -20,12 +20,8 @@ export interface AIProductDescriptionPanelProps {
   readonly apiBaseUrl: string;
   readonly product: ProductFields;
   readonly initialSuggestions: readonly AIProductDescriptionSuggestion[];
-  readonly generateDescriptionImpl?: (
-    opts: GenerateDescriptionOptions,
-  ) => Promise<AIProductDescriptionSuggestion>;
-  readonly startProductPublishImpl?: (
-    input: StartProductPublishInput,
-  ) => Promise<{ readonly id: string }>;
+  readonly generateDescriptionImpl?: (opts: GenerateDescriptionOptions) => Promise<AIProductDescriptionSuggestion>;
+  readonly startProductPublishImpl?: (input: StartProductPublishInput) => Promise<{ readonly id: string }>;
   readonly allowBffFallback?: boolean;
   readonly fallbackBffBaseUrl?: string;
 }
@@ -86,9 +82,12 @@ export function AIProductDescriptionPanel({
 }: AIProductDescriptionPanelProps) {
   const [suggestions, setSuggestions] =
     useState<readonly AIProductDescriptionSuggestion[]>(initialSuggestions);
-  const [activeSuggestion, setActiveSuggestion] = useState<
-    AIProductDescriptionSuggestion | undefined
-  >(() => selectLatestSuggestion(initialSuggestions));
+  const [activeSuggestion, setActiveSuggestion] = useState<AIProductDescriptionSuggestion | undefined>(() =>
+    selectLatestSuggestion(initialSuggestions),
+  );
+  const [factCheckResult, setFactCheckResult] = useState<FactCheckResult | undefined>(
+    () => selectLatestSuggestion(initialSuggestions)?.factCheckResult,
+  );
   const [prompt, setPrompt] = useState(defaultDescriptionPrompt(product));
   const [editableDescription, setEditableDescription] = useState(product.description ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -117,6 +116,7 @@ export function AIProductDescriptionPanel({
       });
       setSuggestions((current) => [nextSuggestion, ...current]);
       setActiveSuggestion(nextSuggestion);
+      setFactCheckResult(nextSuggestion.factCheckResult);
       setMessage("Generated a fresh AI suggestion.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to generate an AI description.");
@@ -134,6 +134,7 @@ export function AIProductDescriptionPanel({
       ),
     );
     setActiveSuggestion({ ...activeSuggestion, status: "approved" });
+    setFactCheckResult(activeSuggestion.factCheckResult);
     setMessage("Suggestion approved and copied into the editor.");
     setError(null);
   }
@@ -146,6 +147,7 @@ export function AIProductDescriptionPanel({
       ),
     );
     setActiveSuggestion(undefined);
+    setFactCheckResult(undefined);
     setMessage("Suggestion rejected.");
     setError(null);
   }
@@ -172,9 +174,7 @@ export function AIProductDescriptionPanel({
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
       <header className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
-          Admin content agent
-        </p>
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">Admin content agent</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">AI Description Studio</h1>
         <p className="mt-2 max-w-3xl text-sm text-gray-600">
           Generate, score, approve, reject, and edit AI-assisted product copy for {product.title}.
@@ -185,9 +185,7 @@ export function AIProductDescriptionPanel({
         <div
           role={error ? "alert" : "status"}
           className={`mb-6 rounded-md border p-4 text-sm ${
-            error
-              ? "border-red-200 bg-red-50 text-red-700"
-              : "border-green-200 bg-green-50 text-green-700"
+            error ? "border-red-200 bg-red-50 text-red-700" : "border-green-200 bg-green-50 text-green-700"
           }`}
         >
           {error ?? message}
@@ -259,11 +257,16 @@ export function AIProductDescriptionPanel({
             </>
           ) : (
             <p className="mt-4 rounded-md border border-dashed border-gray-300 p-4 text-sm text-gray-600">
-              No active AI suggestion. Generate a new description or review an existing suggestion
-              when the backend provides one.
+              No active AI suggestion. Generate a new description or review an existing suggestion when the backend
+              provides one.
             </p>
           )}
         </article>
+      </section>
+
+      <section className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
+        <ClaimEvidenceList result={factCheckResult} />
+        <RAGSourceViewer apiBaseUrl={apiBaseUrl} productId={product.id} />
       </section>
 
       <section className="mt-8 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
@@ -271,8 +274,8 @@ export function AIProductDescriptionPanel({
           Editable description
         </label>
         <p className="mt-1 text-sm text-gray-600">
-          Approving a suggestion copies it here. Operators can edit the copy before the backend
-          publish workflow is wired in.
+          Approving a suggestion copies it here. Operators can edit the copy before the backend publish workflow is
+          wired in.
         </p>
         <textarea
           id="editable-description"
@@ -282,8 +285,7 @@ export function AIProductDescriptionPanel({
           className="mt-4 w-full rounded-md border border-gray-300 p-3 text-sm leading-6 text-gray-900 shadow-sm focus:border-[var(--color-brand-500)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
         />
         <p className="mt-2 text-xs text-gray-500">
-          {suggestions.length} AI suggestion{suggestions.length === 1 ? "" : "s"} loaded for this
-          product.
+          {suggestions.length} AI suggestion{suggestions.length === 1 ? "" : "s"} loaded for this product.
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button

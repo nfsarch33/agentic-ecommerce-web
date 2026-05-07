@@ -58,6 +58,35 @@ const aiSuggestion = {
   model: "minimax-text-01",
 };
 
+const evidenceSource = {
+  id: "ev_resistance_band_manual",
+  title: "Resistance Band Product Manual",
+  uri: "s3://rag-docs/resistance-band-manual.md",
+  excerpt: "The set includes five latex bands with progressive tension levels.",
+  similarity: 0.91,
+  source_type: "manual",
+  metadata: { page: 2, section: "Specifications" },
+};
+
+const factCheckResult = {
+  id: "fc_ai_content_1",
+  product_id: product.id,
+  suggestion_id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  overall_confidence: 86,
+  status: "supported",
+  checked_at: "2026-05-08T01:00:00Z",
+  claims: [
+    {
+      id: "claim_tension_levels",
+      text: "The set includes five tension levels.",
+      confidence: 92,
+      verdict: "supported",
+      evidence: [evidenceSource],
+      explanation: "Product manual confirms the five-level resistance claim.",
+    },
+  ],
+};
+
 const complianceRule = {
   id: "prohibited_words",
   description: "Product copy must avoid unsupported superlatives.",
@@ -287,7 +316,6 @@ const workflows: MockWorkflow[] = [
   },
 ];
 
-
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,OPTIONS",
@@ -432,10 +460,16 @@ const server = Bun.serve({
           id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
           description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
           created_at: "2026-05-07T00:12:00Z",
+          fact_check_result: factCheckResult,
         },
       });
     }
-
+    if (url.pathname === `/api/v1/products/${product.id}/fact-check-results/latest` && req.method === "GET") {
+      return json({ result: factCheckResult });
+    }
+    if (url.pathname === "/api/v1/rag/evidence/search" && req.method === "POST") {
+      return json({ sources: [evidenceSource] });
+    }
     if (url.pathname === "/api/v1/workflows" && req.method === "GET") {
       const status = url.searchParams.get("status");
       const limit = Number(url.searchParams.get("limit") ?? "50");
