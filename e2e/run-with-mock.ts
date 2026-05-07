@@ -1035,6 +1035,25 @@ const server = Bun.serve({
     if (url.pathname === "/api/v1/agents/pricing/recommendations" && req.method === "GET") {
       return json({ recommendations: [pricingRecommendation] });
     }
+    if (url.pathname === "/api/v1/agent-schedules" && req.method === "GET") {
+      return json({ schedules: [agentSchedule] });
+    }
+    if (
+      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` &&
+      req.method === "POST"
+    ) {
+      agentSchedule.enabled = true;
+      agentSchedule.updated_at = "2026-05-08T01:22:00Z";
+      return json({ schedule: agentSchedule });
+    }
+    if (
+      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` &&
+      req.method === "POST"
+    ) {
+      agentSchedule.enabled = false;
+      agentSchedule.updated_at = "2026-05-08T01:22:00Z";
+      return json({ schedule: agentSchedule });
+    }
     if (url.pathname === "/api/v1/agents/schedules" && req.method === "GET") {
       return json({ schedules: [agentSchedule] });
     }

@@ -13,10 +13,17 @@ test("admin agents page manages sourcing, pricing, and schedule controls", async
   await page.getByRole("button", { name: /approve sourcing recommendation/i }).click();
   await expect(page.getByRole("status")).toContainText("Sourcing recommendation approved.");
 
+  await expect(page.getByRole("heading", { name: /pricing rules/i })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: /latest pricing recommendations/i }),
+  ).toBeVisible();
+  await expect(page.getByText(/expected margin 52%/i)).toBeVisible();
   await page.getByLabel(/target margin for margin guardrail/i).fill("45");
   await page.getByRole("button", { name: /save margin guardrail pricing rule/i }).click();
   await expect(page.getByRole("status")).toContainText("Pricing rule saved.");
 
+  await expect(page.getByRole("heading", { name: /agent schedules/i })).toBeVisible();
+  await expect(page.getByText(/daily . Australia\/Melbourne/i)).toBeVisible();
   await page.getByLabel(/enable sourcing agent schedule/i).click();
   await expect(page.getByRole("status")).toContainText("Sourcing Agent schedule disabled.");
 });

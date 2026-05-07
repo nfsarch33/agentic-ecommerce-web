@@ -73,16 +73,14 @@ const rawPricingRecommendation = {
 };
 
 const rawSchedule = {
-  id: "schedule_sourcing_daily",
-  agent_id: "agent_sourcing",
-  agent_name: "Sourcing Agent",
+  id: "sourcing-recommendations-daily",
+  agent_id: "sourcing",
   enabled: true,
-  frequency: "daily",
-  cron_expression: "0 8 * * *",
-  timezone: "Australia/Melbourne",
-  parameters: { category: "fitness", max_candidates: 5 },
+  interval_seconds: 86400,
+  priority: 1,
+  payload: { category: "fitness", max_candidates: 5 },
   next_run_at: "2026-05-09T08:00:00+10:00",
-  workflow_id: "wf_schedule_1",
+  created_at: "2026-05-08T01:14:00Z",
   updated_at: "2026-05-08T01:15:00Z",
 };
 
@@ -186,7 +184,7 @@ describe("agent automation API adapters", () => {
     const schedules = await fetchAgentSchedules({ baseUrl: "http://api.test", fetchImpl });
     const updated = await updateAgentSchedule({
       baseUrl: "http://api.test",
-      scheduleId: "schedule_sourcing_daily",
+      scheduleId: "sourcing-recommendations-daily",
       enabled: false,
       frequency: "weekly",
       parameters: { category: "fitness", maxCandidates: 3 },
@@ -194,16 +192,12 @@ describe("agent automation API adapters", () => {
     });
 
     expect(schedules[0]?.parameters).toEqual({ category: "fitness", max_candidates: 5 });
+    expect(schedules[0]?.frequency).toBe("daily");
     expect(updated.enabled).toBe(false);
     expect(fetchImpl).toHaveBeenLastCalledWith(
-      "http://api.test/api/v1/agents/schedules/schedule_sourcing_daily",
+      "http://api.test/api/v1/agent-schedules/sourcing-recommendations-daily/disable",
       expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({
-          enabled: false,
-          frequency: "weekly",
-          parameters: { category: "fitness", maxCandidates: 3 },
-        }),
+        method: "POST",
       }),
     );
   });
@@ -250,8 +244,8 @@ describe("agent automation API adapters", () => {
     };
     const minimalSchedule = {
       ...rawSchedule,
-      cron_expression: undefined,
-      parameters: undefined,
+      cron: undefined,
+      payload: undefined,
       next_run_at: undefined,
       workflow_id: undefined,
     };

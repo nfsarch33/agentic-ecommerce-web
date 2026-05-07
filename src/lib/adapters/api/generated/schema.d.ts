@@ -659,6 +659,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/agent-schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List configured backend agent schedules */
+        get: operations["listAgentSchedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-schedules/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable a configured backend agent schedule */
+        post: operations["enableAgentSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-schedules/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable a configured backend agent schedule */
+        post: operations["disableAgentSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/webhooks": {
         parameters: {
             query?: never;
@@ -785,6 +836,26 @@ export interface paths {
          * @description Starts the Temporal workflow that sources supplier media, processes it, runs QA, stores it, and links it to a product.
          */
         post: operations["startMediaProcessingWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/sourcing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the SourcingWorkflow
+         * @description Starts the Temporal workflow that searches deterministic supplier candidates, scores them, compares landed prices, checks margin, and recommends a supplier.
+         */
+        post: operations["startSourcingWorkflow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -954,6 +1025,32 @@ export interface components {
         };
         AgentHistoryResponse: {
             runs: components["schemas"]["AgentRun"][];
+        };
+        AgentSchedule: {
+            id: string;
+            /** @enum {string} */
+            agent_id: "sourcing" | "pricing" | "compliance";
+            /** @description Optional cron-like schedule expression when configured. */
+            cron?: string;
+            /** @description Deterministic interval fallback used by in-repo schedules. */
+            interval_seconds?: number;
+            enabled: boolean;
+            priority: number;
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            next_run_at?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        AgentSchedulesResponse: {
+            schedules: components["schemas"]["AgentSchedule"][];
+        };
+        AgentScheduleResponse: {
+            schedule: components["schemas"]["AgentSchedule"];
         };
         CreateWebhookRequest: {
             /**
@@ -1400,6 +1497,28 @@ export interface components {
             format?: "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "jpeg" | "png" | "webp" | "gif";
             /** @default false */
             remove_background: boolean;
+        };
+        SourcingCandidate: {
+            supplier_id: string;
+            sku: string;
+            unit_cost_cents: number;
+            shipping_cents: number;
+            estimated_sell_price_cents: number;
+            lead_time_days?: number;
+            reliability_score?: number;
+            demand_score?: number;
+            competition_score?: number;
+        };
+        StartSourcingWorkflowRequest: {
+            sku: string;
+            query?: string;
+            estimated_sell_price_cents?: number;
+            /** @default 0.3 */
+            minimum_margin_pct: number;
+            /** @description Operator identity recorded in workflow audit events. */
+            requested_by?: string;
+            candidate_limit?: number;
+            candidates: components["schemas"]["SourcingCandidate"][];
         };
         WorkflowStartResponse: {
             workflow_id: string;
@@ -3144,6 +3263,142 @@ export interface operations {
             };
         };
     };
+    listAgentSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent schedules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentSchedulesResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated session does not have agent permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    enableAgentSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent schedule enabled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentScheduleResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated session does not have agent permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Agent schedule not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    disableAgentSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent schedule disabled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentScheduleResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated session does not have agent permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Agent schedule not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listWebhooks: {
         parameters: {
             query?: never;
@@ -3543,6 +3798,66 @@ export interface operations {
                 };
             };
             /** @description Product ID or source URL is missing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startSourcingWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSourcingWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description SKU or deterministic candidate list is missing. */
             422: {
                 headers: {
                     [name: string]: unknown;
