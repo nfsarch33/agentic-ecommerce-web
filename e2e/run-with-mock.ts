@@ -84,6 +84,14 @@ const factCheckResult = {
       evidence: [evidenceSource],
       explanation: "Product manual confirms the five-level resistance claim.",
     },
+    {
+      id: "claim_warranty_coverage",
+      text: "Warranty coverage is available.",
+      confidence: 46,
+      verdict: "ambiguous",
+      evidence: [],
+      explanation: "No warranty document was returned for this claim.",
+    },
   ],
 };
 
@@ -563,6 +571,9 @@ const server = Bun.serve({
       req.method === "GET"
     ) {
       return json({ result: factCheckResult });
+    }
+    if (url.pathname === "/api/v1/rag/search" && req.method === "GET") {
+      return json({ query: url.searchParams.get("q") ?? "", results: [evidenceSource] });
     }
     if (url.pathname === "/api/v1/rag/evidence/search" && req.method === "POST") {
       return json({ sources: [evidenceSource] });
