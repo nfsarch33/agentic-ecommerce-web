@@ -1,8 +1,10 @@
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./helpers/auth";
 
 const productId = "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c";
 
 test("admin AI content studio previews, rejects, generates, approves, and edits product copy", async ({ page }) => {
+  await signInAs(page, "operator");
   await page.goto(`/admin/products/${productId}/content`);
 
   await expect(page.getByRole("heading", { name: "AI Description Studio" })).toBeVisible();

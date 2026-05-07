@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./helpers/auth";
 
 test("admin compliance dashboard reviews rules and runs a bulk check", async ({ page }) => {
+  await signInAs(page, "operator");
   await page.goto("/admin/compliance");
 
   await expect(page.getByRole("heading", { name: "Compliance Dashboard" })).toBeVisible();
