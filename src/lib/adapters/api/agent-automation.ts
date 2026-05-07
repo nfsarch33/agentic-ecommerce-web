@@ -11,6 +11,11 @@ import {
   type SourcingRecommendation,
   type SourcingRecommendationStatus,
 } from "@/lib/domain/agent-automation";
+import type { components } from "./generated/schema";
+
+type BackendAgentSchedule = components["schemas"]["AgentSchedule"];
+type BackendAgentScheduleResponse = components["schemas"]["AgentScheduleResponse"];
+type BackendAgentSchedulesResponse = components["schemas"]["AgentSchedulesResponse"];
 
 export type SourcingDecision = "approve" | "reject" | "adjust";
 
@@ -113,19 +118,23 @@ interface RawPricingRecommendation {
   readonly created_at?: unknown;
 }
 
-interface RawAgentSchedule {
+type RawAgentSchedule = Partial<BackendAgentSchedule> & {
   readonly id?: unknown;
   readonly agent_id?: unknown;
   readonly agent_name?: unknown;
   readonly enabled?: unknown;
   readonly frequency?: unknown;
   readonly cron_expression?: unknown;
+  readonly cron?: unknown;
+  readonly interval_seconds?: unknown;
+  readonly priority?: unknown;
   readonly timezone?: unknown;
   readonly parameters?: unknown;
+  readonly payload?: unknown;
   readonly next_run_at?: unknown;
   readonly workflow_id?: unknown;
   readonly updated_at?: unknown;
-}
+};
 
 function apiUrl(baseUrl: string, path: string): string {
   if (!baseUrl) throw new AgentAutomationApiError("agent automation API: baseUrl is required");
@@ -149,6 +158,43 @@ function parametersFrom(value: unknown): Readonly<Record<string, unknown>> {
     return value as Readonly<Record<string, unknown>>;
   }
   return {};
+}
+
+function scheduleFrequencyFrom(raw: RawAgentSchedule): AgentScheduleFrequency {
+  if (typeof raw.frequency === "string" && raw.frequency !== "") {
+    return raw.frequency as AgentScheduleFrequency;
+  }
+  if (typeof raw.cron === "string" && raw.cron.trim() !== "") {
+    return "custom";
+  }
+  switch (raw.interval_seconds) {
+    case 3600:
+      return "hourly";
+    case 86400:
+      return "daily";
+    case 604800:
+      return "weekly";
+    default:
+      return "custom";
+  }
+}
+
+function scheduleAgentNameFrom(raw: RawAgentSchedule): string {
+  if (typeof raw.agent_name === "string" && raw.agent_name !== "") return raw.agent_name;
+  const agentId = stringFrom(raw.agent_id);
+  switch (agentId) {
+    case "sourcing":
+    case "agent_sourcing":
+      return "Sourcing Agent";
+    case "pricing":
+    case "agent_pricing":
+      return "Pricing Agent";
+    case "compliance":
+    case "agent_compliance":
+      return "Compliance Agent";
+    default:
+      return agentId || "Agent";
+  }
 }
 
 function mapCandidate(raw: RawSourcingCandidate) {
@@ -225,12 +271,12 @@ function mapSchedule(raw: RawAgentSchedule): AgentSchedule {
   return createAgentSchedule({
     id: stringFrom(raw.id),
     agentId: stringFrom(raw.agent_id),
-    agentName: stringFrom(raw.agent_name),
+    agentName: scheduleAgentNameFrom(raw),
     enabled: Boolean(raw.enabled),
-    frequency: stringFrom(raw.frequency) as AgentScheduleFrequency,
-    cronExpression: optionalString(raw.cron_expression),
-    timezone: stringFrom(raw.timezone),
-    parameters: parametersFrom(raw.parameters),
+    frequency: scheduleFrequencyFrom(raw),
+    cronExpression: optionalString(raw.cron_expression ?? raw.cron),
+    timezone: stringFrom(raw.timezone) || "UTC",
+    parameters: parametersFrom(raw.parameters ?? raw.payload),
     nextRunAt: optionalString(raw.next_run_at),
     workflowId: optionalString(raw.workflow_id),
     updatedAt: stringFrom(raw.updated_at),
@@ -412,11 +458,11 @@ export async function fetchAgentSchedules(
 ): Promise<AgentSchedule[]> {
   const res = await requestJson(
     opts,
-    "/api/v1/agents/schedules",
+    "/api/v1/agent-schedules",
     { method: "GET" },
     "fetchAgentSchedules",
   );
-  const body = (await readJson(res, "fetchAgentSchedules")) as { schedules?: unknown };
+  const body = (await readJson(res, "fetchAgentSchedules")) as BackendAgentSchedulesResponse;
   if (!Array.isArray(body.schedules)) {
     throw new AgentAutomationApiError(
       "fetchAgentSchedules: response body must include schedules array",
@@ -433,23 +479,21 @@ export async function updateAgentSchedule(
 ): Promise<AgentSchedule> {
   if (!opts.scheduleId)
     throw new AgentAutomationApiError("updateAgentSchedule: scheduleId is required");
+  if (opts.enabled === undefined) {
+    throw new AgentAutomationApiError(
+      "updateAgentSchedule: enabled is required by backend contract",
+    );
+  }
+  const action = opts.enabled ? "enable" : "disable";
   const res = await requestJson(
     opts,
-    `/api/v1/agents/schedules/${encodeURIComponent(opts.scheduleId)}`,
+    `/api/v1/agent-schedules/${encodeURIComponent(opts.scheduleId)}/${action}`,
     {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        enabled: opts.enabled,
-        frequency: opts.frequency,
-        cron_expression: opts.cronExpression,
-        timezone: opts.timezone,
-        parameters: opts.parameters,
-      }),
+      method: "POST",
     },
     "updateAgentSchedule",
   );
-  const body = (await readJson(res, "updateAgentSchedule")) as { schedule?: unknown };
+  const body = (await readJson(res, "updateAgentSchedule")) as BackendAgentScheduleResponse;
   if (!body.schedule)
     throw new AgentAutomationApiError("updateAgentSchedule: response body must include schedule");
   return wrapContract("updateAgentSchedule", () => mapSchedule(body.schedule as RawAgentSchedule));
