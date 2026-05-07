@@ -57,6 +57,15 @@ sibling
 [`runx`](https://github.com/nfsarch33/runx) tool's
 `internal/minimaxauth` package and consumed by the bridge.
 
+## Security headers
+
+Set CSP, referrer policy, frame-ancestor, content-type, and permissions-policy
+headers in the deployment platform, CDN, or reverse proxy. Start with the
+baseline in `SECURITY.md`, then allow only the deployed storefront origin, the
+Go backend origin, approved image/media hosts, and required BFF endpoints.
+Frontend role checks are not an authorisation boundary; JWT validation, RBAC,
+and rate limiting belong in the Go backend.
+
 ## Project layout
 
 ```
@@ -128,6 +137,9 @@ The dev server runs on http://localhost:3000 by default.
 |------------------------|-------------------------------|----------------------------------------|
 | `MC_API_BASE_URL`      | `http://localhost:8080`       | Private Go backend base URL            |
 | `FLEET_AI_BRIDGE_URL`  | _(unset)_                     | Tailscale fleet bridge (validated)     |
+| `NEXT_PUBLIC_APP_ORIGIN` | _(unset)_                   | Public storefront origin for deployment docs and headers |
+| `CSP_CONNECT_SRC`      | _(unset)_                     | Deployment header allowlist for API/BFF connections |
+| `CSP_REPORT_URI`       | _(unset)_                     | Optional CSP report endpoint           |
 | `PORT`                 | `3000`                        | Next.js dev server port                |
 
 ## Contributing

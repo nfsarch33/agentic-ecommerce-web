@@ -1,0 +1,11 @@
+title = "agentic-ecommerce-web"
+
+[allowlist]
+description = "Ignore generated dependency, build, and test-output directories."
+paths = [
+  '''(^|/)node_modules/''',
+  '''(^|/)\.next/''',
+  '''(^|/)coverage/''',
+  '''(^|/)playwright-report/''',
+  '''(^|/)test-results/''',
+]
