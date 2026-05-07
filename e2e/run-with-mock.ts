@@ -36,6 +36,24 @@ const syncConflict = {
   resolved_at?: string;
 };
 
+const aiSuggestion = {
+  id: "618f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  product_id: product.id,
+  description: "Train anywhere with a durable five-band set designed for progressive resistance.",
+  status: "generated",
+  quality_score: {
+    overall: 84,
+    readability: 82,
+    seo: 78,
+    tone: 90,
+    length: 80,
+    factual: 88,
+    notes: ["Clear benefit-led opening"],
+  },
+  created_at: "2026-05-07T00:08:00Z",
+  model: "minimax-text-01",
+};
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,OPTIONS",
@@ -111,6 +129,22 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/v1/products/resistance-band-set" && req.method === "GET") {
       return json(product);
+    }
+    if (url.pathname === `/api/v1/products/${product.id}` && req.method === "GET") {
+      return json(product);
+    }
+    if (url.pathname === `/api/v1/products/${product.id}/ai-suggestions` && req.method === "GET") {
+      return json({ suggestions: [aiSuggestion] });
+    }
+    if (url.pathname === `/api/v1/products/${product.id}/generate-description` && req.method === "POST") {
+      return json({
+        suggestion: {
+          ...aiSuggestion,
+          id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+          description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
+          created_at: "2026-05-07T00:12:00Z",
+        },
+      });
     }
     if (url.pathname === "/api/v1/sync/status" && req.method === "GET") {
       return json({
