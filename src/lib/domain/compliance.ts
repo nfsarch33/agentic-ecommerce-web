@@ -1,5 +1,5 @@
 export type ComplianceRuleCategory = "content" | "seo" | "media" | "legal";
-export type ComplianceSeverity = "info" | "warning" | "error" | "critical";
+export type ComplianceSeverity = "info" | "warning" | "critical";
 export type ComplianceStatus = "passed" | "failed" | "needs_review";
 export type RuleCheckStatus = ComplianceStatus;
 export type AltTextStatus = "missing" | "too_short" | "valid";
@@ -71,6 +71,71 @@ export interface ComplianceSummary {
   readonly averageScore: number;
 }
 
+export interface ComplianceTrend {
+  readonly date: string;
+  readonly passed: number;
+  readonly failed: number;
+  readonly needsReview: number;
+  readonly averageScore: number;
+}
+
+export interface ComplianceRuleCoverage {
+  readonly ruleId: string;
+  readonly ruleName: string;
+  readonly checked: number;
+  readonly passed: number;
+  readonly failed: number;
+}
+
+export interface ComplianceReportSummary {
+  readonly tenantId: string;
+  readonly period: string;
+  readonly generatedAt: string;
+  readonly totals: {
+    readonly checks: number;
+    readonly passed: number;
+    readonly failed: number;
+    readonly needsReview: number;
+  };
+  readonly passRate: number;
+  readonly failRate: number;
+  readonly averageScore: number;
+  readonly trends: readonly ComplianceTrend[];
+  readonly ruleCoverage: readonly ComplianceRuleCoverage[];
+}
+
+export type ComplianceReportSummaryInput = Omit<ComplianceReportSummary, "passRate" | "failRate"> &
+  Partial<Pick<ComplianceReportSummary, "passRate" | "failRate">>;
+
+export type CustomComplianceOperator =
+  | "contains"
+  | "does_not_contain"
+  | "equals"
+  | "not_equals"
+  | "min_score"
+  | "max_score";
+
+export interface CustomComplianceRuleCondition {
+  readonly field: string;
+  readonly operator: CustomComplianceOperator;
+  readonly value: string;
+}
+
+export interface CustomComplianceRuleInput extends Omit<ComplianceRule, "id"> {
+  readonly id?: string;
+  readonly tenantId: string;
+  readonly condition: CustomComplianceRuleCondition;
+  readonly version?: number;
+  readonly updatedAt?: string;
+}
+
+export interface CustomComplianceRule extends ComplianceRule {
+  readonly tenantId: string;
+  readonly condition: CustomComplianceRuleCondition;
+  readonly version: number;
+  readonly updatedAt: string;
+}
+
 export interface MediaAssetInput {
   readonly id: string;
   readonly fileName: string;
@@ -106,9 +171,17 @@ export class ComplianceValidationError extends Error {
   override readonly name = "ComplianceValidationError";
 }
 
-const severities = new Set<ComplianceSeverity>(["info", "warning", "error", "critical"]);
+const severities = new Set<ComplianceSeverity>(["info", "warning", "critical"]);
 const categories = new Set<ComplianceRuleCategory>(["content", "seo", "media", "legal"]);
 const statuses = new Set<ComplianceStatus>(["passed", "failed", "needs_review"]);
+const customOperators = new Set<CustomComplianceOperator>([
+  "contains",
+  "does_not_contain",
+  "equals",
+  "not_equals",
+  "min_score",
+  "max_score",
+]);
 
 function parseNonEmptyString(value: string, label: string): string {
   const trimmed = value.trim();
@@ -142,6 +215,20 @@ export function parseRuleCategory(value: string, label = "category"): Compliance
     throw new ComplianceValidationError(`${label} is invalid`);
   }
   return value as ComplianceRuleCategory;
+}
+
+function parseOperator(value: string, label = "condition.operator"): CustomComplianceOperator {
+  if (!customOperators.has(value as CustomComplianceOperator)) {
+    throw new ComplianceValidationError(`${label} is invalid`);
+  }
+  return value as CustomComplianceOperator;
+}
+
+function nonNegativeInteger(value: number, label: string): number {
+  if (!Number.isFinite(value) || value < 0) {
+    throw new ComplianceValidationError(`${label} must be zero or greater`);
+  }
+  return Math.round(value);
 }
 
 export function createComplianceRule(input: ComplianceRule): ComplianceRule {
@@ -204,9 +291,7 @@ export function createComplianceResult(input: ComplianceResultInput): Compliance
   };
 }
 
-export function complianceResultLabel(
-  result: Pick<ComplianceResult, "status">,
-): "Pass" | "Fail" | "Review" {
+export function complianceResultLabel(result: Pick<ComplianceResult, "status">): "Pass" | "Fail" | "Review" {
   if (result.status === "passed") return "Pass";
   if (result.status === "failed") return "Fail";
   return "Review";
@@ -227,6 +312,64 @@ export function complianceSummary(results: readonly ComplianceResult[]): Complia
   const averageScore =
     total === 0 ? 0 : Math.round(results.reduce((sum, result) => sum + result.score, 0) / total);
   return { total, passed, failed, needsReview, averageScore };
+}
+
+export function createComplianceReportSummary(input: ComplianceReportSummaryInput): ComplianceReportSummary {
+  const checks = nonNegativeInteger(input.totals.checks, "totals.checks");
+  const passed = nonNegativeInteger(input.totals.passed, "totals.passed");
+  const failed = nonNegativeInteger(input.totals.failed, "totals.failed");
+  const needsReview = nonNegativeInteger(input.totals.needsReview, "totals.needsReview");
+  return {
+    tenantId: parseNonEmptyString(input.tenantId, "tenantId"),
+    period: parseNonEmptyString(input.period, "period"),
+    generatedAt: parseNonEmptyString(input.generatedAt, "generatedAt"),
+    totals: { checks, passed, failed, needsReview },
+    passRate: checks === 0 ? 0 : Math.round((passed / checks) * 100),
+    failRate: checks === 0 ? 0 : Math.round((failed / checks) * 100),
+    averageScore: parseScore(input.averageScore, "averageScore"),
+    trends: input.trends.map((trend) => ({
+      date: parseNonEmptyString(trend.date, "trend.date"),
+      passed: nonNegativeInteger(trend.passed, "trend.passed"),
+      failed: nonNegativeInteger(trend.failed, "trend.failed"),
+      needsReview: nonNegativeInteger(trend.needsReview, "trend.needsReview"),
+      averageScore: parseScore(trend.averageScore, "trend.averageScore"),
+    })),
+    ruleCoverage: input.ruleCoverage.map((coverage) => ({
+      ruleId: parseNonEmptyString(coverage.ruleId, "coverage.ruleId"),
+      ruleName: parseNonEmptyString(coverage.ruleName, "coverage.ruleName"),
+      checked: nonNegativeInteger(coverage.checked, "coverage.checked"),
+      passed: nonNegativeInteger(coverage.passed, "coverage.passed"),
+      failed: nonNegativeInteger(coverage.failed, "coverage.failed"),
+    })),
+  };
+}
+
+export function ruleCoveragePercent(coverage: ComplianceRuleCoverage): number {
+  if (coverage.checked === 0) return 0;
+  return Math.round((coverage.passed / coverage.checked) * 100);
+}
+
+export function createCustomComplianceRule(input: CustomComplianceRuleInput): CustomComplianceRule {
+  const rule = createComplianceRule({
+    id: input.id?.trim() || input.code,
+    code: input.code,
+    name: input.name,
+    description: input.description,
+    category: input.category,
+    severity: input.severity,
+    enabled: input.enabled,
+  });
+  return {
+    ...rule,
+    tenantId: parseNonEmptyString(input.tenantId, "tenantId"),
+    condition: {
+      field: parseNonEmptyString(input.condition.field, "condition.field"),
+      operator: parseOperator(input.condition.operator),
+      value: parseNonEmptyString(input.condition.value, "condition.value"),
+    },
+    version: input.version === undefined ? 1 : Math.max(1, Math.round(input.version)),
+    updatedAt: parseNonEmptyString(input.updatedAt ?? new Date(0).toISOString(), "updatedAt"),
+  };
 }
 
 export function altTextStatus(altText: string): AltTextStatus {

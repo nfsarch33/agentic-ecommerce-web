@@ -23,16 +23,17 @@ export default async function CompliancePage() {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unable to load compliance dashboard.";
     return (
-      <>
-        <ComplianceDashboard apiBaseUrl={clientBaseUrl} products={[]} rules={[]} initialResults={[]} />
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {message}
-        </div>
-      </>
+      <ComplianceDashboard
+        apiBaseUrl={clientBaseUrl}
+        products={[]}
+        rules={[]}
+        initialResults={[]}
+        initialError={message}
+      />
     );
   }
 
-  const { products, rules, results } = dashboard;
+  const { products, rules, results, reportSummary, customRules } = dashboard;
   const serializableProducts = products.map((product) => ({
     id: product.id,
     sku: product.sku,
@@ -49,6 +50,8 @@ export default async function CompliancePage() {
       products={serializableProducts}
       rules={rules}
       initialResults={results}
+      reportSummary={reportSummary}
+      customRules={customRules}
     />
   );
 }

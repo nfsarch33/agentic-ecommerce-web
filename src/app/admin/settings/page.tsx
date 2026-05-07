@@ -36,6 +36,13 @@ export default async function SettingsPage() {
       status: configured(process.env.AGENT_SCHEDULER_CONFIGURED),
       description: "Agent scheduler integration status for sourcing, content, pricing, and compliance workers.",
     },
+    {
+      name: "Tenant",
+      status: "configured",
+      description: "Branding, locale, AI tone, and compliance preferences for the active tenant.",
+      href: "/admin/settings/tenant",
+      actionLabel: "Open tenant settings",
+    },
   ];
 
   return <SettingsSkeleton sections={sections} />;

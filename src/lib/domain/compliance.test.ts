@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   complianceResultLabel,
   complianceSummary,
+  createComplianceReportSummary,
   createComplianceResult,
+  createCustomComplianceRule,
   createMediaAsset,
   createSeoScore,
+  ruleCoveragePercent,
   seoScoreLabel,
   type ComplianceRule,
 } from "./compliance";
@@ -25,7 +28,7 @@ const rules: ComplianceRule[] = [
     name: "Image alt text",
     description: "Product images need meaningful alt text.",
     category: "media",
-    severity: "error",
+    severity: "warning",
     enabled: true,
   },
 ];
@@ -104,7 +107,7 @@ describe("ComplianceResult", () => {
         {
           rule: rules[1]!,
           status: "passed",
-          severity: "error",
+          severity: "warning",
           reason: "Alt text is descriptive.",
         },
       ],
@@ -170,25 +173,69 @@ describe("MediaAsset", () => {
   });
 
   it("flags very short alt text separately from valid alt text", () => {
-    expect(
-      createMediaAsset({
-        id: "asset_2",
-        fileName: "hero.jpg",
-        mimeType: "image/jpeg",
-        sizeBytes: 1,
-        previewUrl: "blob:http://localhost/hero-2",
-        altText: "short",
-      }).altTextStatus,
-    ).toBe("too_short");
-    expect(
-      createMediaAsset({
-        id: "asset_3",
-        fileName: "hero.jpg",
-        mimeType: "image/jpeg",
-        sizeBytes: 1,
-        previewUrl: "blob:http://localhost/hero-3",
-        altText: "Resistance band kit on a gym mat",
-      }).altTextStatus,
-    ).toBe("valid");
+    expect(createMediaAsset({
+      id: "asset_2",
+      fileName: "hero.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: 1,
+      previewUrl: "blob:http://localhost/hero-2",
+      altText: "short",
+    }).altTextStatus).toBe("too_short");
+    expect(createMediaAsset({
+      id: "asset_3",
+      fileName: "hero.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: 1,
+      previewUrl: "blob:http://localhost/hero-3",
+      altText: "Resistance band kit on a gym mat",
+    }).altTextStatus).toBe("valid");
+  });
+});
+
+describe("Compliance reporting", () => {
+  it("normalizes report summary trends and computes rule coverage", () => {
+    const report = createComplianceReportSummary({
+      tenantId: " tenant_default ",
+      period: "30d",
+      generatedAt: "2026-05-08T00:00:00Z",
+      totals: { checks: 10, passed: 7, failed: 2, needsReview: 1 },
+      averageScore: 83,
+      trends: [
+        { date: "2026-05-01", passed: 3, failed: 1, needsReview: 0, averageScore: 84 },
+        { date: "2026-05-02", passed: 4, failed: 1, needsReview: 1, averageScore: 82 },
+      ],
+      ruleCoverage: [
+        { ruleId: "rule_alt_text", ruleName: "Image alt text", checked: 10, passed: 8, failed: 2 },
+        { ruleId: "rule_claims", ruleName: "No exaggerated claims", checked: 0, passed: 0, failed: 0 },
+      ],
+    });
+
+    expect(report.tenantId).toBe("tenant_default");
+    expect(report.passRate).toBe(70);
+    expect(report.failRate).toBe(20);
+    expect(ruleCoveragePercent(report.ruleCoverage[0]!)).toBe(80);
+    expect(ruleCoveragePercent(report.ruleCoverage[1]!)).toBe(0);
+  });
+
+  it("validates custom compliance rule definitions", () => {
+    const rule = createCustomComplianceRule({
+      id: "custom_health_claims",
+      tenantId: "tenant_default",
+      code: "copy.health_claims",
+      name: "Health claim guardrail",
+      description: "Reject unsupported medical claims.",
+      category: "legal",
+      severity: "critical",
+      enabled: true,
+      condition: { field: "description", operator: "does_not_contain", value: "cure" },
+      version: 2,
+      updatedAt: "2026-05-08T00:00:00Z",
+    });
+
+    expect(rule.tenantId).toBe("tenant_default");
+    expect(rule.condition.operator).toBe("does_not_contain");
+    expect(() => createCustomComplianceRule({ ...rule, condition: { ...rule.condition, value: "" } })).toThrow(
+      /condition.value/,
+    );
   });
 });

@@ -1,21 +1,21 @@
 import {
   ComplianceValidationError,
+  createComplianceReportSummary,
   createComplianceResult,
   createComplianceRule,
+  createCustomComplianceRule as createDomainCustomComplianceRule,
   createSeoScore,
+  type ComplianceReportSummary,
   type ComplianceResult,
   type ComplianceRule,
   type ComplianceRuleCategory,
   type ComplianceSeverity,
   type ComplianceStatus,
+  type CustomComplianceRule,
+  type CustomComplianceRuleCondition,
+  type CustomComplianceRuleInput,
   type SeoScore,
 } from "@/lib/domain/compliance";
-import type { components } from "./generated/schema";
-
-type OpenAPIComplianceCheckRequest = components["schemas"]["ComplianceCheckRequest"];
-type OpenAPIComplianceCheckResponse = components["schemas"]["ComplianceCheckResponse"];
-type OpenAPISEOSuggestionRequest = components["schemas"]["SEOSuggestionRequest"];
-type OpenAPISEOSuggestionResponse = components["schemas"]["SEOSuggestionResponse"];
 
 export interface FetchComplianceRulesOptions {
   readonly baseUrl: string;
@@ -39,6 +39,59 @@ export interface RequestSeoSuggestionsOptions {
   readonly signal?: AbortSignal;
 }
 
+export interface FetchComplianceReportSummaryOptions {
+  readonly baseUrl: string;
+  readonly tenantId: string;
+  readonly period?: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface ExportComplianceReportOptions {
+  readonly baseUrl: string;
+  readonly tenantId: string;
+  readonly format: "csv" | "json";
+  readonly period?: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface ComplianceReportExport {
+  readonly filename: string;
+  readonly mimeType: string;
+  readonly content: string;
+}
+
+export interface FetchCustomComplianceRulesOptions {
+  readonly baseUrl: string;
+  readonly tenantId: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface CreateCustomComplianceRuleOptions {
+  readonly baseUrl: string;
+  readonly rule: Omit<CustomComplianceRuleInput, "id" | "version" | "updatedAt">;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface UpdateCustomComplianceRuleOptions {
+  readonly baseUrl: string;
+  readonly ruleId: string;
+  readonly patch: Partial<Omit<CustomComplianceRuleInput, "id">> & { readonly tenantId: string };
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface DeleteCustomComplianceRuleOptions {
+  readonly baseUrl: string;
+  readonly tenantId: string;
+  readonly ruleId: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
 export interface SeoSuggestionsResponse {
   readonly available: boolean;
   readonly score?: SeoScore;
@@ -50,10 +103,7 @@ export class ComplianceApiError extends Error {
   override readonly cause?: unknown;
   readonly status?: number;
 
-  constructor(
-    message: string,
-    options: { readonly status?: number; readonly cause?: unknown } = {},
-  ) {
+  constructor(message: string, options: { readonly status?: number; readonly cause?: unknown } = {}) {
     super(message);
     this.status = options.status;
     this.cause = options.cause;
@@ -71,10 +121,6 @@ interface RawComplianceRule {
 }
 
 interface RawRuleResult {
-  readonly id?: unknown;
-  readonly pass?: unknown;
-  readonly score?: unknown;
-  readonly reasons?: unknown;
   readonly rule?: unknown;
   readonly status?: unknown;
   readonly severity?: unknown;
@@ -97,14 +143,11 @@ interface RawSeoScore {
 interface RawComplianceResult {
   readonly product_id?: unknown;
   readonly productId?: unknown;
-  readonly pass?: unknown;
   readonly status?: unknown;
   readonly score?: unknown;
   readonly checked_at?: unknown;
   readonly checkedAt?: unknown;
-  readonly severity?: unknown;
   readonly rules?: unknown;
-  readonly results?: unknown;
   readonly rule_results?: unknown;
   readonly ruleResults?: unknown;
   readonly seo_score?: unknown;
@@ -122,6 +165,55 @@ interface RawComplianceResponse {
 interface RawSeoSuggestionsResponse {
   readonly score?: unknown;
   readonly suggestions?: unknown;
+}
+
+interface RawComplianceReportSummary {
+  readonly tenant_id?: unknown;
+  readonly tenantId?: unknown;
+  readonly period?: unknown;
+  readonly generated_at?: unknown;
+  readonly generatedAt?: unknown;
+  readonly totals?: {
+    readonly checks?: unknown;
+    readonly passed?: unknown;
+    readonly failed?: unknown;
+    readonly needs_review?: unknown;
+    readonly needsReview?: unknown;
+  };
+  readonly average_score?: unknown;
+  readonly averageScore?: unknown;
+  readonly trends?: unknown;
+  readonly rule_coverage?: unknown;
+  readonly ruleCoverage?: unknown;
+}
+
+interface RawComplianceTrend {
+  readonly date?: unknown;
+  readonly passed?: unknown;
+  readonly failed?: unknown;
+  readonly needs_review?: unknown;
+  readonly needsReview?: unknown;
+  readonly average_score?: unknown;
+  readonly averageScore?: unknown;
+}
+
+interface RawRuleCoverage {
+  readonly rule_id?: unknown;
+  readonly ruleId?: unknown;
+  readonly rule_name?: unknown;
+  readonly ruleName?: unknown;
+  readonly checked?: unknown;
+  readonly passed?: unknown;
+  readonly failed?: unknown;
+}
+
+interface RawCustomComplianceRule extends RawComplianceRule {
+  readonly tenant_id?: unknown;
+  readonly tenantId?: unknown;
+  readonly condition?: unknown;
+  readonly version?: unknown;
+  readonly updated_at?: unknown;
+  readonly updatedAt?: unknown;
 }
 
 function apiUrl(baseUrl: string, path: string): string {
@@ -148,45 +240,17 @@ function parseNumber(value: unknown, label: string): number {
   return value;
 }
 
-function humanizeRuleId(id: string): string {
-  return id
-    .split(/[_\-.]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function inferRuleCategory(id: string): ComplianceRuleCategory {
-  if (id.includes("seo") || id.includes("slug") || id.includes("meta")) return "seo";
-  if (id.includes("image") || id.includes("media") || id.includes("alt")) return "media";
-  if (id.includes("legal") || id.includes("disclaimer")) return "legal";
-  return "content";
-}
-
-function statusFromBackend(pass: boolean, severity: ComplianceSeverity): ComplianceStatus {
-  if (pass) return "passed";
-  if (severity === "info" || severity === "warning") return "needs_review";
-  return "failed";
-}
-
 function parseRule(raw: unknown): ComplianceRule {
   const value = raw as RawComplianceRule;
   try {
-    const id = parseString(value?.id, "rule.id");
     return createComplianceRule({
-      id,
-      code: typeof value?.code === "string" && value.code.trim() !== "" ? value.code : id,
-      name:
-        typeof value?.name === "string" && value.name.trim() !== ""
-          ? value.name
-          : humanizeRuleId(id),
+      id: parseString(value?.id, "rule.id"),
+      code: parseString(value?.code, "rule.code"),
+      name: parseString(value?.name, "rule.name"),
       description: parseString(value?.description, "rule.description"),
-      category:
-        typeof value?.category === "string" && value.category.trim() !== ""
-          ? (value.category as ComplianceRuleCategory)
-          : inferRuleCategory(id),
+      category: parseString(value?.category, "rule.category") as ComplianceRuleCategory,
       severity: parseString(value?.severity, "rule.severity") as ComplianceSeverity,
-      enabled: value?.enabled === undefined ? true : parseBoolean(value.enabled, "rule.enabled"),
+      enabled: parseBoolean(value?.enabled, "rule.enabled"),
     });
   } catch (err) {
     if (err instanceof ComplianceValidationError || err instanceof ComplianceApiError) {
@@ -198,12 +262,10 @@ function parseRule(raw: unknown): ComplianceRule {
 
 function parseSeoScore(raw: unknown): SeoScore | undefined {
   if (raw === undefined || raw === null) return undefined;
-  if (typeof raw === "number") return seoScoreFromOverall(raw);
   const value = raw as RawSeoScore;
   try {
     return createSeoScore({
-      overall:
-        value.overall === undefined ? undefined : parseNumber(value.overall, "seo_score.overall"),
+      overall: value.overall === undefined ? undefined : parseNumber(value.overall, "seo_score.overall"),
       title: parseNumber(value.title, "seo_score.title"),
       metaDescription: parseNumber(
         value.meta_description ?? value.metaDescription,
@@ -230,106 +292,30 @@ function parseSeoScore(raw: unknown): SeoScore | undefined {
   }
 }
 
-function seoScoreFromOverall(
-  overall: number,
-  imageAltText = overall,
-  recommendations: readonly string[] = [],
-): SeoScore {
-  const score = parseNumber(overall, "seo_score.score");
-  const imageScore = parseNumber(imageAltText, "seo_score.image_alt_text");
-  return createSeoScore({
-    overall: score,
-    title: score,
-    metaDescription: score,
-    slug: score,
-    keywordDensity: score,
-    imageAltText: imageScore,
-    recommendations,
-  });
-}
-
 function parseRuleResult(raw: unknown) {
   const value = raw as RawRuleResult;
-  if (value?.rule !== undefined) {
-    return {
-      rule: parseRule(value.rule),
-      status: parseString(value?.status, "rule_result.status") as ComplianceStatus,
-      severity: parseString(value?.severity, "rule_result.severity") as ComplianceSeverity,
-      reason: parseString(value?.reason, "rule_result.reason"),
-    };
-  }
-
-  const id = parseString(value?.id, "rule_result.id");
-  const pass = parseBoolean(value?.pass, "rule_result.pass");
-  const severity = parseString(value?.severity, "rule_result.severity") as ComplianceSeverity;
-  const reasons = Array.isArray(value?.reasons)
-    ? value.reasons.filter((item): item is string => typeof item === "string" && item.trim() !== "")
-    : [];
   return {
-    rule: createComplianceRule({
-      id,
-      code: id,
-      name: humanizeRuleId(id),
-      description: `${humanizeRuleId(id)} backend compliance rule.`,
-      category: inferRuleCategory(id),
-      severity,
-      enabled: true,
-    }),
-    status: statusFromBackend(pass, severity),
-    severity,
-    reason: reasons.length > 0 ? reasons.join(" ") : pass ? "Rule passed." : "Rule failed.",
+    rule: parseRule(value?.rule),
+    status: parseString(value?.status, "rule_result.status") as ComplianceStatus,
+    severity: parseString(value?.severity, "rule_result.severity") as ComplianceSeverity,
+    reason: parseString(value?.reason, "rule_result.reason"),
   };
-}
-
-function parseBackendComplianceSeoScore(rawRuleResults: unknown): SeoScore | undefined {
-  if (!Array.isArray(rawRuleResults)) return undefined;
-  const results = rawRuleResults as RawRuleResult[];
-  const seoResult = results.find((result) => result.id === "seo_minimum_score");
-  if (!seoResult || typeof seoResult.score !== "number") return undefined;
-  const imageResult = results.find((result) => result.id === "image_alt_text");
-  const recommendations = Array.isArray(seoResult.reasons)
-    ? seoResult.reasons.filter((item): item is string => typeof item === "string")
-    : [];
-  return seoScoreFromOverall(
-    seoResult.score,
-    typeof imageResult?.score === "number" ? imageResult.score : seoResult.score,
-    recommendations,
-  );
 }
 
 function parseComplianceResult(raw: unknown): ComplianceResult {
   const value = raw as RawComplianceResult;
-  const rawRuleResults =
-    value?.results ?? value?.rules ?? value?.rule_results ?? value?.ruleResults;
+  const rawRuleResults = value?.rules ?? value?.rule_results ?? value?.ruleResults;
   if (!Array.isArray(rawRuleResults)) {
     throw new ComplianceApiError("compliance result must include rules array");
   }
   try {
-    const pass =
-      value?.pass === undefined
-        ? parseString(value?.status, "result.status") === "passed"
-        : parseBoolean(value.pass, "result.pass");
-    const severity =
-      typeof value?.severity === "string"
-        ? (value.severity as ComplianceSeverity)
-        : pass
-          ? "info"
-          : "critical";
     return createComplianceResult({
       productId: parseString(value?.product_id ?? value?.productId, "result.product_id"),
-      status:
-        typeof value?.status === "string"
-          ? (value.status as ComplianceStatus)
-          : statusFromBackend(pass, severity),
+      status: parseString(value?.status, "result.status") as ComplianceStatus,
       score: parseNumber(value?.score, "result.score"),
-      checkedAt:
-        typeof (value?.checked_at ?? value?.checkedAt) === "string"
-          ? ((value.checked_at ?? value.checkedAt) as string)
-          : "1970-01-01T00:00:00.000Z",
+      checkedAt: parseString(value?.checked_at ?? value?.checkedAt, "result.checked_at"),
       ruleResults: rawRuleResults.map(parseRuleResult),
-      seoScore:
-        parseSeoScore(value?.seo_score ?? value?.seoScore) ??
-        parseBackendComplianceSeoScore(rawRuleResults),
+      seoScore: parseSeoScore(value?.seo_score ?? value?.seoScore),
     });
   } catch (err) {
     if (err instanceof ComplianceValidationError || err instanceof ComplianceApiError) {
@@ -337,6 +323,125 @@ function parseComplianceResult(raw: unknown): ComplianceResult {
     }
     throw err;
   }
+}
+
+function parseTrend(raw: unknown) {
+  const value = raw as RawComplianceTrend;
+  return {
+    date: parseString(value?.date, "trend.date"),
+    passed: parseNumber(value?.passed, "trend.passed"),
+    failed: parseNumber(value?.failed, "trend.failed"),
+    needsReview: parseNumber(value?.needs_review ?? value?.needsReview, "trend.needs_review"),
+    averageScore: parseNumber(value?.average_score ?? value?.averageScore, "trend.average_score"),
+  };
+}
+
+function parseCoverage(raw: unknown) {
+  const value = raw as RawRuleCoverage;
+  return {
+    ruleId: parseString(value?.rule_id ?? value?.ruleId, "coverage.rule_id"),
+    ruleName: parseString(value?.rule_name ?? value?.ruleName, "coverage.rule_name"),
+    checked: parseNumber(value?.checked, "coverage.checked"),
+    passed: parseNumber(value?.passed, "coverage.passed"),
+    failed: parseNumber(value?.failed, "coverage.failed"),
+  };
+}
+
+function parseReportSummary(raw: unknown): ComplianceReportSummary {
+  const value = raw as RawComplianceReportSummary;
+  const totals = value?.totals ?? {};
+  const trends = value?.trends;
+  const ruleCoverage = value?.rule_coverage ?? value?.ruleCoverage;
+  if (!Array.isArray(trends)) throw new ComplianceApiError("report.trends must be an array");
+  if (!Array.isArray(ruleCoverage)) throw new ComplianceApiError("report.rule_coverage must be an array");
+  try {
+    return createComplianceReportSummary({
+      tenantId: parseString(value?.tenant_id ?? value?.tenantId, "report.tenant_id"),
+      period: parseString(value?.period, "report.period"),
+      generatedAt: parseString(value?.generated_at ?? value?.generatedAt, "report.generated_at"),
+      totals: {
+        checks: parseNumber(totals.checks, "report.totals.checks"),
+        passed: parseNumber(totals.passed, "report.totals.passed"),
+        failed: parseNumber(totals.failed, "report.totals.failed"),
+        needsReview: parseNumber(totals.needs_review ?? totals.needsReview, "report.totals.needs_review"),
+      },
+      averageScore: parseNumber(value?.average_score ?? value?.averageScore, "report.average_score"),
+      trends: trends.map(parseTrend),
+      ruleCoverage: ruleCoverage.map(parseCoverage),
+    });
+  } catch (err) {
+    if (err instanceof ComplianceValidationError || err instanceof ComplianceApiError) {
+      throw new ComplianceApiError(`parseReportSummary: ${err.message}`, { cause: err });
+    }
+    throw err;
+  }
+}
+
+function parseCondition(raw: unknown): CustomComplianceRuleCondition {
+  const value = raw as { readonly field?: unknown; readonly operator?: unknown; readonly value?: unknown };
+  return {
+    field: parseString(value?.field, "rule.condition.field"),
+    operator: parseString(value?.operator, "rule.condition.operator") as CustomComplianceRuleCondition["operator"],
+    value: parseString(value?.value, "rule.condition.value"),
+  };
+}
+
+function parseCustomRule(raw: unknown): CustomComplianceRule {
+  const value = raw as RawCustomComplianceRule;
+  try {
+    return createDomainCustomComplianceRule({
+      id: parseString(value?.id, "rule.id"),
+      tenantId: parseString(value?.tenant_id ?? value?.tenantId, "rule.tenant_id"),
+      code: parseString(value?.code, "rule.code"),
+      name: parseString(value?.name, "rule.name"),
+      description: parseString(value?.description, "rule.description"),
+      category: parseString(value?.category, "rule.category") as ComplianceRuleCategory,
+      severity: parseString(value?.severity, "rule.severity") as ComplianceSeverity,
+      enabled: parseBoolean(value?.enabled, "rule.enabled"),
+      condition: parseCondition(value?.condition),
+      version: parseNumber(value?.version, "rule.version"),
+      updatedAt: parseString(value?.updated_at ?? value?.updatedAt, "rule.updated_at"),
+    });
+  } catch (err) {
+    if (err instanceof ComplianceValidationError || err instanceof ComplianceApiError) {
+      throw new ComplianceApiError(`parseCustomRule: ${err.message}`, { cause: err });
+    }
+    throw err;
+  }
+}
+
+function customRulePayload(rule: CustomComplianceRuleInput) {
+  return {
+    tenant_id: rule.tenantId,
+    code: rule.code,
+    name: rule.name,
+    description: rule.description,
+    category: rule.category,
+    severity: rule.severity,
+    enabled: rule.enabled,
+    condition: rule.condition,
+  };
+}
+
+function customRulePatchPayload(patch: Partial<Omit<CustomComplianceRuleInput, "id">> & { readonly tenantId: string }) {
+  return {
+    tenant_id: patch.tenantId,
+    ...(patch.code !== undefined ? { code: patch.code } : {}),
+    ...(patch.name !== undefined ? { name: patch.name } : {}),
+    ...(patch.description !== undefined ? { description: patch.description } : {}),
+    ...(patch.category !== undefined ? { category: patch.category } : {}),
+    ...(patch.severity !== undefined ? { severity: patch.severity } : {}),
+    ...(patch.enabled !== undefined ? { enabled: patch.enabled } : {}),
+    ...(patch.condition !== undefined ? { condition: patch.condition } : {}),
+  };
+}
+
+function query(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) search.set(key, value);
+  });
+  return search.toString();
 }
 
 async function readJson(res: Response, label: string): Promise<unknown> {
@@ -375,30 +480,23 @@ export async function fetchComplianceRules(
 export async function checkProductCompliance(
   opts: CheckProductComplianceOptions,
 ): Promise<ComplianceResult> {
-  if (!opts.productId)
-    throw new ComplianceApiError("checkProductCompliance: productId is required");
+  if (!opts.productId) throw new ComplianceApiError("checkProductCompliance: productId is required");
   const fetchImpl = opts.fetchImpl ?? fetch;
   let res: Response;
   try {
     res = await fetchImpl(
-      apiUrl(
-        opts.baseUrl,
-        `/api/v1/products/${encodeURIComponent(opts.productId)}/compliance-check`,
-      ),
+      apiUrl(opts.baseUrl, `/api/v1/products/${encodeURIComponent(opts.productId)}/compliance-check`),
       {
         method: "POST",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({ seo_score_min: 70 } satisfies OpenAPIComplianceCheckRequest),
+        body: JSON.stringify({ include_seo: opts.includeSeo ?? true }),
         signal: opts.signal,
       },
     );
   } catch (err) {
     throw new ComplianceApiError("checkProductCompliance: network error", { cause: err });
   }
-  const raw = (await readJson(res, "checkProductCompliance")) as
-    | RawComplianceResponse
-    | RawComplianceResult
-    | OpenAPIComplianceCheckResponse;
+  const raw = (await readJson(res, "checkProductCompliance")) as RawComplianceResponse | RawComplianceResult;
   return parseComplianceResult("result" in raw ? raw.result : raw);
 }
 
@@ -410,16 +508,11 @@ export async function requestSeoSuggestions(
   let res: Response;
   try {
     res = await fetchImpl(
-      apiUrl(
-        opts.baseUrl,
-        `/api/v1/products/${encodeURIComponent(opts.productId)}/seo-suggestions`,
-      ),
+      apiUrl(opts.baseUrl, `/api/v1/products/${encodeURIComponent(opts.productId)}/seo-suggestions`),
       {
         method: "POST",
         headers: { accept: "application/json", "content-type": "application/json" },
-        body: JSON.stringify({
-          keywords: [...(opts.targetKeywords ?? [])],
-        } satisfies OpenAPISEOSuggestionRequest),
+        body: JSON.stringify({ target_keywords: opts.targetKeywords ?? [] }),
         signal: opts.signal,
       },
     );
@@ -429,34 +522,153 @@ export async function requestSeoSuggestions(
   if (res.status === 404 || res.status === 501) {
     return { available: false, suggestions: [] };
   }
-  const raw = (await readJson(res, "requestSeoSuggestions")) as
-    | RawSeoSuggestionsResponse
-    | OpenAPISEOSuggestionResponse;
-  const legacySuggestions = (raw as RawSeoSuggestionsResponse).suggestions;
-  const suggestions = Array.isArray(legacySuggestions)
-    ? legacySuggestions.filter((item): item is string => typeof item === "string")
-    : "title" in raw
-      ? (() => {
-          const seo = raw as OpenAPISEOSuggestionResponse;
-          return [
-            `SEO title: ${seo.title}`,
-            `Meta description: ${seo.meta_description}`,
-            `Slug: ${seo.slug}`,
-            ...seo.reasons,
-          ];
-        })()
-      : [];
-  const score =
-    "score" in raw && typeof raw.score === "number"
-      ? seoScoreFromOverall(
-          raw.score,
-          raw.score,
-          "reasons" in raw && Array.isArray(raw.reasons) ? raw.reasons : [],
-        )
-      : parseSeoScore((raw as RawSeoSuggestionsResponse).score);
+  const raw = (await readJson(res, "requestSeoSuggestions")) as RawSeoSuggestionsResponse;
+  const suggestions = Array.isArray(raw.suggestions)
+    ? raw.suggestions.filter((item): item is string => typeof item === "string")
+    : [];
   return {
     available: true,
-    score,
+    score: parseSeoScore(raw.score),
     suggestions,
   };
+}
+
+export async function fetchComplianceReportSummary(
+  opts: FetchComplianceReportSummaryOptions,
+): Promise<ComplianceReportSummary> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  const pathQuery = query({ tenant_id: opts.tenantId, period: opts.period ?? "30d" });
+  let res: Response;
+  try {
+    res = await fetchImpl(apiUrl(opts.baseUrl, `/api/v1/compliance/reports/summary?${pathQuery}`), {
+      method: "GET",
+      headers: { accept: "application/json" },
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw new ComplianceApiError("fetchComplianceReportSummary: network error", { cause: err });
+  }
+  const raw = (await readJson(res, "fetchComplianceReportSummary")) as { report?: unknown } | RawComplianceReportSummary;
+  return parseReportSummary("report" in raw ? raw.report : raw);
+}
+
+function filenameFromDisposition(value: string | null, fallback: string): string {
+  const match = value?.match(/filename="?([^";]+)"?/i);
+  return match?.[1] ?? fallback;
+}
+
+export async function exportComplianceReport(opts: ExportComplianceReportOptions): Promise<ComplianceReportExport> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  const pathQuery = query({ tenant_id: opts.tenantId, format: opts.format, period: opts.period ?? "30d" });
+  let res: Response;
+  try {
+    res = await fetchImpl(apiUrl(opts.baseUrl, `/api/v1/compliance/reports/export?${pathQuery}`), {
+      method: "GET",
+      headers: { accept: opts.format === "csv" ? "text/csv" : "application/json" },
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw new ComplianceApiError("exportComplianceReport: network error", { cause: err });
+  }
+  if (!res.ok) throw new ComplianceApiError(`exportComplianceReport: HTTP ${res.status}`, { status: res.status });
+  const mimeType = opts.format === "csv" ? "text/csv" : "application/json";
+  const content = opts.format === "csv" ? await res.text() : JSON.stringify(await res.json(), null, 2);
+  return {
+    filename: filenameFromDisposition(
+      res.headers.get("content-disposition"),
+      `compliance-report.${opts.format}`,
+    ),
+    mimeType,
+    content,
+  };
+}
+
+export async function fetchCustomComplianceRules(
+  opts: FetchCustomComplianceRulesOptions,
+): Promise<CustomComplianceRule[]> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  let res: Response;
+  try {
+    res = await fetchImpl(
+      apiUrl(opts.baseUrl, `/api/v1/compliance/custom-rules?${query({ tenant_id: opts.tenantId })}`),
+      {
+        method: "GET",
+        headers: { accept: "application/json" },
+        signal: opts.signal,
+      },
+    );
+  } catch (err) {
+    throw new ComplianceApiError("fetchCustomComplianceRules: network error", { cause: err });
+  }
+  const raw = (await readJson(res, "fetchCustomComplianceRules")) as { rules?: unknown } | unknown[];
+  const rules = Array.isArray(raw) ? raw : raw.rules;
+  if (!Array.isArray(rules)) {
+    throw new ComplianceApiError("fetchCustomComplianceRules: response body must include rules array");
+  }
+  return rules.map(parseCustomRule);
+}
+
+export async function createCustomComplianceRule(
+  opts: CreateCustomComplianceRuleOptions,
+): Promise<CustomComplianceRule> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  const rule = createDomainCustomComplianceRule(opts.rule);
+  let res: Response;
+  try {
+    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/compliance/custom-rules"), {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify(customRulePayload(rule)),
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw new ComplianceApiError("createCustomComplianceRule: network error", { cause: err });
+  }
+  const raw = (await readJson(res, "createCustomComplianceRule")) as { rule?: unknown } | RawCustomComplianceRule;
+  return parseCustomRule("rule" in raw ? raw.rule : raw);
+}
+
+export async function updateCustomComplianceRule(
+  opts: UpdateCustomComplianceRuleOptions,
+): Promise<CustomComplianceRule> {
+  if (!opts.ruleId) throw new ComplianceApiError("updateCustomComplianceRule: ruleId is required");
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  let res: Response;
+  try {
+    res = await fetchImpl(
+      apiUrl(opts.baseUrl, `/api/v1/compliance/custom-rules/${encodeURIComponent(opts.ruleId)}`),
+      {
+        method: "PATCH",
+        headers: { accept: "application/json", "content-type": "application/json" },
+        body: JSON.stringify(customRulePatchPayload(opts.patch)),
+        signal: opts.signal,
+      },
+    );
+  } catch (err) {
+    throw new ComplianceApiError("updateCustomComplianceRule: network error", { cause: err });
+  }
+  const raw = (await readJson(res, "updateCustomComplianceRule")) as { rule?: unknown } | RawCustomComplianceRule;
+  return parseCustomRule("rule" in raw ? raw.rule : raw);
+}
+
+export async function deleteCustomComplianceRule(opts: DeleteCustomComplianceRuleOptions): Promise<void> {
+  if (!opts.ruleId) throw new ComplianceApiError("deleteCustomComplianceRule: ruleId is required");
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  let res: Response;
+  try {
+    res = await fetchImpl(
+      apiUrl(
+        opts.baseUrl,
+        `/api/v1/compliance/custom-rules/${encodeURIComponent(opts.ruleId)}?${query({ tenant_id: opts.tenantId })}`,
+      ),
+      {
+        method: "DELETE",
+        headers: { accept: "application/json" },
+        signal: opts.signal,
+      },
+    );
+  } catch (err) {
+    throw new ComplianceApiError("deleteCustomComplianceRule: network error", { cause: err });
+  }
+  if (!res.ok) throw new ComplianceApiError(`deleteCustomComplianceRule: HTTP ${res.status}`, { status: res.status });
 }

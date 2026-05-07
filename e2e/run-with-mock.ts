@@ -97,56 +97,77 @@ const factCheckResult = {
 
 const complianceRule = {
   id: "prohibited_words",
+  code: "copy.prohibited_words",
+  name: "No unsupported claims",
   description: "Product copy must avoid unsupported superlatives.",
+  category: "content",
   severity: "critical",
+  enabled: true,
 };
 
 const complianceResult = {
   product_id: product.id,
-  pass: false,
+  status: "failed",
   score: 62,
-  reasons: ["Title claims the product is guaranteed to cure pain."],
-  rule_ids: ["prohibited_words", "seo_minimum_score"],
-  severity: "critical",
-  results: [
+  checked_at: "2026-05-08T00:00:00Z",
+  rules: [
     {
-      id: "prohibited_words",
-      pass: false,
-      score: 0,
+      rule: complianceRule,
+      status: "failed",
       severity: "critical",
-      reasons: ["Title claims the product is guaranteed to cure pain."],
+      reason: "Title claims the product is guaranteed to cure pain.",
     },
     {
-      id: "seo_minimum_score",
-      pass: false,
-      score: 71,
-      severity: "error",
-      reasons: ["seo score below minimum"],
+      rule: {
+        id: "seo_minimum_score",
+        code: "seo.minimum_score",
+        name: "SEO minimum score",
+        description: "Product content must meet the SEO readiness threshold.",
+        category: "seo",
+        severity: "warning",
+        enabled: true,
+      },
+      status: "needs_review",
+      severity: "warning",
+      reason: "SEO score below minimum.",
     },
   ],
+  seo_score: {
+    overall: 71,
+    title: 80,
+    meta_description: 70,
+    slug: 85,
+    keyword_density: 60,
+    image_alt_text: 60,
+    recommendations: ["Use the target keyword in the meta description."],
+  },
 };
 
 const passingComplianceResult = {
   product_id: product.id,
-  pass: true,
+  status: "passed",
   score: 96,
-  reasons: [],
-  rule_ids: ["prohibited_words", "seo_minimum_score"],
-  severity: "info",
-  results: [
+  checked_at: "2026-05-08T00:00:00Z",
+  rules: [
     {
-      id: "prohibited_words",
-      pass: true,
-      score: 100,
+      rule: complianceRule,
+      status: "passed",
       severity: "info",
-      reasons: [],
+      reason: "Product copy avoids unsupported claims.",
     },
     {
-      id: "seo_minimum_score",
-      pass: true,
-      score: 96,
+      rule: {
+        id: "seo_minimum_score",
+        code: "seo.minimum_score",
+        name: "SEO minimum score",
+        description: "Product content must meet the SEO readiness threshold.",
+        category: "seo",
+        severity: "warning",
+        enabled: true,
+      },
+      status: "passed",
       severity: "info",
-      reasons: [],
+      reason: "SEO score is above the minimum threshold.",
     },
   ],
 };
@@ -339,6 +360,71 @@ const recentEvents = [
     metadata: { tenant_id: "default", source: "mc-api" },
   },
 ] as const;
+
+const tenantSettings = {
+  tenant_id: "tenant_default",
+  display_name: "Demo Store",
+  branding: {
+    logo_url: "https://cdn.example/logo.svg",
+    primary_color: "#2563eb",
+    accent_color: "#10b981",
+  },
+  preferences: {
+    default_locale: "en-AU",
+    currency: "AUD",
+    timezone: "Australia/Melbourne",
+    ai_tone: "friendly",
+    compliance_strict_mode: true,
+    data_retention_days: 365,
+  },
+  updated_at: "2026-05-08T00:00:00Z",
+};
+
+const complianceReportSummary = {
+  tenant_id: "tenant_default",
+  period: "30d",
+  generated_at: "2026-05-08T00:00:00Z",
+  totals: { checks: 10, passed: 7, failed: 2, needs_review: 1 },
+  average_score: 83,
+  trends: [
+    { date: "2026-05-01", passed: 3, failed: 1, needs_review: 0, average_score: 84 },
+    { date: "2026-05-02", passed: 4, failed: 1, needs_review: 1, average_score: 82 },
+  ],
+  rule_coverage: [
+    { rule_id: "rule_alt_text", rule_name: "Image alt text", checked: 10, passed: 8, failed: 2 },
+    { rule_id: "rule_claims", rule_name: "No exaggerated claims", checked: 6, passed: 6, failed: 0 },
+  ],
+};
+
+type MockCustomComplianceRule = {
+  id: string;
+  tenant_id: string;
+  code: string;
+  name: string;
+  description: string;
+  category: "content" | "seo" | "media" | "legal";
+  severity: "info" | "warning" | "critical";
+  enabled: boolean;
+  condition: { field: string; operator: "contains" | "does_not_contain" | "equals" | "not_equals" | "min_score" | "max_score"; value: string };
+  version: number;
+  updated_at: string;
+};
+
+const customComplianceRules: MockCustomComplianceRule[] = [
+  {
+    id: "custom_health_claims",
+    tenant_id: "tenant_default",
+    code: "copy.health_claims",
+    name: "Health claim guardrail",
+    description: "Reject unsupported medical claims.",
+    category: "legal",
+    severity: "critical",
+    enabled: true,
+    condition: { field: "description", operator: "does_not_contain", value: "cure" },
+    version: 1,
+    updated_at: "2026-05-08T00:00:00Z",
+  },
+];
 
 type MockWorkflow = {
   id: string;
@@ -694,6 +780,21 @@ const server = Bun.serve({
     if (url.pathname === "/api/v1/auth/logout" && req.method === "POST") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
+    if (url.pathname === "/api/v1/tenants/current/settings" && req.method === "GET") {
+      return json({ settings: tenantSettings });
+    }
+    if (url.pathname === "/api/v1/tenants/current/settings" && req.method === "PATCH") {
+      const body = (await req.json()) as {
+        display_name?: string;
+        branding?: typeof tenantSettings.branding;
+        preferences?: typeof tenantSettings.preferences;
+      };
+      tenantSettings.display_name = body.display_name ?? tenantSettings.display_name;
+      tenantSettings.branding = body.branding ?? tenantSettings.branding;
+      tenantSettings.preferences = body.preferences ?? tenantSettings.preferences;
+      tenantSettings.updated_at = "2026-05-08T00:10:00Z";
+      return json({ settings: tenantSettings });
+    }
     if (url.pathname === "/api/v1/products" && req.method === "GET") {
       return json({ products: [product], total: 1, page: 1, per_page: 20 });
     }
@@ -950,6 +1051,50 @@ const server = Bun.serve({
     }
     if (url.pathname === "/api/v1/compliance/rules" && req.method === "GET") {
       return json({ rules: [complianceRule] });
+    }
+    if (url.pathname === "/api/v1/compliance/reports/summary" && req.method === "GET") {
+      return json({ report: complianceReportSummary });
+    }
+    if (url.pathname === "/api/v1/compliance/reports/export" && req.method === "GET") {
+      if (url.searchParams.get("format") === "json") {
+        return json({ report: complianceReportSummary });
+      }
+      return new Response("rule,passed,failed\nalt_text,8,2\n", {
+        headers: {
+          "content-type": "text/csv",
+          "content-disposition": 'attachment; filename="compliance-report.csv"',
+          ...corsHeaders,
+        },
+      });
+    }
+    if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "GET") {
+      return json({ rules: customComplianceRules });
+    }
+    if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "POST") {
+      const body = (await req.json()) as Omit<MockCustomComplianceRule, "id" | "version" | "updated_at">;
+      const rule: MockCustomComplianceRule = {
+        ...body,
+        id: `custom_${customComplianceRules.length + 1}`,
+        version: 1,
+        updated_at: "2026-05-08T00:20:00Z",
+      };
+      customComplianceRules.unshift(rule);
+      return json({ rule }, { status: 201 });
+    }
+    if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "PATCH") {
+      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
+      const rule = customComplianceRules.find((candidate) => candidate.id === ruleId);
+      if (!rule) return json({ error: "not_found" }, { status: 404 });
+      const body = (await req.json()) as Partial<MockCustomComplianceRule>;
+      Object.assign(rule, body, { updated_at: "2026-05-08T00:21:00Z", version: rule.version + 1 });
+      return json({ rule });
+    }
+    if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "DELETE") {
+      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
+      const index = customComplianceRules.findIndex((candidate) => candidate.id === ruleId);
+      if (index === -1) return json({ error: "not_found" }, { status: 404 });
+      customComplianceRules.splice(index, 1);
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
     if (
       url.pathname === `/api/v1/products/${product.id}/compliance-check` &&

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { canViewAdminNavItem, type User } from "@/lib/domain/auth";
 import { LogoutButton } from "./LogoutButton";
+import { TenantSelector } from "./TenantSelector";
 
 interface AdminNavItem {
   readonly key: string;
@@ -20,6 +21,8 @@ const navItems: readonly AdminNavItem[] = [
   { key: "compliance", href: "/admin/compliance", label: "Compliance" },
   { key: "settings", href: "/admin/settings", label: "Settings" },
 ];
+
+const defaultTenants = [{ tenantId: "tenant_default", displayName: "Demo Store" }] as const;
 
 export interface AdminShellProps {
   readonly user: User;
@@ -60,6 +63,8 @@ export function AdminShell({ user, children }: AdminShellProps) {
               </Link>
             ))}
           </nav>
+
+          <TenantSelector tenants={defaultTenants} activeTenantId="tenant_default" />
 
           <div className="mt-auto space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{accessLabel}</p>

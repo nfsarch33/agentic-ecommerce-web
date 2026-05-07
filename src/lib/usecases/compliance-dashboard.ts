@@ -1,20 +1,28 @@
 import {
   checkProductCompliance,
+  fetchComplianceReportSummary,
   fetchComplianceRules,
+  fetchCustomComplianceRules,
   type CheckProductComplianceOptions,
+  type FetchComplianceReportSummaryOptions,
   type FetchComplianceRulesOptions,
+  type FetchCustomComplianceRulesOptions,
 } from "@/lib/adapters/api/compliance";
 import { fetchProducts, type FetchProductsOptions } from "@/lib/adapters/api/products";
 import {
   complianceSummary,
+  type ComplianceReportSummary,
   type ComplianceResult,
   type ComplianceRule,
   type ComplianceSummary,
+  type CustomComplianceRule,
 } from "@/lib/domain/compliance";
 import type { Product } from "@/lib/domain/product";
 
 export interface LoadComplianceDashboardInput {
   readonly baseUrl: string;
+  readonly tenantId?: string;
+  readonly period?: string;
 }
 
 export interface LoadComplianceDashboardResult {
@@ -22,12 +30,16 @@ export interface LoadComplianceDashboardResult {
   readonly rules: readonly ComplianceRule[];
   readonly results: readonly ComplianceResult[];
   readonly summary: ComplianceSummary;
+  readonly reportSummary?: ComplianceReportSummary;
+  readonly customRules?: readonly CustomComplianceRule[];
 }
 
 export interface LoadComplianceDashboardDeps {
   readonly fetchProductsImpl?: (opts: FetchProductsOptions) => Promise<readonly Product[]>;
   readonly fetchRulesImpl?: (opts: FetchComplianceRulesOptions) => Promise<readonly ComplianceRule[]>;
   readonly checkProductImpl?: (opts: CheckProductComplianceOptions) => Promise<ComplianceResult>;
+  readonly fetchReportSummaryImpl?: (opts: FetchComplianceReportSummaryOptions) => Promise<ComplianceReportSummary>;
+  readonly fetchCustomRulesImpl?: (opts: FetchCustomComplianceRulesOptions) => Promise<readonly CustomComplianceRule[]>;
 }
 
 export interface RunBulkComplianceCheckInput {
@@ -46,9 +58,14 @@ export async function loadComplianceDashboard(
   const fetchProductsImpl = deps.fetchProductsImpl ?? fetchProducts;
   const fetchRulesImpl = deps.fetchRulesImpl ?? fetchComplianceRules;
   const checkProductImpl = deps.checkProductImpl ?? checkProductCompliance;
-  const [products, rules] = await Promise.all([
+  const fetchReportSummaryImpl = deps.fetchReportSummaryImpl ?? fetchComplianceReportSummary;
+  const fetchCustomRulesImpl = deps.fetchCustomRulesImpl ?? fetchCustomComplianceRules;
+  const tenantId = input.tenantId ?? "tenant_default";
+  const [products, rules, reportSummary, customRules] = await Promise.all([
     fetchProductsImpl({ baseUrl: input.baseUrl }),
     fetchRulesImpl({ baseUrl: input.baseUrl }),
+    fetchReportSummaryImpl({ baseUrl: input.baseUrl, tenantId, period: input.period ?? "30d" }).catch(() => undefined),
+    fetchCustomRulesImpl({ baseUrl: input.baseUrl, tenantId }).catch(() => []),
   ]);
   const results = await Promise.all(
     products.map((product) =>
@@ -61,6 +78,8 @@ export async function loadComplianceDashboard(
     rules,
     results,
     summary: complianceSummary(results),
+    reportSummary,
+    customRules,
   };
 }
 

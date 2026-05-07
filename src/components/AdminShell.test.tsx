@@ -27,6 +27,8 @@ describe("AdminShell", () => {
     expect(screen.getByRole("link", { name: /media/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /orders/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/active tenant/i)).toHaveValue("tenant_default");
+    expect(screen.getByText(/single tenant mode/i)).toBeInTheDocument();
     expect(screen.getByText("admin@example.com")).toBeInTheDocument();
   });
 
