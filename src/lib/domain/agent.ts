@@ -1,5 +1,5 @@
 export type AgentKind = "sourcing" | "content" | "pricing" | "compliance";
-export type AgentStatus = "idle" | "queued" | "running" | "succeeded" | "failed" | "disabled";
+export type AgentStatus = "idle" | "queued" | "running" | "succeeded" | "failed" | "cancelled" | "disabled";
 export type AgentRunTrigger = "manual" | "scheduled" | "event";
 export type AgentStatusTone = "gray" | "blue" | "green" | "red" | "amber";
 
@@ -58,6 +58,7 @@ export function agentStatusTone(status: AgentStatus): AgentStatusTone {
       return "red";
     case "queued":
       return "amber";
+    case "cancelled":
     case "disabled":
     case "idle":
       return "gray";
