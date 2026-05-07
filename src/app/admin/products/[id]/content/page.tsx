@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { AIProductDescriptionPanel } from "@/components/AIProductDescriptionPanel";
 import { loadProductContentEditor } from "@/lib/usecases/product-content-editor";
 
@@ -5,6 +6,17 @@ export const dynamic = "force-dynamic";
 
 interface ProductContentPageProps {
   readonly params: Promise<{ readonly id: string }>;
+}
+
+export async function generateMetadata({ params }: ProductContentPageProps): Promise<Metadata> {
+  const { id } = await params;
+  return {
+    title: `Product Content ${id} | Agentic Ecommerce Admin`,
+    description: "Generate AI product copy and start the durable product publish workflow.",
+    alternates: {
+      canonical: `/admin/products/${id}/content`,
+    },
+  };
 }
 
 export default async function ProductContentPage({ params }: ProductContentPageProps) {

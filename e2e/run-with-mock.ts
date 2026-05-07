@@ -189,6 +189,105 @@ const recentEvents = [
   },
 ] as const;
 
+type MockWorkflow = {
+  id: string;
+  type: "product_publish";
+  status: "queued" | "running" | "waiting_review" | "completed" | "failed" | "cancelled";
+  product_id: string;
+  product_title: string;
+  current_activity?: string;
+  started_at: string;
+  updated_at: string;
+  completed_at?: string;
+  error?: string;
+  activities: Array<{
+    id: string;
+    name: string;
+    status: "pending" | "running" | "waiting_review" | "completed" | "failed" | "skipped";
+    started_at?: string;
+    completed_at?: string;
+    message?: string;
+    attempt?: number;
+    error?: string;
+  }>;
+};
+
+const workflowDetail: MockWorkflow = {
+  id: "wf_product_publish_1",
+  type: "product_publish",
+  status: "waiting_review",
+  product_id: product.id,
+  product_title: product.title,
+  current_activity: "Human review",
+  started_at: "2026-05-07T04:40:00Z",
+  updated_at: "2026-05-07T04:42:00Z",
+  activities: [
+    {
+      id: "act_compliance",
+      name: "Check compliance",
+      status: "completed",
+      started_at: "2026-05-07T04:40:00Z",
+      completed_at: "2026-05-07T04:40:30Z",
+      message: "Passed CCE checks.",
+      attempt: 1,
+    },
+    {
+      id: "act_media",
+      name: "Validate media",
+      status: "completed",
+      started_at: "2026-05-07T04:40:30Z",
+      completed_at: "2026-05-07T04:41:00Z",
+      message: "Primary product media is valid.",
+      attempt: 1,
+    },
+    {
+      id: "act_review",
+      name: "Human review",
+      status: "waiting_review",
+      started_at: "2026-05-07T04:41:00Z",
+      message: "Waiting for operator approval.",
+    },
+  ],
+};
+
+const workflows: MockWorkflow[] = [
+  workflowDetail,
+  {
+    ...workflowDetail,
+    id: "wf_product_publish_completed",
+    status: "completed",
+    current_activity: "Published to WooCommerce",
+    updated_at: "2026-05-07T04:20:00Z",
+    completed_at: "2026-05-07T04:20:00Z",
+    activities: workflowDetail.activities.map((activity) => ({
+      ...activity,
+      status: "completed",
+      completed_at: activity.completed_at ?? "2026-05-07T04:20:00Z",
+    })),
+  },
+  {
+    ...workflowDetail,
+    id: "wf_product_publish_failed",
+    status: "failed",
+    current_activity: "Publish to WooCommerce",
+    updated_at: "2026-05-07T04:10:00Z",
+    error: "WooCommerce publish failed",
+    activities: [
+      ...workflowDetail.activities.slice(0, 2),
+      {
+        id: "act_publish",
+        name: "Publish to WooCommerce",
+        status: "failed",
+        started_at: "2026-05-07T04:09:00Z",
+        completed_at: "2026-05-07T04:10:00Z",
+        error: "WooCommerce publish failed",
+        attempt: 2,
+      },
+    ],
+  },
+];
+
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,OPTIONS",
@@ -276,6 +375,21 @@ function sessionFromAuthorization(req: Request): Response {
   return json(session);
 }
 
+function workflowSummary(workflow: MockWorkflow): Omit<MockWorkflow, "activities"> {
+  return {
+    id: workflow.id,
+    type: workflow.type,
+    status: workflow.status,
+    product_id: workflow.product_id,
+    product_title: workflow.product_title,
+    current_activity: workflow.current_activity,
+    started_at: workflow.started_at,
+    updated_at: workflow.updated_at,
+    completed_at: workflow.completed_at,
+    error: workflow.error,
+  };
+}
+
 const apiPort = Number(process.env.E2E_MOCK_API_PORT ?? 18080);
 const releaseFlowMode = process.env.E2E_RELEASE_FLOW === "true";
 const server = Bun.serve({
@@ -320,6 +434,60 @@ const server = Bun.serve({
           created_at: "2026-05-07T00:12:00Z",
         },
       });
+    }
+
+    if (url.pathname === "/api/v1/workflows" && req.method === "GET") {
+      const status = url.searchParams.get("status");
+      const limit = Number(url.searchParams.get("limit") ?? "50");
+      const list = status ? workflows.filter((workflow) => workflow.status === status) : workflows;
+      return json({ workflows: list.slice(0, limit).map(workflowSummary) });
+    }
+    if (url.pathname === "/api/v1/workflows/product-publish" && req.method === "POST") {
+      const body = (await req.json()) as { product_id?: string; description?: string };
+      const workflow: MockWorkflow = {
+        ...workflowDetail,
+        id: `wf_product_publish_${workflows.length + 1}`,
+        status: "running",
+        product_id: body.product_id ?? product.id,
+        product_title: product.title,
+        current_activity: "Check compliance",
+        started_at: "2026-05-07T04:50:00Z",
+        updated_at: "2026-05-07T04:50:00Z",
+        activities: [
+          {
+            id: "act_compliance_new",
+            name: "Check compliance",
+            status: "running",
+            started_at: "2026-05-07T04:50:00Z",
+            message: body.description ? "Checking operator-approved copy." : "Checking product copy.",
+            attempt: 1,
+          },
+        ],
+      };
+      workflows.unshift(workflow);
+      return json({ workflow: workflowSummary(workflow) }, { status: 202 });
+    }
+    if (url.pathname.startsWith("/api/v1/workflows/") && req.method === "GET") {
+      const workflowId = decodeURIComponent(url.pathname.replace("/api/v1/workflows/", ""));
+      const workflow = workflows.find((candidate) => candidate.id === workflowId);
+      return workflow ? json(workflow) : json({ error: "not_found" }, { status: 404 });
+    }
+    if (url.pathname.endsWith("/signals/review") && req.method === "POST") {
+      const workflowId = decodeURIComponent(
+        url.pathname.replace("/api/v1/workflows/", "").replace("/signals/review", ""),
+      );
+      const workflow = workflows.find((candidate) => candidate.id === workflowId);
+      if (!workflow) return json({ error: "not_found" }, { status: 404 });
+      workflow.status = "completed";
+      workflow.current_activity = "Published to WooCommerce";
+      workflow.updated_at = "2026-05-07T04:55:00Z";
+      workflow.completed_at = "2026-05-07T04:55:00Z";
+      workflow.activities = workflow.activities.map((activity) =>
+        activity.status === "waiting_review"
+          ? { ...activity, status: "completed", completed_at: "2026-05-07T04:55:00Z" }
+          : activity,
+      );
+      return json({ workflow: workflowSummary(workflow) }, { status: 202 });
     }
     if (url.pathname === "/api/v1/compliance/rules" && req.method === "GET") {
       return json({ rules: [complianceRule] });

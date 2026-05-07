@@ -44,7 +44,9 @@ describe("AIProductDescriptionPanel", () => {
     expect(screen.getByRole("heading", { name: /ai description studio/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /current description/i })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /generated suggestion/i })).toBeInTheDocument();
-    expect(screen.getAllByText("Progressive resistance band set with 5 tension levels.")).toHaveLength(2);
+    expect(
+      screen.getAllByText("Progressive resistance band set with 5 tension levels."),
+    ).toHaveLength(2);
     expect(screen.getByText(/Train anywhere with a durable/)).toBeInTheDocument();
     expect(screen.getByText("Readability")).toBeInTheDocument();
     expect(screen.getByText("SEO")).toBeInTheDocument();
@@ -79,7 +81,9 @@ describe("AIProductDescriptionPanel", () => {
         prompt: "Make it punchier",
       }),
     );
-    expect(await screen.findByText("Fresh AI copy focused on ecommerce conversion.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Fresh AI copy focused on ecommerce conversion."),
+    ).toBeInTheDocument();
   });
 
   it("approves, edits, and rejects a generated suggestion", async () => {
@@ -99,8 +103,13 @@ describe("AIProductDescriptionPanel", () => {
     expect(screen.getByText(/suggestion approved/i)).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText(/editable description/i));
-    await user.type(screen.getByLabelText(/editable description/i), "Operator-edited approved copy.");
-    expect(screen.getByLabelText(/editable description/i)).toHaveValue("Operator-edited approved copy.");
+    await user.type(
+      screen.getByLabelText(/editable description/i),
+      "Operator-edited approved copy.",
+    );
+    expect(screen.getByLabelText(/editable description/i)).toHaveValue(
+      "Operator-edited approved copy.",
+    );
 
     await user.click(screen.getByRole("button", { name: /reject suggestion/i }));
     expect(screen.getByText(/no active ai suggestion/i)).toBeInTheDocument();
@@ -162,5 +171,42 @@ describe("AIProductDescriptionPanel", () => {
     await user.click(screen.getByRole("button", { name: /generate description/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("backend unavailable");
+  });
+
+  it("starts the product publish workflow with approved editable copy", async () => {
+    const user = userEvent.setup();
+    const startProductPublishImpl = vi.fn().mockResolvedValue({
+      id: "wf_product_publish_1",
+      type: "product_publish",
+      status: "running",
+      productId: product.id,
+      productTitle: product.title,
+      startedAt: "2026-05-07T04:00:00Z",
+      updatedAt: "2026-05-07T04:00:00Z",
+    });
+
+    render(
+      <AIProductDescriptionPanel
+        apiBaseUrl="http://api.test"
+        product={product}
+        initialSuggestions={[suggestion]}
+        generateDescriptionImpl={vi.fn()}
+        startProductPublishImpl={startProductPublishImpl}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /approve suggestion/i }));
+    await user.click(screen.getByRole("button", { name: /start publish workflow/i }));
+
+    expect(startProductPublishImpl).toHaveBeenCalledWith({
+      baseUrl: "http://api.test",
+      productId: product.id,
+      description: suggestion.description,
+    });
+    expect(await screen.findByRole("status")).toHaveTextContent(/publish workflow started/i);
+    expect(screen.getByRole("link", { name: /view workflow/i })).toHaveAttribute(
+      "href",
+      "/admin/workflows/wf_product_publish_1",
+    );
   });
 });
