@@ -8,6 +8,7 @@ describe("GET /readyz", () => {
 
   it("returns ok when required deployment configuration is valid", async () => {
     vi.stubEnv("MC_API_BASE_URL", "https://api.example.com");
+    vi.stubEnv("NEXT_PUBLIC_MC_API_BASE_URL", "https://api.example.com");
     vi.stubEnv("NEXT_PUBLIC_APP_ORIGIN", "https://storefront.example.com");
     vi.stubEnv("NEXT_PUBLIC_MEDIA_CDN_BASE_URL", "https://cdn.example.com");
 
@@ -29,6 +30,27 @@ describe("GET /readyz", () => {
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toMatchObject({
       status: "not_ready",
+    });
+  });
+
+  it("rejects non-HTTPS browser-facing production URLs", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("MC_API_BASE_URL", "http://mc-api.internal:8080");
+    vi.stubEnv("NEXT_PUBLIC_MC_API_BASE_URL", "https://api.example.com");
+    vi.stubEnv("NEXT_PUBLIC_APP_ORIGIN", "https://storefront.example.com");
+    vi.stubEnv("NEXT_PUBLIC_MEDIA_CDN_BASE_URL", "http://cdn.example.com");
+
+    const response = await GET();
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      status: "not_ready",
+      checks: expect.arrayContaining([
+        expect.objectContaining({
+          name: "NEXT_PUBLIC_MEDIA_CDN_BASE_URL",
+          ok: false,
+        }),
+      ]),
     });
   });
 });

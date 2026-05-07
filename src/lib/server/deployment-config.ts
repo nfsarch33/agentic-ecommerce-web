@@ -10,6 +10,7 @@ export interface AuthCookieConfig {
 
 export interface DeploymentConfig {
   readonly mcApiBaseUrl: string;
+  readonly publicMcApiBaseUrl?: string;
   readonly publicAppOrigin?: string;
   readonly mediaCdnBaseUrl?: string;
   readonly n8nUrl?: string;
@@ -52,6 +53,11 @@ export function normalizeHttpBaseUrl(value: string | undefined): string | undefi
   return `${url.origin}${pathname}`;
 }
 
+function isHttpsBaseUrl(value: string | undefined): boolean {
+  const normalized = normalizeHttpBaseUrl(value);
+  return normalized ? new URL(normalized).protocol === "https:" : false;
+}
+
 function parseBoolean(value: string | undefined): boolean | undefined {
   const raw = trimmed(value)?.toLowerCase();
   if (!raw) return undefined;
@@ -82,6 +88,7 @@ export function resolveAuthCookieConfig(env: Env = process.env): AuthCookieConfi
 export function resolveDeploymentConfig(env: Env = process.env): DeploymentConfig {
   return {
     mcApiBaseUrl: normalizeHttpBaseUrl(env.MC_API_BASE_URL) ?? trimmed(env.MC_API_BASE_URL) ?? "http://localhost:8080",
+    publicMcApiBaseUrl: normalizeHttpBaseUrl(env.NEXT_PUBLIC_MC_API_BASE_URL),
     publicAppOrigin:
       normalizeHttpBaseUrl(env.NEXT_PUBLIC_APP_ORIGIN) ?? normalizeHttpBaseUrl(env.NEXT_PUBLIC_SITE_URL),
     mediaCdnBaseUrl: normalizeHttpBaseUrl(env.NEXT_PUBLIC_MEDIA_CDN_BASE_URL),
@@ -91,7 +98,7 @@ export function resolveDeploymentConfig(env: Env = process.env): DeploymentConfi
   };
 }
 
-function requiredUrlCheck(name: string, value: string | undefined): DeploymentCheck {
+function requiredUrlCheck(name: string, value: string | undefined, requireHttps = false): DeploymentCheck {
   const normalized = normalizeHttpBaseUrl(value);
   if (!trimmed(value)) {
     return { name, ok: false, detail: "missing required http(s) URL" };
@@ -99,10 +106,13 @@ function requiredUrlCheck(name: string, value: string | undefined): DeploymentCh
   if (!normalized) {
     return { name, ok: false, detail: "must be an absolute http(s) URL" };
   }
+  if (requireHttps && !isHttpsBaseUrl(normalized)) {
+    return { name, ok: false, detail: "must use HTTPS in production" };
+  }
   return { name, ok: true, detail: normalized };
 }
 
-function optionalUrlCheck(name: string, value: string | undefined): DeploymentCheck {
+function optionalUrlCheck(name: string, value: string | undefined, requireHttps = false): DeploymentCheck {
   const raw = trimmed(value);
   if (!raw) {
     return { name, ok: true, detail: "not configured" };
@@ -111,6 +121,9 @@ function optionalUrlCheck(name: string, value: string | undefined): DeploymentCh
   if (!normalized) {
     return { name, ok: false, detail: "must be an absolute http(s) URL when configured" };
   }
+  if (requireHttps && !isHttpsBaseUrl(normalized)) {
+    return { name, ok: false, detail: "must use HTTPS in production" };
+  }
   return { name, ok: true, detail: normalized };
 }
 
@@ -118,15 +131,19 @@ export function deploymentReadiness(env: Env = process.env): DeploymentReadiness
   const isProduction = env.NODE_ENV === "production";
   const mcApiBaseUrl = isProduction ? env.MC_API_BASE_URL : (env.MC_API_BASE_URL ?? "http://localhost:8080");
   const publicAppOrigin = env.NEXT_PUBLIC_APP_ORIGIN ?? env.NEXT_PUBLIC_SITE_URL;
+  const publicMcApiBaseUrl = env.NEXT_PUBLIC_MC_API_BASE_URL ?? mcApiBaseUrl;
 
   const checks: DeploymentCheck[] = [
     requiredUrlCheck("MC_API_BASE_URL", mcApiBaseUrl),
     isProduction
-      ? requiredUrlCheck("NEXT_PUBLIC_APP_ORIGIN", publicAppOrigin)
+      ? requiredUrlCheck("NEXT_PUBLIC_MC_API_BASE_URL", publicMcApiBaseUrl, true)
+      : optionalUrlCheck("NEXT_PUBLIC_MC_API_BASE_URL", env.NEXT_PUBLIC_MC_API_BASE_URL),
+    isProduction
+      ? requiredUrlCheck("NEXT_PUBLIC_APP_ORIGIN", publicAppOrigin, true)
       : optionalUrlCheck("NEXT_PUBLIC_APP_ORIGIN", publicAppOrigin),
-    optionalUrlCheck("NEXT_PUBLIC_MEDIA_CDN_BASE_URL", env.NEXT_PUBLIC_MEDIA_CDN_BASE_URL),
-    optionalUrlCheck("NEXT_PUBLIC_N8N_URL", env.NEXT_PUBLIC_N8N_URL),
-    optionalUrlCheck("NEXT_PUBLIC_TEMPORAL_UI_URL", env.NEXT_PUBLIC_TEMPORAL_UI_URL),
+    optionalUrlCheck("NEXT_PUBLIC_MEDIA_CDN_BASE_URL", env.NEXT_PUBLIC_MEDIA_CDN_BASE_URL, isProduction),
+    optionalUrlCheck("NEXT_PUBLIC_N8N_URL", env.NEXT_PUBLIC_N8N_URL, isProduction),
+    optionalUrlCheck("NEXT_PUBLIC_TEMPORAL_UI_URL", env.NEXT_PUBLIC_TEMPORAL_UI_URL, isProduction),
   ];
 
   return {
