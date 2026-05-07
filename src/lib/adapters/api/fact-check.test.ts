@@ -9,30 +9,36 @@ function jsonResponse(body: unknown, init: ResponseInit = { status: 200 }): Resp
 }
 
 const rawEvidence = {
-  id: "ev_1",
+  chunk_id: "ev_1",
+  document_id: "doc_1",
   title: "Resistance Band Product Manual",
-  uri: "s3://rag-docs/resistance-band-manual.md",
-  excerpt: "The set includes five latex bands with progressive tension levels.",
-  similarity: 0.91,
-  source_type: "manual",
-  metadata: { page: 2 },
+  source: "s3://rag-docs/resistance-band-manual.md",
+  text: "The set includes five latex bands with progressive tension levels.",
+  score: 0.91,
+  metadata: { page: "2", source_type: "manual" },
 };
 
 const rawFactCheck = {
   id: "fc_1",
   product_id: "p_1",
-  suggestion_id: "sug_1",
-  overall_confidence: 86,
-  status: "supported",
+  pass: false,
+  confidence: 0.86,
   checked_at: "2026-05-08T01:00:00Z",
+  issues: ["ambiguous claim: Warranty coverage is available."],
   claims: [
     {
-      id: "claim_1",
+      claim: { text: "The set includes five tension levels." },
       text: "The set includes five tension levels.",
-      confidence: 92,
-      verdict: "supported",
+      confidence: 0.92,
+      status: "supported",
       evidence: [rawEvidence],
-      explanation: "Product manual confirms this claim.",
+    },
+    {
+      claim: { text: "Warranty coverage is available." },
+      text: "Warranty coverage is available.",
+      confidence: 0.46,
+      status: "ambiguous",
+      evidence: [],
     },
   ],
 };
@@ -50,6 +56,7 @@ describe("getLatestFactCheckResult", () => {
 
     expect(result?.id).toBe("fc_1");
     expect(result?.overallConfidence.score).toBe(86);
+    expect(result?.status).toBe("ambiguous");
     expect(result?.claims[0]?.evidence[0]?.sourceType).toBe("manual");
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/products/p_1/fact-check-results/latest?suggestion_id=sug_1",
@@ -75,8 +82,8 @@ describe("getLatestFactCheckResult", () => {
 });
 
 describe("searchEvidenceSources", () => {
-  it("posts a RAG evidence search query and parses ranked sources", async () => {
-    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ sources: [rawEvidence] }));
+  it("queries backend RAG search and parses ranked sources", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ query: "five tension levels", results: [rawEvidence] }));
 
     const sources = await searchEvidenceSources({
       baseUrl: "http://api.test",
@@ -88,10 +95,10 @@ describe("searchEvidenceSources", () => {
 
     expect(sources[0]?.title).toBe("Resistance Band Product Manual");
     expect(mockFetch).toHaveBeenCalledWith(
-      "http://api.test/api/v1/rag/evidence/search",
+      "http://api.test/api/v1/rag/search?q=five+tension+levels&top_k=3",
       expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ query: "five tension levels", product_id: "p_1", limit: 3 }),
+        method: "GET",
+        headers: expect.objectContaining({ accept: "application/json" }),
       }),
     );
   });

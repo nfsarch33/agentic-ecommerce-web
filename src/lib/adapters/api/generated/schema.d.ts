@@ -212,6 +212,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rag/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest a RAG source document
+         * @description Chunks and embeds source material for fact-check evidence search. Embeddings are produced through the configured embedding port; the backend never calls MiniMax directly.
+         */
+        post: operations["ingestRAGDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rag/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search fact-check evidence */
+        get: operations["searchRAGEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate product content with fact-checking
+         * @description Generates product copy, extracts factual claims, searches RAG evidence, and returns a combined quality/factual approval decision.
+         */
+        post: operations["generateFactCheckedContent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/fact-checks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retrieve a stored fact-check result */
+        get: operations["getFactCheckResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/{id}/compliance-check": {
         parameters: {
             query?: never;
@@ -545,6 +619,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/workflows/content-generation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the ContentGenerationWorkflow
+         * @description Starts the Temporal workflow that generates content, fact-checks claims against RAG evidence, evaluates quality, and auto-approves or rejects the result.
+         */
+        post: operations["startContentGenerationWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows/{id}": {
         parameters: {
             query?: never;
@@ -775,6 +869,84 @@ export interface components {
             tokens_used: number;
             evaluation: components["schemas"]["ContentEvaluation"];
         };
+        GenerateFactCheckedContentRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /**
+             * @default professional
+             * @enum {string}
+             */
+            style: "professional" | "casual" | "luxury" | "technical";
+            /** @default en-AU */
+            language: string;
+            /** @default 120 */
+            max_words: number;
+            keywords?: string[];
+        };
+        ContentFactCheckResponse: {
+            fact_check_id: string;
+            /** Format: uuid */
+            product_id: string;
+            description: string;
+            seo_title: string;
+            meta_description: string;
+            score: number;
+            pass: boolean;
+            tokens_used: number;
+            evaluation: components["schemas"]["ContentEvaluation"];
+            fact_check: components["schemas"]["FactCheckResult"];
+        };
+        FactCheckResult: {
+            id?: string;
+            product_id?: string;
+            pass: boolean;
+            confidence: number;
+            /** Format: date-time */
+            checked_at?: string;
+            claims: components["schemas"]["ClaimCheck"][];
+            issues: string[];
+        };
+        ClaimCheck: {
+            claim: {
+                text: string;
+            };
+            text: string;
+            /** @enum {string} */
+            status: "supported" | "unsupported" | "contradicted" | "ambiguous";
+            confidence: number;
+            evidence: components["schemas"]["RAGSearchResult"][];
+        };
+        RAGDocumentRequest: {
+            id: string;
+            /** @default default */
+            tenant_id: string;
+            title?: string;
+            source?: string;
+            content: string;
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        RAGIngestResponse: {
+            document_id: string;
+            chunks: number;
+        };
+        RAGSearchResponse: {
+            query: string;
+            results: components["schemas"]["RAGSearchResult"][];
+        };
+        RAGSearchResult: {
+            chunk_id: string;
+            document_id: string;
+            tenant_id?: string;
+            title?: string;
+            source?: string;
+            text: string;
+            score: number;
+            metadata?: {
+                [key: string]: string;
+            };
+        };
         ComplianceCheckRequest: {
             keywords?: string[];
             seo_title?: string;
@@ -920,6 +1092,22 @@ export interface components {
             product_id: string;
             /** @description Operator identity recorded in workflow audit events. */
             requested_by?: string;
+        };
+        StartContentGenerationWorkflowRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /** @description Operator identity recorded in workflow audit events. */
+            requested_by?: string;
+            /**
+             * @default professional
+             * @enum {string}
+             */
+            style: "professional" | "casual" | "luxury" | "technical";
+            /** @default en-AU */
+            language: string;
+            /** @default 120 */
+            max_words: number;
+            keywords?: string[];
         };
         WorkflowStartResponse: {
             workflow_id: string;
@@ -1650,6 +1838,189 @@ export interface operations {
             };
         };
     };
+    ingestRAGDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RAGDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Document accepted and chunked. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RAGIngestResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Empty or invalid source document. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description RAG service is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    searchRAGEvidence: {
+        parameters: {
+            query: {
+                q: string;
+                top_k?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ranked evidence chunks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RAGSearchResponse"];
+                };
+            };
+            /** @description Missing query. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description RAG service is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    generateFactCheckedContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateFactCheckedContentRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated content with fact-check result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentFactCheckResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content generation or fact-checking failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content generator or fact checker is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getFactCheckResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fact-check result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactCheckResult"];
+                };
+            };
+            /** @description Fact-check result not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     checkProductCompliance: {
         parameters: {
             query?: never;
@@ -2349,6 +2720,66 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["StartProductPublishWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startContentGenerationWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartContentGenerationWorkflowRequest"];
             };
         };
         responses: {

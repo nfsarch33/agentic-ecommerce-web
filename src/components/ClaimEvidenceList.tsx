@@ -10,13 +10,17 @@ export interface ClaimEvidenceListProps {
 
 const verdictLabels = {
   supported: "Supported",
+  unsupported: "Unsupported",
   contradicted: "Contradicted",
+  ambiguous: "Ambiguous",
   insufficient_evidence: "Needs evidence",
 } as const;
 
 const verdictClasses = {
   supported: "border-green-200 bg-green-50 text-green-700",
+  unsupported: "border-amber-200 bg-amber-50 text-amber-700",
   contradicted: "border-red-200 bg-red-50 text-red-700",
+  ambiguous: "border-amber-200 bg-amber-50 text-amber-700",
   insufficient_evidence: "border-amber-200 bg-amber-50 text-amber-700",
 } as const;
 

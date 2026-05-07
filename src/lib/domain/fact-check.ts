@@ -1,5 +1,5 @@
 export type ConfidenceLabel = "High" | "Medium" | "Low";
-export type ClaimVerdict = "supported" | "contradicted" | "insufficient_evidence";
+export type ClaimVerdict = "supported" | "unsupported" | "contradicted" | "ambiguous" | "insufficient_evidence";
 export type FactCheckStatus = ClaimVerdict;
 
 export interface FactualConfidence {
@@ -158,7 +158,8 @@ export function summarizeFactCheckResult(result: FactCheckResult): FactCheckSumm
     (summary, claim) => ({
       supported: summary.supported + (claim.verdict === "supported" ? 1 : 0),
       contradicted: summary.contradicted + (claim.verdict === "contradicted" ? 1 : 0),
-      insufficient: summary.insufficient + (claim.verdict === "insufficient_evidence" ? 1 : 0),
+      insufficient:
+        summary.insufficient + (["unsupported", "ambiguous", "insufficient_evidence"].includes(claim.verdict) ? 1 : 0),
       total: summary.total + 1,
     }),
     { supported: 0, contradicted: 0, insufficient: 0, total: 0 },
