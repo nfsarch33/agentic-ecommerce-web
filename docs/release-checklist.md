@@ -1,14 +1,15 @@
-# v1.0.0 Release Checklist
+# v1.7.0 Frontend Cloud Deployment Checklist
 
-Use this checklist before tagging `agentic-ecommerce-web` v1.0.0.
+Use this checklist before promoting `agentic-ecommerce-web` for the v1.7.0 cloud-hardening milestone.
 
 ## Version and Docs
 
-- `package.json` contains `"version": "1.0.0"`.
-- `CHANGELOG.md` includes the v1.0.0 release entry.
+- `package.json` versioning is intentionally unchanged unless a frontend release tag is being cut.
+- `CHANGELOG.md` includes the cloud deployment readiness entry when a release tag is prepared.
 - `README.md` links quickstart, architecture, deployment, BFF routes, quality gates, and security boundaries.
-- `docs/deployment.md` documents Docker Compose, AWS ECS/GCP Cloud Run dry-run references, environment variables, and security headers.
+- `docs/deployment.md` documents Docker Compose, AWS/GCP deployment notes, health checks, CDN/media, reverse proxy/TLS, environment variables, and security headers.
 - `docs/bff-routes.md` documents frontend BFF route boundaries and upstream backend API links.
+- `.env.production.example` includes the production frontend origin, backend API URLs, CDN media URL, n8n URL, Temporal UI URL, and auth cookie security settings.
 
 ## Frontend Quality Gates
 
@@ -17,6 +18,7 @@ bun install
 bun run typecheck
 bun run lint
 bun run test
+bun run test:coverage
 bun run build
 bun run test:e2e
 ```
@@ -35,10 +37,10 @@ Expected result: generated schema reflects the backend `api/openapi.yaml` intend
 ## Deployment Gates
 
 ```bash
-docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v1.0.0} .
+docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v1.7.0} .
 ```
 
-Then run the full-stack Docker Compose smoke from the backend repo using the matching `WEB_IMAGE_TAG`. AWS ECS and GCP Cloud Run remain dry-run paths for v1.0.0 and are referenced from the backend Terraform docs.
+Then run the full-stack Docker Compose smoke from the backend repo using the matching `WEB_IMAGE_TAG`. AWS ECS/GCP Cloud Run infrastructure remains backend/infra-owned; the frontend artifact is ready when the image builds and `/healthz` plus `/readyz` behave as documented.
 
 ## Security and Public Boundary Gates
 

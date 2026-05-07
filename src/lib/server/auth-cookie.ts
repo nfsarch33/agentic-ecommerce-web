@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveAuthCookieConfig } from "./deployment-config";
 
 export const AUTH_COOKIE_NAME = "ec_session";
 
@@ -23,25 +24,31 @@ export function readAuthTokenFromRequest(request: Request): string | null {
 }
 
 export function setAuthCookie(response: NextResponse, accessToken: string): void {
+  const cookieConfig = resolveAuthCookieConfig();
+
   response.cookies.set({
     name: AUTH_COOKIE_NAME,
     value: accessToken,
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: cookieConfig.sameSite,
+    secure: cookieConfig.secure,
     path: cookiePath,
     maxAge: sessionMaxAgeSeconds,
+    ...(cookieConfig.domain ? { domain: cookieConfig.domain } : {}),
   });
 }
 
 export function clearAuthCookie(response: NextResponse): void {
+  const cookieConfig = resolveAuthCookieConfig();
+
   response.cookies.set({
     name: AUTH_COOKIE_NAME,
     value: "",
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: cookieConfig.sameSite,
+    secure: cookieConfig.secure,
     path: cookiePath,
     maxAge: 0,
+    ...(cookieConfig.domain ? { domain: cookieConfig.domain } : {}),
   });
 }

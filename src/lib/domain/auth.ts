@@ -39,6 +39,7 @@ const adminNavMinimumRoles: Record<string, Role> = {
   compliance: "operator",
   workflows: "operator",
   n8n: "admin",
+  temporal: "admin",
   settings: "admin",
 };
 

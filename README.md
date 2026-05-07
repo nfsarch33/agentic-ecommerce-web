@@ -159,10 +159,17 @@ validation step.
 
 | Var                    | Default                       | Notes                                  |
 |------------------------|-------------------------------|----------------------------------------|
-| `MC_API_BASE_URL`      | `http://localhost:8080`       | Go backend base URL                    |
+| `MC_API_BASE_URL`      | `http://localhost:8080`       | Server-side Go backend base URL        |
+| `NEXT_PUBLIC_MC_API_BASE_URL` | `MC_API_BASE_URL`       | Browser-reachable Go backend base URL  |
+| `NEXT_PUBLIC_APP_ORIGIN` | `NEXT_PUBLIC_SITE_URL` fallback | Public storefront origin for metadata, readiness, and deployment headers |
+| `NEXT_PUBLIC_MEDIA_CDN_BASE_URL` | _(unset)_             | Public CDN base URL for media assets   |
+| `NEXT_PUBLIC_N8N_URL`  | _(unset)_                     | Admin-only n8n UI link                 |
+| `NEXT_PUBLIC_TEMPORAL_UI_URL` | _(unset)_              | Admin-only Temporal UI link            |
+| `AUTH_COOKIE_SECURE`   | `true` in production          | Secure auth cookie flag                |
+| `AUTH_COOKIE_SAME_SITE` | `lax`                        | Auth cookie SameSite value             |
+| `AUTH_COOKIE_DOMAIN`   | _(unset)_                     | Optional shared auth cookie domain     |
 | `FLEET_AI_BRIDGE_URL`  | _(unset)_                     | Approved AI bridge URL (validated)     |
-| `NEXT_PUBLIC_APP_ORIGIN` | _(unset)_                   | Public storefront origin for deployment docs and headers |
-| `CSP_CONNECT_SRC`      | _(unset)_                     | Deployment header allowlist for API/BFF connections |
+| `CSP_CONNECT_SRC`      | _(unset)_                     | Deployment header allowlist for API/BFF/CDN connections |
 | `CSP_REPORT_URI`       | _(unset)_                     | Optional CSP report endpoint           |
 | `PORT`                 | `3000`                        | Next.js dev server port                |
 
