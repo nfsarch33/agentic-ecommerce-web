@@ -1,4 +1,5 @@
 import { formatMoney, isInStock, type ProductFields } from "@/lib/domain/product";
+import { AddToCartButton } from "./AddToCartButton";
 
 export interface ProductCardProps {
   readonly product: ProductFields;
@@ -17,13 +18,15 @@ export function ProductCard({ product }: ProductCardProps) {
       <p className={inStock ? "text-sm text-green-700" : "text-sm text-red-700"}>
         {inStock ? "In stock" : "Out of stock"}
       </p>
-      <button
-        type="button"
+      <AddToCartButton
         disabled={!inStock}
-        className="mt-1 rounded-md bg-[var(--color-brand-500)] px-3 py-1.5 text-sm text-white hover:bg-[var(--color-brand-700)] disabled:cursor-not-allowed disabled:bg-gray-300"
-      >
-        Add to cart
-      </button>
+        item={{
+          productId: product.id,
+          title: product.title,
+          slug: product.slug,
+          unitPrice: product.price,
+        }}
+      />
     </article>
   );
 }
