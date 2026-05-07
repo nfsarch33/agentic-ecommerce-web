@@ -97,6 +97,29 @@ describe("workflows API adapter", () => {
     ]);
   });
 
+  it("maps backend workflow status responses into a synthetic timeline", async () => {
+    const result = await fetchWorkflowDetail({
+      baseUrl: "http://api.test",
+      workflowId: "product-publish-123",
+      fetchImpl: mockFetch({
+        workflow_id: "product-publish-123",
+        run_id: "run-123",
+        status: "timed_out",
+        start_time: "2026-05-07T04:00:00Z",
+        close_time: "2026-05-07T04:10:00Z",
+      }),
+    });
+
+    expect(result.status).toBe("timed_out");
+    expect(result.activities).toEqual([
+      expect.objectContaining({
+        name: "Temporal execution",
+        status: "failed",
+        message: "Temporal status: timed out",
+      }),
+    ]);
+  });
+
   it("starts a product publish workflow", async () => {
     const fetchImpl = mockFetch({ workflow: rawSummary }, 202);
     const result = await startProductPublishWorkflow({
@@ -116,8 +139,27 @@ describe("workflows API adapter", () => {
     expect(result.id).toBe("wf_product_publish_1");
   });
 
+  it("accepts backend workflow start responses", async () => {
+    const result = await startProductPublishWorkflow({
+      baseUrl: "http://api.test",
+      productId: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+      fetchImpl: mockFetch(
+        {
+          workflow_id: "product-publish-018f1c8e",
+          run_id: "run-123",
+          status: "started",
+          task_queue: "ec-workflows",
+        },
+        202,
+      ),
+    });
+
+    expect(result.id).toBe("product-publish-018f1c8e");
+    expect(result.status).toBe("running");
+  });
+
   it("sends human review signals to the workflow", async () => {
-    const fetchImpl = mockFetch({ workflow: { ...rawSummary, status: "completed" } }, 202);
+    const fetchImpl = mockFetch({ status: "signaled" }, 202);
     const result = await sendWorkflowReviewSignal({
       baseUrl: "http://api.test",
       workflowId: "wf_product_publish_1",
@@ -130,10 +172,10 @@ describe("workflows API adapter", () => {
       "http://api.test/api/v1/workflows/wf_product_publish_1/signals/review",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ signal: "approve", note: "Looks good." }),
+        body: JSON.stringify({ approved: true, note: "Looks good." }),
       }),
     );
-    expect(result.status).toBe("completed");
+    expect(result.id).toBe("wf_product_publish_1");
   });
 
   it("throws WorkflowsApiError for HTTP failures and invalid response bodies", async () => {

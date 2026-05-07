@@ -21,6 +21,16 @@ test("admin workflows page shows status groups and sends review signal", async (
   await expect(page.getByRole("status")).toContainText("Sent approve signal.");
 });
 
+test("admin workflow detail shows failed publish state without review actions", async ({ page }) => {
+  await signInAs(page, "admin");
+  await page.goto("/admin/workflows/wf_product_publish_failed");
+
+  await expect(page.getByRole("heading", { name: /resistance band set workflow/i })).toBeVisible();
+  await expect(page.getByText("WooCommerce publish failed")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
+  await expect(page.getByText(/review signals are available/i)).toBeVisible();
+});
+
 test("product content publish button starts a workflow", async ({ page }) => {
   await signInAs(page, "admin");
   await page.goto(`/admin/products/${productId}/content`);

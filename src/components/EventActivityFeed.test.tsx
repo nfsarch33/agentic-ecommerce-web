@@ -105,7 +105,7 @@ describe("EventActivityFeed", () => {
     );
   });
 
-  it("contains the section landmark with appropriate label", () => {
+  it("contains the section landmark with appropriate label", async () => {
     const listEventsImpl = vi.fn().mockResolvedValue([]);
 
     render(
@@ -115,5 +115,8 @@ describe("EventActivityFeed", () => {
     expect(
       screen.getByRole("region", { name: "Event activity feed" }),
     ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/no recent events/i)).toBeInTheDocument();
+    });
   });
 });

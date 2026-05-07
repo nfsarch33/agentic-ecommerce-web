@@ -60,8 +60,16 @@ describe("workflow domain", () => {
         createWorkflowSummary({ ...baseSummary, id: "wf_2", status: "waiting_review" }),
         createWorkflowSummary({ ...baseSummary, id: "wf_3", status: "completed" }),
         createWorkflowSummary({ ...baseSummary, id: "wf_4", status: "failed" }),
+        createWorkflowSummary({ ...baseSummary, id: "wf_5", status: "timed_out" }),
       ]),
-    ).toEqual({ running: 2, completed: 1, failed: 1 });
+    ).toEqual({ running: 2, completed: 1, failed: 2 });
+  });
+
+  it("labels backend Temporal terminal statuses", () => {
+    expect(workflowStatusLabel("canceled")).toBe("Canceled");
+    expect(workflowStatusLabel("terminated")).toBe("Terminated");
+    expect(workflowStatusLabel("timed_out")).toBe("Timed out");
+    expect(workflowStatusTone("continued_as_new")).toBe("gray");
   });
 
   it("rejects invalid workflow and activity statuses", () => {

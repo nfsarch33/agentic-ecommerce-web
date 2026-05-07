@@ -7,6 +7,11 @@ import {
   type WorkflowStatus,
   type WorkflowSummary,
 } from "@/lib/domain/workflow";
+import type { components } from "./generated/schema";
+
+type WorkflowStartResponse = components["schemas"]["WorkflowStartResponse"];
+type WorkflowStatusResponse = components["schemas"]["WorkflowStatusResponse"];
+type ProductPublishReviewSignal = components["schemas"]["ProductPublishReviewSignal"];
 
 export interface FetchWorkflowListOptions {
   readonly baseUrl: string;
@@ -90,22 +95,78 @@ function parseOptionalNumber(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+function mapBackendWorkflowStatus(status: unknown): WorkflowStatus {
+  if (status === "started") return "running";
+  return String(status ?? "") as WorkflowStatus;
+}
+
 function mapWorkflowSummary(raw: RawWorkflowSummary): WorkflowSummary {
   return createWorkflowSummary({
-    id: String(raw.id ?? ""),
+    id: String(raw.id ?? (raw as WorkflowStatusResponse).workflow_id ?? ""),
     type: String(raw.type ?? ""),
-    status: String(raw.status ?? "") as WorkflowStatus,
+    status: mapBackendWorkflowStatus(raw.status),
     productId: String(raw.product_id ?? ""),
     productTitle: parseOptionalString(raw.product_title),
     currentActivity: parseOptionalString(raw.current_activity),
-    startedAt: String(raw.started_at ?? ""),
-    updatedAt: String(raw.updated_at ?? ""),
-    completedAt: parseOptionalString(raw.completed_at),
+    startedAt: String(raw.started_at ?? (raw as WorkflowStatusResponse).start_time ?? ""),
+    updatedAt: String(raw.updated_at ?? (raw as WorkflowStatusResponse).close_time ?? (raw as WorkflowStatusResponse).start_time ?? ""),
+    completedAt: parseOptionalString(raw.completed_at ?? (raw as WorkflowStatusResponse).close_time),
     error: parseOptionalString(raw.error),
   });
 }
 
+function syntheticActivityForStatus(raw: WorkflowStatusResponse): ActivityStatus {
+  switch (raw.status) {
+    case "completed":
+      return "completed";
+    case "failed":
+    case "terminated":
+    case "timed_out":
+      return "failed";
+    case "canceled":
+    case "continued_as_new":
+    case "unspecified":
+      return "skipped";
+    case "running":
+      return "running";
+  }
+}
+
+function mapWorkflowStatusResponse(raw: WorkflowStatusResponse): WorkflowDetail {
+  const timestamp = raw.start_time ?? raw.close_time ?? nowIso();
+  const summary = createWorkflowSummary({
+    id: raw.workflow_id,
+    type: "product_publish",
+    status: mapBackendWorkflowStatus(raw.status),
+    productId: raw.workflow_id,
+    currentActivity: raw.status === "running" ? "Temporal execution" : undefined,
+    startedAt: timestamp,
+    updatedAt: raw.close_time ?? timestamp,
+    completedAt: raw.close_time,
+  });
+  return createWorkflowDetail({
+    ...summary,
+    activities: [
+      {
+        id: `${raw.workflow_id}-temporal`,
+        name: "Temporal execution",
+        status: syntheticActivityForStatus(raw),
+        startedAt: raw.start_time,
+        completedAt: raw.close_time,
+        message: `Temporal status: ${raw.status.replace(/_/g, " ")}`,
+      },
+    ],
+  });
+}
+
 function mapWorkflowDetail(raw: RawWorkflowDetail): WorkflowDetail {
+  if ("workflow_id" in raw && !("activities" in raw)) {
+    return mapWorkflowStatusResponse(raw as WorkflowStatusResponse);
+  }
   if (!Array.isArray(raw.activities)) {
     throw new WorkflowsApiError("workflow detail response must include activities array");
   }
@@ -199,11 +260,25 @@ export async function startProductPublishWorkflow(
   }
   if (!res.ok) throw new WorkflowsApiError(`startProductPublishWorkflow: HTTP ${res.status}`);
 
-  const body = (await readJson(res, "startProductPublishWorkflow")) as { workflow?: unknown };
-  if (!body.workflow) {
-    throw new WorkflowsApiError("startProductPublishWorkflow: response body must include workflow");
+  const body = (await readJson(res, "startProductPublishWorkflow")) as
+    | { workflow?: unknown }
+    | WorkflowStartResponse;
+  if ("workflow" in body && body.workflow) {
+    return mapWorkflowSummary(body.workflow as RawWorkflowSummary);
   }
-  return mapWorkflowSummary(body.workflow as RawWorkflowSummary);
+  if ("workflow_id" in body) {
+    const timestamp = nowIso();
+    return createWorkflowSummary({
+      id: body.workflow_id,
+      type: "product_publish",
+      status: mapBackendWorkflowStatus(body.status),
+      productId: opts.productId,
+      currentActivity: "Workflow started",
+      startedAt: timestamp,
+      updatedAt: timestamp,
+    });
+  }
+  throw new WorkflowsApiError("startProductPublishWorkflow: response body must include workflow_id");
 }
 
 export async function sendWorkflowReviewSignal(
@@ -216,10 +291,7 @@ export async function sendWorkflowReviewSignal(
     res = await fetchImpl(apiUrl(opts.baseUrl, `/api/v1/workflows/${workflowId}/signals/review`), {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json" },
-      body: JSON.stringify({
-        signal: opts.signal,
-        ...(opts.note ? { note: opts.note } : {}),
-      }),
+      body: JSON.stringify(reviewSignalBody(opts.signal, opts.note)),
     });
   } catch (err) {
     throw new WorkflowsApiError("sendWorkflowReviewSignal: network error", err);
@@ -227,8 +299,24 @@ export async function sendWorkflowReviewSignal(
   if (!res.ok) throw new WorkflowsApiError(`sendWorkflowReviewSignal: HTTP ${res.status}`);
 
   const body = (await readJson(res, "sendWorkflowReviewSignal")) as { workflow?: unknown };
-  if (!body.workflow) {
-    throw new WorkflowsApiError("sendWorkflowReviewSignal: response body must include workflow");
+  if (body.workflow) {
+    return mapWorkflowSummary(body.workflow as RawWorkflowSummary);
   }
-  return mapWorkflowSummary(body.workflow as RawWorkflowSummary);
+  const timestamp = nowIso();
+  return createWorkflowSummary({
+    id: opts.workflowId,
+    type: "product_publish",
+    status: "running",
+    productId: opts.workflowId,
+    currentActivity: "Review signal accepted",
+    startedAt: timestamp,
+    updatedAt: timestamp,
+  });
+}
+
+function reviewSignalBody(signal: ReviewSignal, note?: string): ProductPublishReviewSignal {
+  return {
+    approved: signal === "approve",
+    ...(note ? { note } : {}),
+  };
 }
