@@ -7,7 +7,7 @@ The frontend deploys as a Next.js 15 application using standalone output. It is 
 Build the production image from this repo:
 
 ```bash
-docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v1.7.0} .
+docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v2.0.0} .
 ```
 
 The Dockerfile runs `next build` with `output: "standalone"` and copies `.next/standalone`, `.next/static`, and `public` into a non-root Node 22 Alpine runtime. The image exposes port `3000` and includes a liveness healthcheck against `/healthz`.
@@ -25,8 +25,8 @@ Use `.env.production.example` as the deployment template. Copy these values into
 | `NEXT_PUBLIC_APP_ORIGIN` | Production | Public storefront origin used for metadata, readiness, CDN/reverse-proxy policy, and canonical deployment docs. |
 | `NEXT_PUBLIC_SITE_URL` | Legacy fallback | Backwards-compatible fallback for `NEXT_PUBLIC_APP_ORIGIN`; prefer the new variable. |
 | `NEXT_PUBLIC_MEDIA_CDN_BASE_URL` | Production media deployments | Public CDN base URL for media backed by S3/GCS object storage. |
-| `NEXT_PUBLIC_N8N_URL` | Optional | Admin-only external link to the deployed n8n UI. |
-| `NEXT_PUBLIC_TEMPORAL_UI_URL` | Optional | Admin-only external link to Temporal UI when it is intentionally exposed. |
+| `NEXT_PUBLIC_N8N_URL` | Optional | Admin-only external link to the deployed n8n UI when protected by auth and TLS. |
+| `NEXT_PUBLIC_TEMPORAL_UI_URL` | Optional | Admin-only external link to Temporal UI when it is intentionally exposed behind auth and TLS. |
 | `AUTH_COOKIE_SECURE` | Production | Set to `true` behind HTTPS. Defaults to true when `NODE_ENV=production`. |
 | `AUTH_COOKIE_SAME_SITE` | Production | `lax`, `strict`, or `none`. `none` forces secure cookies for browser compatibility. |
 | `AUTH_COOKIE_DOMAIN` | Optional | Shared cookie domain such as `.example.com` when frontend/API subdomains require it. |
@@ -99,7 +99,7 @@ bun run lint
 bun run test
 bun run test:coverage
 bun run build
-docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v1.7.0} .
+docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v2.0.0} .
 ```
 
 Then run:
