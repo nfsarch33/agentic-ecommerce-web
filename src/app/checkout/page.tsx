@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { CheckoutForm } from "@/components/CheckoutForm";
+import { privatePageMetadata } from "@/lib/seo-metadata";
 
 export const metadata: Metadata = {
-  title: "Checkout | Agentic Ecommerce",
-  description:
-    "Enter shipping details and place an order through the Agentic Ecommerce checkout flow.",
-  alternates: {
+  ...privatePageMetadata({
+    title: "Checkout | Agentic Ecommerce",
+    description: "Enter shipping details and place an order through the Agentic Ecommerce checkout flow.",
     canonical: "/checkout",
-  },
+  }),
 };
 
 export default function CheckoutPage() {
@@ -19,9 +19,7 @@ export default function CheckoutPage() {
           Enter shipping details and use the v0.2.0 payment stub to place your order.
         </p>
       </header>
-      <CheckoutForm
-        apiBaseUrl={process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? "http://localhost:8080"}
-      />
+      <CheckoutForm apiBaseUrl={process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? "http://localhost:8080"} />
     </main>
   );
 }

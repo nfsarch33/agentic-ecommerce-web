@@ -11,9 +11,9 @@ test("admin workflows page shows status groups and sends review signal", async (
   await expect(page.getByRole("region", { name: /running workflows/i }).getByText("Resistance Band Set")).toBeVisible();
   await expect(page.getByText("WooCommerce publish failed")).toBeVisible();
 
-  await page.getByRole("link", { name: "Resistance Band Set" }).first().click();
+  await page.goto("/admin/workflows/wf_product_publish_1");
   await expect(page.getByRole("heading", { name: /resistance band set workflow/i })).toBeVisible();
-  await expect(page.getByText("Check compliance")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Check compliance" })).toBeVisible();
   await expect(page.getByText("Waiting for operator approval.")).toBeVisible();
 
   await page.getByLabel(/review note/i).fill("Approved in mocked E2E");

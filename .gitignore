@@ -12,7 +12,9 @@ node_modules
 # testing
 /coverage
 /playwright-report
+/reports/bundle
 /reports/lighthouse
+/reports/security
 /test-results
 /playwright/.cache
 

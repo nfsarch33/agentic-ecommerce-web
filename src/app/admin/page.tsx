@@ -3,15 +3,16 @@ import Link from "next/link";
 import { requireServerSession } from "@/lib/server/auth-session";
 import { canViewAdminNavItem } from "@/lib/domain/auth";
 import { EventActivityFeed } from "@/components/EventActivityFeed";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | Agentic Ecommerce",
-  description: "Operate catalog, order, agent, compliance, sync, and workflow tools for Agentic Ecommerce.",
-  alternates: {
+  ...adminPageMetadata({
+    title: "Admin Dashboard | Agentic Ecommerce",
+    description: "Operate catalog, order, agent, compliance, sync, and workflow tools for Agentic Ecommerce.",
     canonical: "/admin",
-  },
+  }),
 };
 
 export default async function AdminHomePage() {

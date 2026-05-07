@@ -109,14 +109,21 @@ bun run api:generate
 
 ## Quality gates
 
-| Gate                  | Command               | Threshold                     |
-|-----------------------|-----------------------|-------------------------------|
-| TypeScript strict     | `bun run typecheck`   | zero errors                   |
-| Unit tests            | `bun run test`        | ≥ 80% lines, branches ≥ 75%   |
-| ESLint (next + ts)    | `bun run lint`        | zero errors                   |
-| Production build      | `bun run build`       | First Load JS < 200 kB        |
-| Playwright smoke      | `bun run test:e2e`    | green on Chromium             |
-| v1.0.0 release E2E    | `make release-e2e`    | checkout + admin AI flow green |
+| Gate                  | Command                  | Threshold                       |
+|-----------------------|--------------------------|---------------------------------|
+| TypeScript strict     | `bun run typecheck`      | zero errors                     |
+| Unit tests            | `bun run test`           | ≥ 80% lines, branches ≥ 75%     |
+| ESLint (next + ts)    | `bun run lint`           | zero errors                     |
+| Production build      | `bun run build`          | First Load JS < 200 kB enforced |
+| Bundle regression     | `bun run qa:bundle`      | all routes under budget         |
+| Playwright smoke      | `bun run test:e2e`       | green on Chromium               |
+| Stable E2E gate       | `bun run test:e2e:stable` | serial Chromium, 2 retries      |
+| Lighthouse            | `bun run qa:lighthouse`  | performance and SEO ≥ 90        |
+| Security refresh      | `bun run qa:security`    | high/critical gates clean       |
+| v1.0.0 release E2E    | `make release-e2e`       | checkout + admin AI flow green  |
+
+See `docs/v180-frontend-qa.md` for the v1.8.0 Lighthouse, bundle, contract,
+E2E stability, and security refresh runbook.
 
 ## Local development
 

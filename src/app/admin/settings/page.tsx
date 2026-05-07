@@ -1,7 +1,17 @@
+import type { Metadata } from "next";
 import { SettingsSkeleton, type SettingsSection } from "@/components/SettingsSkeleton";
 import { requireServerSession } from "@/lib/server/auth-session";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  ...adminPageMetadata({
+    title: "Settings | Agentic Ecommerce Admin",
+    description: "Review non-secret configuration readiness for API, WooCommerce, and agent integrations.",
+    canonical: "/admin/settings",
+  }),
+};
 
 function configured(value: string | undefined): SettingsSection["status"] {
   return value && value.trim() !== "" ? "configured" : "not_configured";

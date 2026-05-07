@@ -1,9 +1,19 @@
+import type { Metadata } from "next";
 import { OrderManagement } from "@/components/OrderManagement";
 import { fetchOrder } from "@/lib/adapters/api/orders";
 import { requireServerSession } from "@/lib/server/auth-session";
 import type { Order } from "@/lib/domain/order";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  ...adminPageMetadata({
+    title: "Order Management | Agentic Ecommerce Admin",
+    description: "Look up customer orders and review paid checkout records in the admin console.",
+    canonical: "/admin/orders",
+  }),
+};
 
 interface OrdersAdminPageProps {
   readonly searchParams?: Promise<{ readonly id?: string }>;

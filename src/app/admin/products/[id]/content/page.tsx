@@ -3,6 +3,7 @@ import { AIProductDescriptionPanel } from "@/components/AIProductDescriptionPane
 import { ProductMediaPanel } from "@/components/ProductMediaPanel";
 import { loadProductMedia } from "@/lib/usecases/media-library";
 import { loadProductContentEditor } from "@/lib/usecases/product-content-editor";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -12,13 +13,11 @@ interface ProductContentPageProps {
 
 export async function generateMetadata({ params }: ProductContentPageProps): Promise<Metadata> {
   const { id } = await params;
-  return {
+  return adminPageMetadata({
     title: `Product Content ${id} | Agentic Ecommerce Admin`,
     description: "Generate AI product copy and start the durable product publish workflow.",
-    alternates: {
-      canonical: `/admin/products/${id}/content`,
-    },
-  };
+    canonical: `/admin/products/${id}/content`,
+  });
 }
 
 export default async function ProductContentPage({ params }: ProductContentPageProps) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { WorkflowTimeline } from "@/components/WorkflowTimeline";
 import { loadWorkflowDetail } from "@/lib/usecases/workflows";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
 
@@ -10,13 +11,11 @@ interface WorkflowDetailPageProps {
 
 export async function generateMetadata({ params }: WorkflowDetailPageProps): Promise<Metadata> {
   const { id } = await params;
-  return {
+  return adminPageMetadata({
     title: `Workflow ${id} | Agentic Ecommerce Admin`,
     description: "Review the product publish workflow timeline and send human review signals.",
-    alternates: {
-      canonical: `/admin/workflows/${id}`,
-    },
-  };
+    canonical: `/admin/workflows/${id}`,
+  });
 }
 
 export default async function WorkflowDetailPage({ params }: WorkflowDetailPageProps) {

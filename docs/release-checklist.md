@@ -1,6 +1,7 @@
-# v1.7.0 Frontend Cloud Deployment Checklist
+# v1.8.0 Frontend QA Checklist
 
-Use this checklist before promoting `agentic-ecommerce-web` for the v1.7.0 cloud-hardening milestone.
+Use this checklist before promoting `agentic-ecommerce-web` for the v1.8.0
+frontend QA, Lighthouse, bundle, and security refresh milestone.
 
 ## Version and Docs
 
@@ -8,6 +9,7 @@ Use this checklist before promoting `agentic-ecommerce-web` for the v1.7.0 cloud
 - `CHANGELOG.md` includes the cloud deployment readiness entry when a release tag is prepared.
 - `README.md` links quickstart, architecture, deployment, BFF routes, quality gates, and security boundaries.
 - `docs/deployment.md` documents Docker Compose, AWS/GCP deployment notes, health checks, CDN/media, reverse proxy/TLS, environment variables, and security headers.
+- `docs/v180-frontend-qa.md` documents Lighthouse, bundle budget, stable E2E, contract, and security gates.
 - `docs/bff-routes.md` documents frontend BFF route boundaries and upstream backend API links.
 - `.env.production.example` includes the production frontend origin, backend API URLs, CDN media URL, n8n URL, Temporal UI URL, and auth cookie security settings.
 
@@ -20,10 +22,25 @@ bun run lint
 bun run test
 bun run test:coverage
 bun run build
-bun run test:e2e
+bun run qa:bundle
+bun run test:e2e:stable
 ```
 
-Target release threshold: TypeScript, ESLint, unit tests, production build, and Playwright smoke pass. Lighthouse performance should be at least 90 for the production build before final release publication.
+Target release threshold: TypeScript, ESLint, unit tests, production build, and
+Playwright smoke pass. `bun run build` enforces First Load JS < 200 kB.
+Lighthouse performance and SEO should both be at least 90 for the production
+build before final release publication.
+
+## Lighthouse and Bundle Gates
+
+```bash
+bun run build
+bun run start
+LIGHTHOUSE_URL=http://127.0.0.1:3000/ bun run qa:lighthouse
+```
+
+Expected result: `reports/bundle/next-build-summary.json` and
+`reports/lighthouse/*-summary.json` show all v1.8.0 thresholds passing.
 
 ## Contract Gates
 
@@ -46,7 +63,8 @@ Then run the full-stack Docker Compose smoke from the backend repo using the mat
 
 ```bash
 runx shell-leak-scan --repo agentic-ecommerce-web
-sentrux scan .
+bun run qa:security
+sentrux gate .
 ```
 
 Review docs-inclusive output before merge. Public docs must not contain live credentials, private fleet hostnames, internal IPs, personal filesystem paths, account IDs, project IDs, browser profiles, or direct MiniMax app-service calls.

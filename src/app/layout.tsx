@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
 import { CartProvider } from "@/components/CartProvider";
 import { resolveDeploymentConfig } from "@/lib/server/deployment-config";
+import { publicPageMetadata } from "@/lib/seo-metadata";
 import "./globals.css";
 
 const publicAppOrigin = resolveDeploymentConfig().publicAppOrigin ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(publicAppOrigin),
-  title: "Agentic Ecommerce",
-  description: "AI-assisted ecommerce storefront with an operator admin console and workflow automation.",
-  alternates: {
+  ...publicPageMetadata({
+    title: "Agentic Ecommerce",
+    description: "AI-assisted ecommerce storefront with an operator admin console and workflow automation.",
     canonical: "/",
-  },
-  robots: {
-    index: false,
-    follow: false,
-  },
+  }),
+  metadataBase: new URL(publicAppOrigin),
 };
 
 export default function RootLayout({

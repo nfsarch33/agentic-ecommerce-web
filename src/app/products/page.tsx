@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ProductList } from "@/components/ProductList";
 import { listProducts } from "@/lib/usecases/list-products";
 import { fetchProducts } from "@/lib/adapters/api/products";
+import { publicPageMetadata } from "@/lib/seo-metadata";
 
 // Force dynamic rendering for now: products come from the live backend
 // each request. Once we add caching at the BFF route handler we can
@@ -9,11 +10,11 @@ import { fetchProducts } from "@/lib/adapters/api/products";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Products | Agentic Ecommerce",
-  description: "Browse live product inventory from the Agentic Ecommerce storefront.",
-  alternates: {
+  ...publicPageMetadata({
+    title: "Products | Agentic Ecommerce",
+    description: "Browse live product inventory from the Agentic Ecommerce storefront.",
     canonical: "/products",
-  },
+  }),
 };
 
 export default async function ProductsPage() {

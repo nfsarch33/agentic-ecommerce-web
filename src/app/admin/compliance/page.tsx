@@ -1,19 +1,37 @@
+import type { Metadata } from "next";
 import { ComplianceDashboard } from "@/components/ComplianceDashboard";
 import { loadComplianceDashboard } from "@/lib/usecases/compliance-dashboard";
+import { adminPageMetadata } from "@/lib/seo-metadata";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  ...adminPageMetadata({
+    title: "Compliance Dashboard | Agentic Ecommerce Admin",
+    description: "Review product compliance rules, AI content checks, and unresolved policy findings.",
+    canonical: "/admin/compliance",
+  }),
+};
 
 export default async function CompliancePage() {
   const serverBaseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
   const clientBaseUrl = process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? serverBaseUrl;
-  const dashboard = await loadComplianceDashboard({ baseUrl: serverBaseUrl }).catch(
-    (err: unknown) => ({
-      products: [],
-      rules: [],
-      results: [],
-      initialError: err instanceof Error ? err.message : "Unable to load compliance dashboard.",
-    }),
-  );
+  let dashboard: Awaited<ReturnType<typeof loadComplianceDashboard>>;
+
+  try {
+    dashboard = await loadComplianceDashboard({ baseUrl: serverBaseUrl });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unable to load compliance dashboard.";
+    return (
+      <>
+        <ComplianceDashboard apiBaseUrl={clientBaseUrl} products={[]} rules={[]} initialResults={[]} />
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+          {message}
+        </div>
+      </>
+    );
+  }
+
   const { products, rules, results } = dashboard;
   const serializableProducts = products.map((product) => ({
     id: product.id,
@@ -31,7 +49,6 @@ export default async function CompliancePage() {
       products={serializableProducts}
       rules={rules}
       initialResults={results}
-      initialError={"initialError" in dashboard ? dashboard.initialError : undefined}
     />
   );
 }
