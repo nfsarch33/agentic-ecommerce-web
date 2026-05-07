@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ProductList } from "@/components/ProductList";
 import { listProducts } from "@/lib/usecases/list-products";
 import { fetchProducts } from "@/lib/adapters/api/products";
@@ -6,6 +7,14 @@ import { fetchProducts } from "@/lib/adapters/api/products";
 // each request. Once we add caching at the BFF route handler we can
 // switch to ISR or revalidate-on-demand.
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Products | Agentic Ecommerce",
+  description: "Browse live product inventory from the Agentic Ecommerce storefront.",
+  alternates: {
+    canonical: "/products",
+  },
+};
 
 export default async function ProductsPage() {
   const { products } = await listProducts(

@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
 import { CartView } from "@/components/CartView";
+
+export const metadata: Metadata = {
+  title: "Cart | Agentic Ecommerce",
+  description: "Review selected products before checkout in the Agentic Ecommerce storefront.",
+  alternates: {
+    canonical: "/cart",
+  },
+};
 
 export default function CartPage() {
   return (

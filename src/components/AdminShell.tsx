@@ -14,6 +14,7 @@ const navItems: readonly AdminNavItem[] = [
   { key: "orders", href: "/admin/orders", label: "Orders" },
   { key: "sync", href: "/admin/sync", label: "Sync" },
   { key: "agents", href: "/admin/agents", label: "Agents" },
+  { key: "workflows", href: "/admin/workflows", label: "Workflows" },
   { key: "compliance", href: "/admin/compliance", label: "Compliance" },
   { key: "settings", href: "/admin/settings", label: "Settings" },
 ];
@@ -32,7 +33,9 @@ export function AdminShell({ user, children }: AdminShellProps) {
       <aside className="border-b border-gray-200 bg-white lg:fixed lg:inset-y-0 lg:left-0 lg:w-72 lg:border-b-0 lg:border-r">
         <div className="flex h-full flex-col gap-6 p-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Agentic Ecommerce</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Agentic Ecommerce
+            </p>
             <h1 className="mt-2 text-xl font-semibold text-gray-950">Admin Console</h1>
           </div>
 
@@ -49,7 +52,9 @@ export function AdminShell({ user, children }: AdminShellProps) {
           </nav>
 
           <div className="mt-auto space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{accessLabel}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              {accessLabel}
+            </p>
             <p className="break-all text-sm font-medium text-gray-900">{user.email}</p>
             <LogoutButton />
           </div>

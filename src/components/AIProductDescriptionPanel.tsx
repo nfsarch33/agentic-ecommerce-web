@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { generateDescription, type GenerateDescriptionOptions } from "@/lib/adapters/api/ai-content";
+import Link from "next/link";
+import {
+  generateDescription,
+  type GenerateDescriptionOptions,
+} from "@/lib/adapters/api/ai-content";
 import {
   qualityScoreLabel,
   selectLatestSuggestion,
@@ -10,12 +14,18 @@ import {
 } from "@/lib/domain/ai-description";
 import type { ProductFields } from "@/lib/domain/product";
 import { defaultDescriptionPrompt } from "@/lib/usecases/product-content-editor";
+import { startProductPublish, type StartProductPublishInput } from "@/lib/usecases/workflows";
 
 export interface AIProductDescriptionPanelProps {
   readonly apiBaseUrl: string;
   readonly product: ProductFields;
   readonly initialSuggestions: readonly AIProductDescriptionSuggestion[];
-  readonly generateDescriptionImpl?: (opts: GenerateDescriptionOptions) => Promise<AIProductDescriptionSuggestion>;
+  readonly generateDescriptionImpl?: (
+    opts: GenerateDescriptionOptions,
+  ) => Promise<AIProductDescriptionSuggestion>;
+  readonly startProductPublishImpl?: (
+    input: StartProductPublishInput,
+  ) => Promise<{ readonly id: string }>;
   readonly allowBffFallback?: boolean;
   readonly fallbackBffBaseUrl?: string;
 }
@@ -70,17 +80,20 @@ export function AIProductDescriptionPanel({
   product,
   initialSuggestions,
   generateDescriptionImpl = generateDescription,
+  startProductPublishImpl = startProductPublish,
   allowBffFallback = process.env.NODE_ENV !== "production",
   fallbackBffBaseUrl = "",
 }: AIProductDescriptionPanelProps) {
   const [suggestions, setSuggestions] =
     useState<readonly AIProductDescriptionSuggestion[]>(initialSuggestions);
-  const [activeSuggestion, setActiveSuggestion] = useState<AIProductDescriptionSuggestion | undefined>(() =>
-    selectLatestSuggestion(initialSuggestions),
-  );
+  const [activeSuggestion, setActiveSuggestion] = useState<
+    AIProductDescriptionSuggestion | undefined
+  >(() => selectLatestSuggestion(initialSuggestions));
   const [prompt, setPrompt] = useState(defaultDescriptionPrompt(product));
   const [editableDescription, setEditableDescription] = useState(product.description ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishWorkflowId, setPublishWorkflowId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,10 +150,31 @@ export function AIProductDescriptionPanel({
     setError(null);
   }
 
+  async function handleStartPublishWorkflow(): Promise<void> {
+    setMessage(null);
+    setError(null);
+    setIsPublishing(true);
+    try {
+      const workflow = await startProductPublishImpl({
+        baseUrl: apiBaseUrl,
+        productId: product.id,
+        description: editableDescription.trim() || undefined,
+      });
+      setPublishWorkflowId(workflow.id);
+      setMessage("Publish workflow started.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to start the publish workflow.");
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
       <header className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">Admin content agent</p>
+        <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
+          Admin content agent
+        </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">AI Description Studio</h1>
         <p className="mt-2 max-w-3xl text-sm text-gray-600">
           Generate, score, approve, reject, and edit AI-assisted product copy for {product.title}.
@@ -151,7 +185,9 @@ export function AIProductDescriptionPanel({
         <div
           role={error ? "alert" : "status"}
           className={`mb-6 rounded-md border p-4 text-sm ${
-            error ? "border-red-200 bg-red-50 text-red-700" : "border-green-200 bg-green-50 text-green-700"
+            error
+              ? "border-red-200 bg-red-50 text-red-700"
+              : "border-green-200 bg-green-50 text-green-700"
           }`}
         >
           {error ?? message}
@@ -223,8 +259,8 @@ export function AIProductDescriptionPanel({
             </>
           ) : (
             <p className="mt-4 rounded-md border border-dashed border-gray-300 p-4 text-sm text-gray-600">
-              No active AI suggestion. Generate a new description or review an existing suggestion when the backend
-              provides one.
+              No active AI suggestion. Generate a new description or review an existing suggestion
+              when the backend provides one.
             </p>
           )}
         </article>
@@ -235,8 +271,8 @@ export function AIProductDescriptionPanel({
           Editable description
         </label>
         <p className="mt-1 text-sm text-gray-600">
-          Approving a suggestion copies it here. Operators can edit the copy before the backend publish workflow is
-          wired in.
+          Approving a suggestion copies it here. Operators can edit the copy before the backend
+          publish workflow is wired in.
         </p>
         <textarea
           id="editable-description"
@@ -246,8 +282,27 @@ export function AIProductDescriptionPanel({
           className="mt-4 w-full rounded-md border border-gray-300 p-3 text-sm leading-6 text-gray-900 shadow-sm focus:border-[var(--color-brand-500)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)]/20"
         />
         <p className="mt-2 text-xs text-gray-500">
-          {suggestions.length} AI suggestion{suggestions.length === 1 ? "" : "s"} loaded for this product.
+          {suggestions.length} AI suggestion{suggestions.length === 1 ? "" : "s"} loaded for this
+          product.
         </p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            disabled={isPublishing}
+            onClick={() => void handleStartPublishWorkflow()}
+            className="cursor-pointer rounded-md bg-[var(--color-brand-500)] px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[var(--color-brand-700)] disabled:cursor-wait disabled:bg-gray-300"
+          >
+            {isPublishing ? "Starting workflow..." : "Start publish workflow"}
+          </button>
+          {publishWorkflowId && (
+            <Link
+              href={`/admin/workflows/${publishWorkflowId}`}
+              className="text-sm font-medium text-blue-600 hover:underline"
+            >
+              View workflow
+            </Link>
+          )}
+        </div>
       </section>
     </main>
   );

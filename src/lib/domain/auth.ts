@@ -36,6 +36,7 @@ const adminNavMinimumRoles: Record<string, Role> = {
   sync: "operator",
   agents: "operator",
   compliance: "operator",
+  workflows: "operator",
   settings: "admin",
 };
 
