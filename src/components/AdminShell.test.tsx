@@ -62,6 +62,28 @@ describe("AdminShell", () => {
     expect(screen.queryByRole("link", { name: /open n8n/i })).not.toBeInTheDocument();
   });
 
+  it("shows the Temporal UI link only when configured for administrators", () => {
+    vi.stubEnv("NEXT_PUBLIC_TEMPORAL_UI_URL", "https://temporal.example.com");
+
+    const { rerender } = render(
+      <AdminShell user={user("admin")}>
+        <p>Dashboard content</p>
+      </AdminShell>,
+    );
+
+    expect(screen.getByRole("link", { name: /open temporal/i })).toHaveAttribute(
+      "href",
+      "https://temporal.example.com",
+    );
+
+    rerender(
+      <AdminShell user={user("operator")}>
+        <p>Dashboard content</p>
+      </AdminShell>,
+    );
+    expect(screen.queryByRole("link", { name: /open temporal/i })).not.toBeInTheDocument();
+  });
+
   it("hides the n8n admin link when no URL is configured", () => {
     render(
       <AdminShell user={user("admin")}>

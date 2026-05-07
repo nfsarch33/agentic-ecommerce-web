@@ -28,9 +28,13 @@ export interface AdminShellProps {
 
 export function AdminShell({ user, children }: AdminShellProps) {
   const n8nUrl = process.env.NEXT_PUBLIC_N8N_URL?.trim();
-  const externalItems: readonly AdminNavItem[] = n8nUrl
-    ? [{ key: "n8n", href: n8nUrl, label: "Open n8n", external: true }]
-    : [];
+  const temporalUiUrl = process.env.NEXT_PUBLIC_TEMPORAL_UI_URL?.trim();
+  const externalItems: readonly AdminNavItem[] = [
+    ...(n8nUrl ? [{ key: "n8n", href: n8nUrl, label: "Open n8n", external: true }] : []),
+    ...(temporalUiUrl
+      ? [{ key: "temporal", href: temporalUiUrl, label: "Open Temporal", external: true }]
+      : []),
+  ];
   const visibleItems = [...navItems, ...externalItems].filter((item) => canViewAdminNavItem(user, item.key));
   const accessLabel = user.role === "viewer" ? "Viewer access" : `${user.role} access`;
 

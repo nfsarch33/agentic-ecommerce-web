@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { CartProvider } from "@/components/CartProvider";
+import { resolveDeploymentConfig } from "@/lib/server/deployment-config";
 import "./globals.css";
 
+const publicAppOrigin = resolveDeploymentConfig().publicAppOrigin ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(publicAppOrigin),
   title: "Agentic Ecommerce",
-  description:
-    "AI-assisted ecommerce storefront with an operator admin console and workflow automation.",
+  description: "AI-assisted ecommerce storefront with an operator admin console and workflow automation.",
   alternates: {
     canonical: "/",
   },
