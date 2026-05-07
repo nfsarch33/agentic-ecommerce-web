@@ -71,6 +71,23 @@ describe("WorkflowTimeline", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(/sent approve signal/i);
   });
 
+  it("shows an error when a review signal fails", async () => {
+    const user = userEvent.setup();
+    const sendReviewSignalImpl = vi.fn().mockRejectedValue(new Error("Temporal signal failed"));
+
+    render(
+      <WorkflowTimeline
+        workflow={detail}
+        apiBaseUrl="http://api.test"
+        sendReviewSignalImpl={sendReviewSignalImpl}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /reject/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Temporal signal failed");
+  });
+
   it("does not render review actions once the workflow is completed", () => {
     render(
       <WorkflowTimeline

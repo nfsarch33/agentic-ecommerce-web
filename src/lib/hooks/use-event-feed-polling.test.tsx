@@ -20,8 +20,14 @@ const sampleEvents: EventItem[] = [
   },
 ];
 
+async function flushPromises(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
 describe("useEventFeedPolling", () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -54,14 +60,16 @@ describe("useEventFeedPolling", () => {
       }),
     );
 
-    await vi.waitFor(() => expect(listEventsImpl).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await flushPromises();
+    });
+    expect(listEventsImpl).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       vi.advanceTimersByTime(5000);
+      await flushPromises();
     });
-    await vi.waitFor(() => expect(listEventsImpl).toHaveBeenCalledTimes(2));
-
-    vi.useRealTimers();
+    expect(listEventsImpl).toHaveBeenCalledTimes(2);
   });
 
   it("sets error state when the fetch fails", async () => {
@@ -108,14 +116,18 @@ describe("useEventFeedPolling", () => {
       }),
     );
 
-    await vi.waitFor(() => expect(listEventsImpl).toHaveBeenCalledTimes(1));
-
-    unmount();
     await act(async () => {
-      vi.advanceTimersByTime(6000);
+      await flushPromises();
     });
     expect(listEventsImpl).toHaveBeenCalledTimes(1);
 
-    vi.useRealTimers();
+    act(() => {
+      unmount();
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+      await flushPromises();
+    });
+    expect(listEventsImpl).toHaveBeenCalledTimes(1);
   });
 });

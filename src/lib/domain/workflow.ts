@@ -4,7 +4,12 @@ export type WorkflowStatus =
   | "waiting_review"
   | "completed"
   | "failed"
-  | "cancelled";
+  | "canceled"
+  | "cancelled"
+  | "terminated"
+  | "continued_as_new"
+  | "timed_out"
+  | "unspecified";
 export type ActivityStatus =
   | "pending"
   | "running"
@@ -58,7 +63,12 @@ const workflowStatuses = new Set<WorkflowStatus>([
   "waiting_review",
   "completed",
   "failed",
+  "canceled",
   "cancelled",
+  "terminated",
+  "continued_as_new",
+  "timed_out",
+  "unspecified",
 ]);
 
 const activityStatuses = new Set<ActivityStatus>([
@@ -154,8 +164,18 @@ export function workflowStatusLabel(status: WorkflowStatus): string {
       return "Completed";
     case "failed":
       return "Failed";
+    case "canceled":
+      return "Canceled";
     case "cancelled":
       return "Cancelled";
+    case "terminated":
+      return "Terminated";
+    case "continued_as_new":
+      return "Continued as new";
+    case "timed_out":
+      return "Timed out";
+    case "unspecified":
+      return "Unspecified";
   }
 }
 
@@ -171,8 +191,13 @@ export function workflowStatusTone(
     case "completed":
       return "green";
     case "failed":
+    case "terminated":
+    case "timed_out":
       return "red";
+    case "canceled":
     case "cancelled":
+    case "continued_as_new":
+    case "unspecified":
       return "gray";
   }
 }
@@ -197,6 +222,9 @@ export function countWorkflowsByStatus(
         return { ...counts, completed: counts.completed + 1 };
       }
       if (workflow.status === "failed") {
+        return { ...counts, failed: counts.failed + 1 };
+      }
+      if (workflow.status === "terminated" || workflow.status === "timed_out") {
         return { ...counts, failed: counts.failed + 1 };
       }
       if (
