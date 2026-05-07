@@ -1,0 +1,4 @@
+# Next.js 15.5.16 vendors picomatch 4.0.3 under dist/compiled/picomatch.
+# Application dependencies are locked to picomatch 4.0.4; remove this ignore
+# once Next.js re-vendors picomatch >=4.0.4.
+CVE-2026-33671
