@@ -12,23 +12,28 @@ function asResponse(body: unknown, init: ResponseInit = { status: 200 }): Respon
 describe("fetchProducts", () => {
   it("returns parsed Product entities", async () => {
     const mockFetch = async () =>
-      asResponse([
-        {
-          id: "p_1",
-          title: "Foam roller",
-          slug: "foam-roller",
-          price: { amount: 3500, currency: "AUD" },
-          stock: 5,
-          description: "Dense black foam.",
-        },
-        {
-          id: "p_2",
-          title: "Yoga mat",
-          slug: "yoga-mat",
-          price: { amount: 6995, currency: "AUD" },
-          stock: 0,
-        },
-      ]);
+      asResponse({
+        products: [
+          {
+            id: "p_1",
+            title: "Foam roller",
+            slug: "foam-roller",
+            price: { amount: 3500, currency: "AUD" },
+            stock: 5,
+            description: "Dense black foam.",
+          },
+          {
+            id: "p_2",
+            title: "Yoga mat",
+            slug: "yoga-mat",
+            price: { amount: 6995, currency: "AUD" },
+            stock: 0,
+          },
+        ],
+        total: 2,
+        page: 1,
+        per_page: 20,
+      });
     const products: Product[] = await fetchProducts({
       baseUrl: "http://api.test",
       fetchImpl: mockFetch,
@@ -47,8 +52,8 @@ describe("fetchProducts", () => {
     );
   });
 
-  it("throws on malformed payload (not an array)", async () => {
-    const mockFetch = async () => asResponse({ products: [] });
+  it("throws on malformed payload (missing products array)", async () => {
+    const mockFetch = async () => asResponse({ total: 0, page: 1, per_page: 20 });
     await expect(fetchProducts({ baseUrl: "http://api.test", fetchImpl: mockFetch })).rejects.toBeInstanceOf(
       ProductsApiError,
     );
@@ -67,7 +72,7 @@ describe("fetchProducts", () => {
     let calledUrl = "";
     const mockFetch = async (input: RequestInfo | URL) => {
       calledUrl = typeof input === "string" ? input : input.toString();
-      return asResponse([]);
+      return asResponse({ products: [], total: 0, page: 1, per_page: 20 });
     };
     await fetchProducts({ baseUrl: "http://api.test", fetchImpl: mockFetch });
     expect(calledUrl).toBe("http://api.test/api/v1/products");
@@ -75,7 +80,7 @@ describe("fetchProducts", () => {
 
   it("rejects an empty baseUrl at the boundary", async () => {
     await expect(
-      fetchProducts({ baseUrl: "", fetchImpl: async () => asResponse([]) }),
+      fetchProducts({ baseUrl: "", fetchImpl: async () => asResponse({ products: [] }) }),
     ).rejects.toBeInstanceOf(ProductsApiError);
   });
 });
