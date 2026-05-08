@@ -1683,9 +1683,224 @@ const server = Bun.serve({
         },
       );
     }
+    // v2.4.0 Marketplace + tenants
+    const marketplaceResponse = await handleMarketplaceRequest(req, url);
+    if (marketplaceResponse) return marketplaceResponse;
+    const tenantResponse = await handleTenantRequest(req, url);
+    if (tenantResponse) return tenantResponse;
     return json({ error: "not_found" }, { status: 404 });
   },
 });
+
+// v2.4.0 marketplace + tenant aggregate mock data and handlers.
+interface MockManifest {
+  slug: string;
+  name: string;
+  version: string;
+  vendor: string;
+  description?: string;
+  category?: string;
+  homepage_url?: string;
+  event_subscriptions: string[];
+  permissions: string[];
+  dependencies: { slug: string; constraint?: string }[];
+}
+
+interface MockInstallation {
+  tenant_id: string;
+  slug: string;
+  installed_version: string;
+  state: "installed" | "active" | "deactivated";
+  installed_at: string;
+  activated_at?: string;
+  updated_at: string;
+}
+
+interface MockTenant {
+  id: string;
+  slug: string;
+  name: string;
+  plan: string;
+  status: "provisioning" | "active" | "suspended" | "archived";
+  created_at: string;
+  updated_at: string;
+}
+
+const marketplacePlugins: MockManifest[] = [
+  {
+    slug: "stripe-payments",
+    name: "Stripe Payments",
+    version: "1.2.0",
+    vendor: "Agentic Labs",
+    description: "Stripe checkout + webhook bridge.",
+    category: "payments",
+    event_subscriptions: [],
+    permissions: ["orders.read", "orders.write"],
+    dependencies: [],
+  },
+  {
+    slug: "ses-email",
+    name: "SES Email",
+    version: "1.0.0",
+    vendor: "Agentic Labs",
+    description: "Transactional email via Amazon SES.",
+    category: "notifications",
+    event_subscriptions: [],
+    permissions: ["events.emit"],
+    dependencies: [],
+  },
+];
+
+const marketplaceInstallations: MockInstallation[] = [];
+const marketplaceSettings = new Map<string, Record<string, unknown>>();
+const tenantsStore: MockTenant[] = [];
+
+function settingsKey(tenant: string, slug: string): string {
+  return `${tenant}::${slug}`;
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+async function handleMarketplaceRequest(req: Request, url: URL): Promise<Response | null> {
+  if (!url.pathname.startsWith("/api/v1/marketplace/")) return null;
+  if (url.pathname === "/api/v1/marketplace/plugins" && req.method === "GET") {
+    return json({
+      plugins: marketplacePlugins,
+      total: marketplacePlugins.length,
+      page: 1,
+      per_page: 20,
+    });
+  }
+  const slugMatch = url.pathname.match(/^\/api\/v1\/marketplace\/plugins\/([a-z][a-z0-9-]*[a-z0-9])(?:\/(install|activate|deactivate))?$/);
+  if (slugMatch) {
+    const slug = slugMatch[1];
+    const action = slugMatch[2];
+    const manifest = marketplacePlugins.find((p) => p.slug === slug);
+    const tenantId = req.headers.get("x-tenant-id") ?? "tenant_default";
+    if (!manifest) return json({ error: "not_found" }, { status: 404 });
+    if (!action && req.method === "GET") return json(manifest);
+    if (!action && req.method === "DELETE") {
+      const idx = marketplaceInstallations.findIndex((i) => i.tenant_id === tenantId && i.slug === slug);
+      if (idx < 0) return json({ error: "not_found" }, { status: 404 });
+      marketplaceInstallations.splice(idx, 1);
+      marketplaceSettings.delete(settingsKey(tenantId, slug));
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+    if (action === "install" && req.method === "POST") {
+      if (marketplaceInstallations.some((i) => i.tenant_id === tenantId && i.slug === slug)) {
+        return json({ error: "already_installed" }, { status: 409 });
+      }
+      const ins: MockInstallation = {
+        tenant_id: tenantId,
+        slug,
+        installed_version: manifest.version,
+        state: "installed",
+        installed_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      marketplaceInstallations.push(ins);
+      return json(ins, { status: 201 });
+    }
+    const ins = marketplaceInstallations.find((i) => i.tenant_id === tenantId && i.slug === slug);
+    if (!ins) return json({ error: "not_found" }, { status: 404 });
+    if (action === "activate" && req.method === "POST") {
+      if (ins.state === "active") return json({ error: "invalid_transition" }, { status: 422 });
+      ins.state = "active";
+      if (!ins.activated_at) ins.activated_at = nowIso();
+      ins.updated_at = nowIso();
+      return json(ins);
+    }
+    if (action === "deactivate" && req.method === "POST") {
+      if (ins.state !== "active") return json({ error: "invalid_transition" }, { status: 422 });
+      ins.state = "deactivated";
+      ins.updated_at = nowIso();
+      return json(ins);
+    }
+  }
+  const settingsMatch = url.pathname.match(/^\/api\/v1\/marketplace\/installations\/([a-z][a-z0-9-]*[a-z0-9])\/settings$/);
+  if (settingsMatch) {
+    const slug = settingsMatch[1];
+    const tenantId = req.headers.get("x-tenant-id") ?? "tenant_default";
+    const ins = marketplaceInstallations.find((i) => i.tenant_id === tenantId && i.slug === slug);
+    if (!ins) return json({ error: "not_found" }, { status: 404 });
+    const key = settingsKey(tenantId, slug);
+    if (req.method === "GET") {
+      return json({ settings: marketplaceSettings.get(key) ?? {} });
+    }
+    if (req.method === "PATCH") {
+      const body = (await req.json()) as Record<string, unknown>;
+      marketplaceSettings.set(key, body);
+      return json({ settings: body });
+    }
+  }
+  return json({ error: "method_not_allowed" }, { status: 405 });
+}
+
+async function handleTenantRequest(req: Request, url: URL): Promise<Response | null> {
+  if (!url.pathname.startsWith("/api/v1/tenants")) return null;
+  if (url.pathname === "/api/v1/tenants" && req.method === "GET") {
+    return json({
+      tenants: tenantsStore,
+      total: tenantsStore.length,
+      page: 1,
+      per_page: 20,
+    });
+  }
+  if (url.pathname === "/api/v1/tenants" && req.method === "POST") {
+    const body = (await req.json()) as { id?: string; slug?: string; name?: string; plan?: string };
+    if (!body.slug || !/^[a-z][a-z0-9-]*[a-z0-9]$/.test(body.slug)) {
+      return json({ error: "invalid_slug" }, { status: 400 });
+    }
+    if (tenantsStore.some((t) => t.slug === body.slug)) {
+      return json({ error: "slug_exists" }, { status: 409 });
+    }
+    const t: MockTenant = {
+      id: body.id ?? body.slug,
+      slug: body.slug,
+      name: body.name ?? body.slug,
+      plan: body.plan ?? "free",
+      status: "provisioning",
+      created_at: nowIso(),
+      updated_at: nowIso(),
+    };
+    tenantsStore.push(t);
+    return json(t, { status: 201 });
+  }
+  const tenantMatch = url.pathname.match(/^\/api\/v1\/tenants\/([^/]+)(?:\/(suspend|activate|archive))?$/);
+  if (tenantMatch) {
+    const id = tenantMatch[1];
+    const action = tenantMatch[2];
+    const t = tenantsStore.find((t) => t.id === id);
+    if (!t) return json({ error: "not_found" }, { status: 404 });
+    if (!action) {
+      if (req.method === "GET") return json(t);
+      if (req.method === "PATCH") {
+        const body = (await req.json()) as { name?: string; plan?: string };
+        if (body.name) t.name = body.name;
+        if (body.plan) t.plan = body.plan;
+        t.updated_at = nowIso();
+        return json(t);
+      }
+    }
+    if (req.method !== "POST") return json({ error: "method_not_allowed" }, { status: 405 });
+    const allowed: Record<string, ReadonlyArray<MockTenant["status"]>> = {
+      activate: ["provisioning", "suspended"],
+      suspend: ["active"],
+      archive: ["provisioning", "active", "suspended"],
+    };
+    if (!allowed[action!].includes(t.status)) {
+      return json({ error: "invalid_transition" }, { status: 422 });
+    }
+    if (action === "activate") t.status = "active";
+    if (action === "suspend") t.status = "suspended";
+    if (action === "archive") t.status = "archived";
+    t.updated_at = nowIso();
+    return json(t);
+  }
+  return null;
+}
 
 const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
 const next = Bun.spawn(["bun", "run", "dev:e2e"], {
