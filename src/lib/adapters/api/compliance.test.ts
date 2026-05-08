@@ -427,4 +427,39 @@ describe("custom compliance rule API", () => {
       }),
     );
   });
+
+  it("rejects deleteCustomComplianceRule when ruleId is empty", async () => {
+    const { ComplianceApiError } = await import("./compliance");
+    await expect(
+      deleteCustomComplianceRule({
+        baseUrl: "http://api.test",
+        tenantId: "tenant_default",
+        ruleId: "",
+      }),
+    ).rejects.toBeInstanceOf(ComplianceApiError);
+  });
+
+  it("wraps deleteCustomComplianceRule fetch network failures", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      deleteCustomComplianceRule({
+        baseUrl: "http://api.test",
+        tenantId: "tenant_default",
+        ruleId: "custom_health_claims",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("wraps deleteCustomComplianceRule non-2xx responses with the HTTP status", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(new Response(null, { status: 404 }));
+    await expect(
+      deleteCustomComplianceRule({
+        baseUrl: "http://api.test",
+        tenantId: "tenant_default",
+        ruleId: "missing",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/HTTP 404/);
+  });
 });

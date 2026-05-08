@@ -37,3 +37,43 @@ export interface Order {
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+
+const ORDER_STATUSES: readonly OrderStatus[] = [
+  "pending",
+  "paid",
+  "fulfilled",
+  "shipped",
+  "completed",
+  "failed",
+  "cancelled",
+];
+
+const TERMINAL_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+export function isOrderStatus(value: unknown): value is OrderStatus {
+  return typeof value === "string" && (ORDER_STATUSES as readonly string[]).includes(value);
+}
+
+export function isTerminalOrderStatus(status: OrderStatus): boolean {
+  return TERMINAL_STATUSES.has(status);
+}
+
+export function isInFlightOrder(order: Pick<Order, "status">): boolean {
+  return !isTerminalOrderStatus(order.status);
+}
+
+export function orderShippingLines(address: ShippingAddress): readonly string[] {
+  const street = address.line2
+    ? `${address.line1}, ${address.line2}`
+    : address.line1;
+  return [
+    address.name,
+    street,
+    `${address.city}, ${address.region} ${address.postalCode}`,
+    address.country,
+  ];
+}

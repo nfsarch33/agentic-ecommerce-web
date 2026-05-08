@@ -201,4 +201,42 @@ describe("media API adapter", () => {
       }),
     ).rejects.toThrow(/invalid JSON/);
   });
+
+  it("returns an empty list when fetchMediaAssets gets a 404 (backend not yet enabled)", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(new Response("not found", { status: 404 }));
+    const assets = await fetchMediaAssets({
+      baseUrl: "https://api.example",
+      fetchImpl,
+    });
+    expect(assets).toEqual([]);
+  });
+
+  it("returns an empty list when fetchMediaAssets gets a 405 (route not yet implemented)", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(new Response("method not allowed", { status: 405 }));
+    const assets = await fetchMediaAssets({
+      baseUrl: "https://api.example",
+      fetchImpl,
+    });
+    expect(assets).toEqual([]);
+  });
+
+  it("propagates non-soft-fail HTTP errors from fetchMediaAssets", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(new Response("server down", { status: 503 }));
+    await expect(
+      fetchMediaAssets({ baseUrl: "https://api.example", fetchImpl }),
+    ).rejects.toThrow(/HTTP 503/);
+  });
+
+  it("wraps fetch network failures from fetchMediaAssets as MediaApiError", async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      fetchMediaAssets({ baseUrl: "https://api.example", fetchImpl }),
+    ).rejects.toThrow(/network error/);
+  });
 });

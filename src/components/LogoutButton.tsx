@@ -11,6 +11,11 @@ export function LogoutButton() {
     setLoggingOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore network failures: the BFF logout is best-effort and the
+      // user-visible side effect is the redirect+refresh below. Letting
+      // a rejected fetch escape `void logout()` would surface as an
+      // unhandled-rejection warning without changing UX.
     } finally {
       router.push("/login");
       router.refresh();

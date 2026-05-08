@@ -159,4 +159,42 @@ describe("fetchAgentHistory", () => {
       }),
     ).rejects.toBeInstanceOf(AgentsApiError);
   });
+
+  it("requires a non-empty agentId", async () => {
+    await expect(
+      fetchAgentHistory({ baseUrl: "http://api.test", agentId: "" }),
+    ).rejects.toBeInstanceOf(AgentsApiError);
+  });
+
+  it("wraps fetch network failures from fetchAgentHistory", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      fetchAgentHistory({
+        baseUrl: "http://api.test",
+        agentId: "agent_sourcing",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/network error/);
+  });
+});
+
+describe("triggerAgentRun edge cases", () => {
+  it("requires a non-empty agentId", async () => {
+    const { triggerAgentRun } = await import("./agents");
+    await expect(
+      triggerAgentRun({ baseUrl: "http://api.test", agentId: "" }),
+    ).rejects.toBeInstanceOf(AgentsApiError);
+  });
+
+  it("wraps fetch network failures", async () => {
+    const { triggerAgentRun } = await import("./agents");
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      triggerAgentRun({
+        baseUrl: "http://api.test",
+        agentId: "agent_sourcing",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/network error/);
+  });
 });

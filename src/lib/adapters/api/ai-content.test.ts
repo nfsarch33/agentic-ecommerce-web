@@ -279,4 +279,111 @@ describe("getAISuggestions", () => {
       getAISuggestions({ baseUrl: "http://api.test", productId: "p_1", fetchImpl: mockFetch }),
     ).rejects.toBeInstanceOf(AIContentApiError);
   });
+
+  it("requires a non-empty productId", async () => {
+    await expect(
+      getAISuggestions({ baseUrl: "http://api.test", productId: "" }),
+    ).rejects.toBeInstanceOf(AIContentApiError);
+  });
+
+  it("readJson surfaces invalid JSON as an AIContentApiError", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response("definitely not json", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    await expect(
+      getAISuggestions({ baseUrl: "http://api.test", productId: "p_1", fetchImpl: mockFetch }),
+    ).rejects.toThrow(/invalid JSON/);
+  });
+});
+
+describe("generateDescription edge cases", () => {
+  it("requires a non-empty productId", async () => {
+    await expect(
+      generateDescription({ baseUrl: "http://api.test", productId: "", prompt: "x" }),
+    ).rejects.toBeInstanceOf(AIContentApiError);
+  });
+
+  it("requires a non-empty prompt", async () => {
+    await expect(
+      generateDescription({ baseUrl: "http://api.test", productId: "p_1", prompt: "   " }),
+    ).rejects.toBeInstanceOf(AIContentApiError);
+  });
+
+  it("falls back to the BFF route on a 404 from the primary backend", async () => {
+    const mockFetch = vi
+      .fn()
+      // Primary backend says "not implemented yet"
+      .mockResolvedValueOnce(jsonResponse({}, { status: 404 }))
+      // BFF fallback responds with a description
+      .mockResolvedValueOnce(jsonResponse({ description: "Resilient fallback copy." }));
+
+    const out = await generateDescription({
+      baseUrl: "http://api.test",
+      fallbackBffBaseUrl: "http://web.test",
+      productId: "p_1",
+      prompt: "Describe it",
+      allowBffFallback: true,
+      fetchImpl: mockFetch,
+    });
+    expect(out.description).toBe("Resilient fallback copy.");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to the BFF route on a 501 from the primary backend", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({}, { status: 501 }))
+      .mockResolvedValueOnce(jsonResponse({ description: "Fallback after 501." }));
+
+    const out = await generateDescription({
+      baseUrl: "http://api.test",
+      fallbackBffBaseUrl: "http://web.test",
+      productId: "p_1",
+      prompt: "Describe it",
+      allowBffFallback: true,
+      fetchImpl: mockFetch,
+    });
+    expect(out.description).toBe("Fallback after 501.");
+  });
+
+  it("re-throws the original AIContentApiError without fallback when fallback is disabled", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({}, { status: 404 }));
+
+    await expect(
+      generateDescription({
+        baseUrl: "http://api.test",
+        productId: "p_1",
+        prompt: "Describe it",
+        allowBffFallback: false,
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/HTTP 404/);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("wraps BFF fallback network errors as AIContentApiError", async () => {
+    const mockFetch = vi
+      .fn()
+      // Primary returns 404 (triggers fallback)
+      .mockResolvedValueOnce(jsonResponse({}, { status: 404 }))
+      // Fallback fetch fails
+      .mockRejectedValueOnce(new Error("fallback-down"));
+
+    await expect(
+      generateDescription({
+        baseUrl: "http://api.test",
+        fallbackBffBaseUrl: "http://web.test",
+        productId: "p_1",
+        prompt: "Describe it",
+        allowBffFallback: true,
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/generateDescription fallback: network error/);
+  });
 });

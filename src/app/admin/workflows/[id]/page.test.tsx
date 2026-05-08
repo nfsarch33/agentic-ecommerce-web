@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import WorkflowDetailPage from "./page";
+import WorkflowDetailPage, { generateMetadata } from "./page";
 
 vi.mock("@/lib/usecases/workflows", () => ({
   loadWorkflowDetail: vi.fn(),
@@ -48,5 +48,13 @@ describe("admin workflow detail page", () => {
         workflowId: "wf_product_publish_1",
       }),
     );
+  });
+
+  it("builds noindex admin metadata with the canonical workflow URL", async () => {
+    const meta = await generateMetadata({
+      params: Promise.resolve({ id: "wf_product_publish_1" }),
+    });
+    expect(meta.title).toContain("wf_product_publish_1");
+    expect(meta.alternates?.canonical).toBe("/admin/workflows/wf_product_publish_1");
   });
 });

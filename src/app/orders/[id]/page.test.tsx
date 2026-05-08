@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import OrderConfirmationPage from "./page";
+import OrderConfirmationPage, { generateMetadata } from "./page";
 
 vi.mock("@/lib/adapters/api/orders", () => ({
   fetchOrder: vi.fn(),
@@ -40,5 +40,11 @@ describe("OrderConfirmationPage", () => {
 
     expect(screen.getByText("ord_123")).toBeInTheDocument();
     expect(fetchOrder).toHaveBeenCalledWith(expect.objectContaining({ orderId: "ord_123" }));
+  });
+
+  it("builds private confirmation metadata with the canonical order URL", async () => {
+    const meta = await generateMetadata({ params: Promise.resolve({ id: "ord_123" }) });
+    expect(meta.title).toContain("ord_123");
+    expect(meta.alternates?.canonical).toBe("/orders/ord_123");
   });
 });

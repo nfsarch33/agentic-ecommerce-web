@@ -114,4 +114,91 @@ describe("resolveSyncConflict", () => {
       }),
     );
   });
+
+  it("requires a non-empty conflictId", async () => {
+    const { SyncApiError } = await import("./sync");
+    await expect(
+      resolveSyncConflict({
+        baseUrl: "http://api.test",
+        conflictId: "",
+        resolution: "remote",
+      }),
+    ).rejects.toBeInstanceOf(SyncApiError);
+  });
+
+  it("includes operator note in the request body when provided", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({}), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      }))
+      .mockImplementation(async () => new Response(
+        JSON.stringify({
+          id: "conflict_1",
+          sku: "BAND-001",
+          remote_id: 44,
+          status: "resolved",
+          fields: [],
+          resolution: "manual",
+          note: "Manual override approved by ops",
+          created_at: "2026-05-07T00:05:00Z",
+          resolved_at: "2026-05-07T00:10:00Z",
+        }),
+        { headers: { "content-type": "application/json" } },
+      ));
+    const fetchImpl = mockFetch;
+    await resolveSyncConflict({
+      baseUrl: "http://api.test",
+      conflictId: "conflict_1",
+      resolution: "manual",
+      note: "Manual override approved by ops",
+      fetchImpl,
+    });
+    const call = fetchImpl.mock.calls[0];
+    expect(call?.[1]?.body).toBe(
+      JSON.stringify({ resolution: "manual", note: "Manual override approved by ops" }),
+    );
+  });
+
+  it("wraps fetch network failures from resolveSyncConflict", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      resolveSyncConflict({
+        baseUrl: "http://api.test",
+        conflictId: "conflict_1",
+        resolution: "remote",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("wraps fetch network failures from fetchSyncStatus", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    const { fetchSyncStatus } = await import("./sync");
+    await expect(
+      fetchSyncStatus({ baseUrl: "http://api.test", fetchImpl: mockFetch }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("wraps fetch network failures from fetchSyncConflicts", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    const { fetchSyncConflicts } = await import("./sync");
+    await expect(
+      fetchSyncConflicts({ baseUrl: "http://api.test", fetchImpl: mockFetch }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("rejects malformed conflicts payloads", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ conflicts: null }), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      }),
+    );
+    const { fetchSyncConflicts } = await import("./sync");
+    await expect(
+      fetchSyncConflicts({ baseUrl: "http://api.test", fetchImpl: mockFetch }),
+    ).rejects.toThrow(/conflicts array/);
+  });
 });
