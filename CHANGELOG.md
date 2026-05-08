@@ -2,6 +2,42 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## Unreleased (v2.5.0 MVP)
+
+### Added — Tenant self-service registration + billing UI
+
+- New domain helpers in `src/lib/domain/billing.ts` and
+  `src/lib/domain/registration.ts` mirroring the Go state machines.
+  Subscription transitions (`trialing → active → past_due → paused →
+  canceled`) and registration transitions (`pending_email_verification
+  → email_verified → onboarding → active`) reject illegal moves with
+  typed `IllegalSubscriptionTransitionError`.
+- API adapters: `src/lib/adapters/api/billing.ts`,
+  `src/lib/adapters/api/register.ts`, `src/lib/adapters/api/usage.ts`.
+  Defensive parsing rejects malformed payloads with typed
+  `BillingApiError` / `RegistrationApiError`.
+- Use cases under `src/lib/usecases/`: `submit-registration`,
+  `verify-email`, `complete-onboarding`, `billing-actions`
+  (cancel/pause/resume).
+- Components:
+  `SubscriptionStatusPill`, `InvoiceTable`, `UsageProgressBar`,
+  `RegistrationWizardSteps`, `OnboardingPlanSelector`,
+  `RegistrationForm`, `RegistrationVerifyClient`, `OnboardingClient`,
+  `BillingDashboard`.
+- Public pages:
+  `/register`, `/register/verify`, `/register/onboarding`.
+- Admin pages:
+  `/admin/billing`, `/admin/billing/invoices`, `/admin/billing/usage`.
+- Mock API extended with `/register*`, `/api/v1/admin/billing/*`
+  handlers in `e2e/run-with-mock.ts`.
+- Playwright E2E: `e2e/registration-flow.spec.ts` and
+  `e2e/billing-flow.spec.ts`. All 36 specs pass under `bun run
+  test:e2e`.
+- OpenAPI types regenerated from the v2.5.0 backend spec.
+
+Coverage: 95.27% (gate ≥95% green). Bundle: max 117 kB First Load JS
+(limit 200 kB).
+
 ## Unreleased (v2.3.0 MVP)
 
 ### Added — Digital goods UI
