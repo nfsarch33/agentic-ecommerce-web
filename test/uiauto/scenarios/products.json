@@ -1,0 +1,54 @@
+[
+  {
+    "action_types": [
+      "wait",
+      "verify",
+      "verify",
+      "wait",
+      "verify",
+      "verify"
+    ],
+    "action_values": [
+      "h1[role=heading][name=Products]",
+      "",
+      "",
+      "h1[role=heading][name~='Resistance Band Set']",
+      "",
+      ""
+    ],
+    "id": "products",
+    "name": "Storefront product list and detail browse",
+    "natural_language": [
+      "Navigate to the products listing page",
+      "Verify the Products heading is visible",
+      "Verify the Resistance Band Set product card heading is visible",
+      "Navigate to the resistance-band-set product detail page",
+      "Verify the product detail heading is visible",
+      "Verify the Add to cart button is enabled"
+    ],
+    "page_objects": [
+      "page.products",
+      "products.heading",
+      "products.card_resistance_band",
+      "page.product_detail",
+      "product_detail.heading",
+      "product_detail.add_to_cart"
+    ],
+    "selectors_used": [
+      "/products",
+      "h1[role=heading][name=Products]",
+      "h2[role=heading][name~='Resistance Band Set']",
+      "/products/resistance-band-set",
+      "h1[role=heading][name~='Resistance Band Set']",
+      "button[role=button][name~='Add to cart']"
+    ],
+    "source": "agentic-ecommerce-web/e2e/products.spec.ts",
+    "tags": [
+      "v2.1.0",
+      "storefront",
+      "smoke",
+      "anonymous"
+    ]
+  }
+]
+

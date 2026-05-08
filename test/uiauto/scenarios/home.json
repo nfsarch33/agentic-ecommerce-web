@@ -1,0 +1,39 @@
+[
+  {
+    "action_types": [
+      "wait",
+      "verify",
+      "verify"
+    ],
+    "action_values": [
+      "h1[role=heading]",
+      "",
+      ""
+    ],
+    "id": "home",
+    "name": "Storefront landing page hero",
+    "natural_language": [
+      "Navigate to the storefront landing page",
+      "Verify the agentic ecommerce hero heading is visible",
+      "Verify the Browse products call-to-action link is visible"
+    ],
+    "page_objects": [
+      "page.landing",
+      "landing.hero_heading",
+      "landing.cta_browse_products"
+    ],
+    "selectors_used": [
+      "/",
+      "h1[role=heading]",
+      "a[href='/products']"
+    ],
+    "source": "agentic-ecommerce-web/e2e/home.spec.ts",
+    "tags": [
+      "v2.1.0",
+      "storefront",
+      "smoke",
+      "anonymous"
+    ]
+  }
+]
+
