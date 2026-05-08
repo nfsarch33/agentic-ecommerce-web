@@ -1688,6 +1688,11 @@ const server = Bun.serve({
     if (marketplaceResponse) return marketplaceResponse;
     const tenantResponse = await handleTenantRequest(req, url);
     if (tenantResponse) return tenantResponse;
+    // v2.5.0 Registration + billing
+    const registrationResponse = await handleRegistrationRequest(req, url);
+    if (registrationResponse) return registrationResponse;
+    const billingResponse = await handleBillingRequest(req, url);
+    if (billingResponse) return billingResponse;
     return json({ error: "not_found" }, { status: 404 });
   },
 });
@@ -1900,6 +1905,179 @@ async function handleTenantRequest(req: Request, url: URL): Promise<Response | n
     return json(t);
   }
   return null;
+}
+
+// v2.5.0 Mock registration + billing.
+interface MockRegistration {
+  id: string;
+  email: string;
+  slug_requested: string;
+  plan_requested: string;
+  status: "pending_email_verification" | "email_verified" | "onboarding" | "active";
+  tenant_id?: string;
+  company_name?: string;
+}
+
+interface MockBillingSubscription {
+  id: string;
+  tenant_id: string;
+  plan_id: string;
+  state: "trialing" | "active" | "past_due" | "paused" | "canceled";
+  stripe_subscription_id: string;
+  stripe_customer_id: string;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MockBillingInvoice {
+  id: string;
+  tenant_id: string;
+  subscription_id: string;
+  amount: number;
+  currency: string;
+  status: "open" | "paid" | "void" | "uncollectible";
+  period_start: string;
+  period_end: string;
+  created_at: string;
+}
+
+const registrations: MockRegistration[] = [];
+const billingSubs: MockBillingSubscription[] = [
+  {
+    id: "sub_e2e_1",
+    tenant_id: "tenant_default",
+    plan_id: "starter",
+    state: "active",
+    stripe_subscription_id: "sub_stripe_e2e_1",
+    stripe_customer_id: "cus_e2e_1",
+    current_period_start: "2026-05-08T00:00:00Z",
+    current_period_end: "2026-06-07T00:00:00Z",
+    cancel_at_period_end: false,
+    created_at: "2026-05-08T00:00:00Z",
+    updated_at: "2026-05-08T00:00:00Z",
+  },
+];
+const billingInvoices: MockBillingInvoice[] = [
+  {
+    id: "inv_e2e_1",
+    tenant_id: "tenant_default",
+    subscription_id: "sub_e2e_1",
+    amount: 1900,
+    currency: "AUD",
+    status: "paid",
+    period_start: "2026-05-08T00:00:00Z",
+    period_end: "2026-06-07T00:00:00Z",
+    created_at: "2026-05-08T00:00:00Z",
+  },
+];
+
+async function handleRegistrationRequest(req: Request, url: URL): Promise<Response | null> {
+  if (!url.pathname.startsWith("/register")) return null;
+  if (url.pathname === "/register" && req.method === "POST") {
+    const body = (await req.json()) as { email?: string; slug_requested?: string; plan_requested?: string };
+    if (!body.email || !body.slug_requested) {
+      return json({ error: "email_required" }, { status: 400 });
+    }
+    if (registrations.some((r) => r.slug_requested === body.slug_requested && r.status === "active")) {
+      return json({ error: "slug_taken" }, { status: 409 });
+    }
+    const reg: MockRegistration = {
+      id: `reg_${registrations.length + 1}`,
+      email: body.email,
+      slug_requested: body.slug_requested,
+      plan_requested: body.plan_requested ?? "free",
+      status: "pending_email_verification",
+    };
+    registrations.push(reg);
+    return json({ registration: reg, message: "Verification email sent." }, { status: 202 });
+  }
+  if (url.pathname === "/register/verify" && req.method === "POST") {
+    const body = (await req.json()) as { token?: string };
+    if (!body.token) return json({ error: "token_required" }, { status: 400 });
+    const reg = registrations[registrations.length - 1];
+    if (!reg) return json({ error: "not_found" }, { status: 404 });
+    reg.status = "email_verified";
+    return json(reg);
+  }
+  if (url.pathname === "/register/onboarding" && req.method === "POST") {
+    const body = (await req.json()) as {
+      registration_id?: string;
+      company_name?: string;
+      plan?: string;
+    };
+    if (!body.registration_id || !body.company_name) {
+      return json({ error: "validation" }, { status: 400 });
+    }
+    const reg = registrations.find((r) => r.id === body.registration_id);
+    if (!reg) return json({ error: "not_found" }, { status: 404 });
+    if (reg.status === "pending_email_verification") {
+      return json({ error: "invalid_transition" }, { status: 422 });
+    }
+    reg.status = "active";
+    reg.company_name = body.company_name;
+    reg.tenant_id = reg.slug_requested;
+    return json({
+      registration: reg,
+      tenant: {
+        id: reg.tenant_id,
+        slug: reg.slug_requested,
+        name: reg.company_name,
+        plan: body.plan ?? reg.plan_requested,
+        status: "active",
+        created_at: "2026-05-08T00:00:00Z",
+        updated_at: "2026-05-08T00:00:00Z",
+      },
+    });
+  }
+  return json({ error: "method_not_allowed" }, { status: 405 });
+}
+
+async function handleBillingRequest(req: Request, url: URL): Promise<Response | null> {
+  if (!url.pathname.startsWith("/api/v1/admin/billing")) return null;
+  if (url.pathname === "/api/v1/admin/billing/subscriptions" && req.method === "GET") {
+    return json({ subscriptions: billingSubs, total: billingSubs.length });
+  }
+  if (url.pathname === "/api/v1/admin/billing/invoices" && req.method === "GET") {
+    return json({ invoices: billingInvoices, total: billingInvoices.length });
+  }
+  if (url.pathname === "/api/v1/admin/billing/usage" && req.method === "GET") {
+    return json({
+      tenant_id: "tenant_default",
+      plan: url.searchParams.get("plan") ?? "free",
+      period_start: "2026-05-08T00:00:00Z",
+      period_end: "2026-06-07T00:00:00Z",
+      rollups: [
+        { metric: "api.requests", value: 42, limit: 60 },
+        { metric: "agent.runs", value: 5, limit: 20 },
+        { metric: "storage.bytes", value: 1024, limit: 52428800 },
+      ],
+    });
+  }
+  const subMatch = url.pathname.match(/^\/api\/v1\/admin\/billing\/subscriptions\/([^/]+)(?:\/(cancel|pause|resume))?$/);
+  if (subMatch) {
+    const id = subMatch[1];
+    const action = subMatch[2];
+    const sub = billingSubs.find((s) => s.id === id);
+    if (!sub) return json({ error: "not_found" }, { status: 404 });
+    if (!action && req.method === "GET") return json(sub);
+    if (req.method === "POST") {
+      if (action === "cancel") sub.state = "canceled";
+      if (action === "pause") sub.state = "paused";
+      if (action === "resume") sub.state = "active";
+      sub.updated_at = "2026-05-08T01:00:00Z";
+      return json(sub);
+    }
+  }
+  const invMatch = url.pathname.match(/^\/api\/v1\/admin\/billing\/invoices\/([^/]+)$/);
+  if (invMatch) {
+    const inv = billingInvoices.find((i) => i.id === invMatch[1]);
+    if (!inv) return json({ error: "not_found" }, { status: 404 });
+    return json(inv);
+  }
+  return json({ error: "method_not_allowed" }, { status: 405 });
 }
 
 const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
