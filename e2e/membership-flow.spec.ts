@@ -13,7 +13,7 @@ test.describe("v2.2.0 membership flow", () => {
     // Customer joins via storefront /account/membership.
     // We do this by hitting the public adapter directly (POST /api/v1/memberships)
     // because the storefront checkout button is a Stripe stub for v2.2.0.
-    const create = await page.request.post("http://127.0.0.1:18180/api/v1/memberships", {
+    const create = await page.request.post("http://127.0.0.1:18080/api/v1/memberships", {
       headers: { "x-tenant-id": "tenant_default", "content-type": "application/json" },
       data: { member_email: "operator@example.com", plan_id: "plan_pro_monthly" },
     });
@@ -43,7 +43,7 @@ test.describe("v2.2.0 membership flow", () => {
     await signInAs(page, "operator");
 
     // Seed an active membership for operator@example.com via API.
-    await page.request.post("http://127.0.0.1:18180/api/v1/memberships", {
+    await page.request.post("http://127.0.0.1:18080/api/v1/memberships", {
       headers: { "x-tenant-id": "tenant_default", "content-type": "application/json" },
       data: { member_email: "operator@example.com", plan_id: "plan_pro_monthly" },
     });
