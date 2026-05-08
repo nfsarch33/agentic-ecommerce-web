@@ -50,6 +50,31 @@ const mediaCdnPattern = mediaCdnRemotePattern();
 // turbopack runtime. v3.0.0+ should aim to remove these by adopting
 // nonces; for v2.9.0 the CSP frame-ancestors + form-action +
 // base-uri restrictions already cut the most common attack surfaces.
+//
+// connect-src dynamically picks up NEXT_PUBLIC_MC_API_BASE_URL when
+// it points at a separate origin (typical for dev / E2E mock runs
+// where the Next.js app and the mock API run on different ports).
+// Production deployments serve /api/* via a reverse proxy on the same
+// origin, so `'self'` continues to cover the canonical case.
+function connectSrcHosts(): string[] {
+  const hosts = new Set<string>(["'self'", "https://api.stripe.com"]);
+  const candidates = [
+    process.env.NEXT_PUBLIC_MC_API_BASE_URL,
+    process.env.MC_API_BASE_URL,
+  ];
+  for (const raw of candidates) {
+    const trimmed = raw?.trim();
+    if (!trimmed) continue;
+    try {
+      const url = new URL(trimmed);
+      hosts.add(`${url.protocol}//${url.host}`);
+    } catch {
+      // ignore malformed values
+    }
+  }
+  return Array.from(hosts);
+}
+
 const securityHeaders = [
   {
     key: "Content-Security-Policy",
@@ -59,7 +84,7 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
-      "connect-src 'self' https://api.stripe.com",
+      `connect-src ${connectSrcHosts().join(" ")}`,
       "frame-ancestors 'none'",
       "form-action 'self'",
       "base-uri 'self'",
