@@ -15,6 +15,8 @@ const navItems: readonly AdminNavItem[] = [
   { key: "products", href: "/admin/products", label: "Products" },
   { key: "media", href: "/admin/media", label: "Media" },
   { key: "orders", href: "/admin/orders", label: "Orders" },
+  { key: "memberships", href: "/admin/memberships", label: "Memberships" },
+  { key: "membership-plans", href: "/admin/membership-plans", label: "Membership Plans" },
   { key: "sync", href: "/admin/sync", label: "Sync" },
   { key: "agents", href: "/admin/agents", label: "Agents" },
   { key: "workflows", href: "/admin/workflows", label: "Workflows" },
