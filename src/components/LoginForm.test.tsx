@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LoginForm } from "./LoginForm";
@@ -11,9 +11,11 @@ vi.mock("next/navigation", () => ({
 }));
 
 afterEach(() => {
+  cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   push.mockReset();
-  window.localStorage.clear();
+  globalThis.localStorage?.clear?.();
 });
 
 describe("LoginForm", () => {

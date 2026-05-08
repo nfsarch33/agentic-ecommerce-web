@@ -1,12 +1,22 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProductCard } from "./ProductCard";
 import { CartProvider, useCart } from "@/components/CartProvider";
 import { Product } from "@/lib/domain/product";
 
+const push = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+}));
+
+afterEach(() => {
+  push.mockReset();
+});
+
 const inStock = Product.fromInput({
-  id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  id: "p_1",
   sku: "ROLLER-001",
   title: "Foam roller",
   slug: "foam-roller",
@@ -16,7 +26,7 @@ const inStock = Product.fromInput({
 });
 
 const outOfStock = Product.fromInput({
-  id: "118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+  id: "p_2",
   sku: "MAT-001",
   title: "Yoga mat",
   slug: "yoga-mat",
@@ -72,6 +82,21 @@ describe("ProductCard", () => {
     await userEvent.click(screen.getByRole("button", { name: /add to cart/i }));
 
     expect(screen.getByLabelText("cart item count")).toHaveTextContent("1");
-    expect(screen.getByRole("link", { name: /view cart/i })).toHaveAttribute("href", "/cart");
+  });
+
+  it("offers cart navigation after adding an item", async () => {
+    render(
+      <CartProvider>
+        <ProductCard product={inStock} />
+      </CartProvider>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /add to cart/i }));
+
+    const viewCart = screen.getByRole("link", { name: /view cart/i });
+    expect(viewCart).toHaveAttribute("href", "/cart");
+
+    await userEvent.click(viewCart);
+    expect(push).toHaveBeenCalledWith("/cart");
   });
 });

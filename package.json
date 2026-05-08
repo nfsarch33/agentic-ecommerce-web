@@ -30,8 +30,8 @@
     "vitest": "^3.2.0"
   },
   "engines": {
-    "bun": ">=1.3.0",
-    "node": ">=20.0.0"
+    "bun": "\u003e=1.3.0",
+    "node": "\u003e=20.0.0"
   },
   "license": "Apache-2.0",
   "name": "agentic-ecommerce-web",
@@ -43,7 +43,7 @@
     "api:generate": "bun run scripts/generate-api-types.ts",
     "build": "bun run scripts/build-with-bundle-budget.ts",
     "build:next": "next build",
-    "contract:check": "bun run api:generate && git diff --exit-code -- src/lib/adapters/api/generated/schema.d.ts",
+    "contract:check": "bun run api:generate \u0026\u0026 git diff --exit-code -- src/lib/adapters/api/generated/schema.d.ts",
     "dev": "next dev --turbopack",
     "dev:e2e": "next dev",
     "e2e:release": "E2E_RELEASE_FLOW=true playwright test e2e/v200-release-flow.spec.ts",
@@ -54,12 +54,12 @@
     "qa:bundle": "bun run scripts/build-with-bundle-budget.ts",
     "qa:lighthouse": "bun run scripts/lighthouse-audit.ts",
     "qa:security": "bun run scripts/security-refresh.ts",
-    "qa:v180": "bun run typecheck && bun run lint && bun run test && bun run test:coverage && bun run build && bun run test:e2e:stable",
+    "qa:v180": "bun run typecheck \u0026\u0026 bun run lint \u0026\u0026 bun run test \u0026\u0026 bun run test:coverage \u0026\u0026 bun run build \u0026\u0026 bun run test:e2e:stable",
     "start": "next start",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:stable": "rm -rf .next && CI=1 PORT=3100 E2E_MOCK_API_PORT=18180 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 PLAYWRIGHT_HTML_REPORT=playwright-report/v180 playwright test --project=chromium --workers=1 --retries=2",
+    "test:e2e:stable": "rm -rf .next \u0026\u0026 CI=1 PORT=3100 E2E_MOCK_API_PORT=18180 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3100 PLAYWRIGHT_HTML_REPORT=playwright-report/v180 playwright test --project=chromium --workers=1 --retries=2",
     "test:e2e:ui": "playwright test --ui",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
@@ -67,3 +67,4 @@
   "type": "module",
   "version": "2.0.0"
 }
+
