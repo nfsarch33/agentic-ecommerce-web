@@ -11,6 +11,7 @@
       "verify",
       "verify",
       "click",
+      "wait",
       "verify"
     ],
     "action_values": [
@@ -24,6 +25,7 @@
       "",
       "",
       "",
+      "div[role=status]",
       ""
     ],
     "auth": {
@@ -44,6 +46,7 @@
       "Verify the Found three supplier candidates summary is visible",
       "Verify the candidates count of 3 appears in the run output",
       "Click the Run sourcing agent now button",
+      "Wait for the Queued manual run status banner live region to appear (v2.8.0 flake fix)",
       "Verify the Queued manual run status banner appears"
     ],
     "page_objects": [
@@ -57,6 +60,7 @@
       "agents.history_summary",
       "agents.history_output",
       "agents.run_button_sourcing",
+      "agents.status_banner_wait",
       "agents.status_banner"
     ],
     "selectors_used": [
@@ -70,15 +74,16 @@
       "text=Found three supplier candidates.",
       "text=\"candidates\": 3",
       "button[aria-label~='Run sourcing agent now']",
+      "div[role=status]",
       "div[role=status][text~='Queued manual run']"
     ],
     "source": "agentic-ecommerce-web/e2e/admin-agents.spec.ts",
     "tags": [
       "v2.1.0",
+      "v2.8.0-flake-fix",
       "admin",
       "agents",
-      "auth-provider",
-      "flake-candidate"
+      "auth-provider"
     ]
   }
 ]
