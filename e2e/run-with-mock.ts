@@ -1693,6 +1693,9 @@ const server = Bun.serve({
     if (registrationResponse) return registrationResponse;
     const billingResponse = await handleBillingRequest(req, url);
     if (billingResponse) return billingResponse;
+    // v2.7.0 Marketplace submission queue (super-admin)
+    const submissionResponse = await handleAdminSubmissionsRequest(req, url);
+    if (submissionResponse) return submissionResponse;
     return json({ error: "not_found" }, { status: 404 });
   },
 });
@@ -1768,8 +1771,66 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+interface MockSubmission {
+  id: string;
+  tenant_id: string;
+  submitter_email: string;
+  manifest: MockManifest;
+  state: "pending_review" | "approved" | "rejected";
+  review_notes: string;
+  submitted_at: string;
+  reviewed_at?: string;
+  reviewer?: string;
+}
+
+const marketplaceSubmissions: MockSubmission[] = [
+  {
+    id: "sub-seed-1",
+    tenant_id: "tenant_default",
+    submitter_email: "vendor@example.com",
+    manifest: {
+      slug: "klaviyo-marketing",
+      name: "Klaviyo Marketing",
+      version: "0.4.1",
+      vendor: "Klaviyo",
+      event_subscriptions: [],
+      permissions: [],
+      dependencies: [],
+    },
+    state: "pending_review",
+    review_notes: "",
+    submitted_at: "2026-05-09T03:00:00Z",
+  },
+];
+
+let submissionCounter = 1;
+
 async function handleMarketplaceRequest(req: Request, url: URL): Promise<Response | null> {
   if (!url.pathname.startsWith("/api/v1/marketplace/")) return null;
+  if (url.pathname === "/api/v1/marketplace/plugins/submit" && req.method === "POST") {
+    const body = (await req.json()) as Record<string, unknown>;
+    const tenantId = req.headers.get("x-tenant-id") ?? "tenant_default";
+    submissionCounter += 1;
+    const sub: MockSubmission = {
+      id: `sub-${submissionCounter}`,
+      tenant_id: tenantId,
+      submitter_email: typeof body.submitter_email === "string" ? body.submitter_email : "",
+      manifest: {
+        slug: typeof body.slug === "string" ? body.slug : "",
+        name: typeof body.name === "string" ? body.name : "",
+        version: typeof body.version === "string" ? body.version : "",
+        vendor: typeof body.vendor === "string" ? body.vendor : "",
+        event_subscriptions: Array.isArray(body.event_subscriptions) ? (body.event_subscriptions as string[]) : [],
+        permissions: Array.isArray(body.permissions) ? (body.permissions as string[]) : [],
+        dependencies: [],
+      },
+      state: "pending_review",
+      review_notes: "",
+      submitted_at: nowIso(),
+    };
+    marketplaceSubmissions.push(sub);
+    return json(sub, { status: 201 });
+  }
   if (url.pathname === "/api/v1/marketplace/plugins" && req.method === "GET") {
     return json({
       plugins: marketplacePlugins,
@@ -1839,6 +1900,45 @@ async function handleMarketplaceRequest(req: Request, url: URL): Promise<Respons
       marketplaceSettings.set(key, body);
       return json({ settings: body });
     }
+  }
+  return json({ error: "method_not_allowed" }, { status: 405 });
+}
+
+async function handleAdminSubmissionsRequest(req: Request, url: URL): Promise<Response | null> {
+  if (!url.pathname.startsWith("/api/v1/admin/marketplace/submissions")) return null;
+  if (url.pathname === "/api/v1/admin/marketplace/submissions" && req.method === "GET") {
+    const filter = url.searchParams.get("tenant_id");
+    const rows = marketplaceSubmissions.filter((row) => {
+      if (row.state !== "pending_review") return false;
+      if (filter && row.tenant_id !== filter) return false;
+      return true;
+    });
+    return json({ submissions: rows, total: rows.length, page: 1, per_page: 50 });
+  }
+  const idMatch = url.pathname.match(/^\/api\/v1\/admin\/marketplace\/submissions\/([^/]+)(?:\/(approve|reject))?$/);
+  if (!idMatch) return json({ error: "method_not_allowed" }, { status: 405 });
+  const id = idMatch[1];
+  const action = idMatch[2];
+  const sub = marketplaceSubmissions.find((row) => row.id === id);
+  if (!sub) return json({ error: "not_found" }, { status: 404 });
+  if (!action && req.method === "GET") return json(sub);
+  if (action === "approve" && req.method === "POST") {
+    if (sub.state !== "pending_review") return json({ error: "invalid_transition" }, { status: 422 });
+    sub.state = "approved";
+    sub.reviewer = "admin@example.com";
+    sub.reviewed_at = nowIso();
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    sub.review_notes = typeof body.review_notes === "string" ? body.review_notes : "";
+    return json(sub);
+  }
+  if (action === "reject" && req.method === "POST") {
+    if (sub.state !== "pending_review") return json({ error: "invalid_transition" }, { status: 422 });
+    sub.state = "rejected";
+    sub.reviewer = "admin@example.com";
+    sub.reviewed_at = nowIso();
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    sub.review_notes = typeof body.review_notes === "string" ? body.review_notes : "";
+    return json(sub);
   }
   return json({ error: "method_not_allowed" }, { status: 405 });
 }
