@@ -2,6 +2,61 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## Unreleased (v2.2.0 MVP)
+
+### Added -- Membership UI
+
+- New domain types in `src/lib/domain/membership.ts` (`MembershipState`,
+  `MembershipTransition`, `BillingCycle`, `Member`, `MembershipPlan`,
+  `Subscription`) with a transition table that mirrors the backend
+  state machine in `internal/domain/membership/state.go`. Helpers
+  `canTransition`, `nextState`, `availableActions`, `stateLabel`,
+  `stateTone` keep the React layer free of `if status ==` branching.
+- HTTP adapters in `src/lib/adapters/api/membership-plans.ts` and
+  `src/lib/adapters/api/memberships.ts` covering the seven new
+  endpoints (`GET/POST /membership-plans`,
+  `GET/PATCH/DELETE /membership-plans/{id}`,
+  `GET/POST /memberships`,
+  `GET/PATCH /memberships/{id}`, plus `cancel`/`pause`/`resume`).
+  Adapters parse the OpenAPI shapes, accept `fetchImpl` for unit
+  tests, and surface typed `MembershipsApiError` /
+  `MembershipPlansApiError`.
+- Use cases in `src/lib/usecases/`: `list-memberships.ts` (paginated +
+  state filter + counts) and `cancel-membership.ts` /
+  `pause-membership.ts` / `resume-membership.ts`. Each transition use
+  case reuses the domain transition table to refuse illegal moves with
+  a typed `IllegalMembershipTransitionError` before the network call.
+- React components: `MembershipStatusPill`, `MembershipActions`,
+  `PlanSelector`, `MembershipManagement` (admin list + counts +
+  inline transitions), `MembershipPlanManagement` (admin plan grid),
+  `MembershipDetailClient` (admin detail page state machine), and
+  `CustomerMembershipPanel` (storefront join + status + lifecycle
+  actions).
+- Pages: `/admin/memberships`, `/admin/memberships/{id}`,
+  `/admin/membership-plans`, `/account/membership`. Account page
+  prefers active/paused/trial subs over cancelled history.
+- AdminShell nav extended with "Memberships" (viewer+) and
+  "Membership Plans" (operator+); role gates wired in
+  `lib/domain/auth.ts`.
+- OpenAPI types regenerated from the v2.2.0 backend spec (627 lines
+  added to `src/lib/adapters/api/generated/schema.d.ts`).
+- Playwright spec `e2e/membership-flow.spec.ts` covering admin plan
+  view, admin cancel, customer pause/resume, and unauthenticated
+  empty state. Mock server now serves `/membership-plans` and
+  `/memberships` endpoints with realistic state transitions.
+
+### Verification
+
+- `bun run typecheck` -- clean
+- `bun run lint` -- clean
+- `bun run test` -- 649 tests across 126 files pass (was 516 / 122
+  before; 110 new tests for membership)
+- `bun run test:coverage` -- `All files: 95.09%` lines (gate `>=95%`)
+- `bun run build` -- max First Load JS = 117 kB (limit 200 kB);
+  `Bundle budget report written to reports/bundle/next-build-summary.json`
+- `bun run test:e2e --project=chromium` -- 24 specs pass (was 21;
+  3 new membership specs)
+
 ## Unreleased (v2.1.0 MVP)
 
 ### Added

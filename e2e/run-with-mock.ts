@@ -667,6 +667,53 @@ const mediaAssets: MockMediaAsset[] = [
   },
 ];
 
+type MockMembershipPlan = {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description?: string;
+  billing_cycle: "monthly" | "annual";
+  price: { amount: number; currency: string };
+  benefits: string[];
+  stripe_price_id?: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type MockSubscription = {
+  id: string;
+  tenant_id: string;
+  member_id: string;
+  member_email: string;
+  plan_id: string;
+  state: "trial" | "active" | "paused" | "cancelled" | "expired";
+  current_period_start: string;
+  current_period_end: string;
+  trial_ends_at: string;
+  stripe_subscription_id?: string;
+  cancelled_at?: string;
+  created_at: string;
+  updated_at: string;
+  plan: MockMembershipPlan;
+};
+
+const membershipPlans: MockMembershipPlan[] = [
+  {
+    id: "plan_pro_monthly",
+    tenant_id: "tenant_default",
+    name: "Pro Monthly",
+    description: "All-access monthly plan with priority support.",
+    billing_cycle: "monthly",
+    price: { amount: 2900, currency: "AUD" },
+    benefits: ["Priority email support", "Early access to features"],
+    stripe_price_id: "price_pro_monthly",
+    created_at: "2026-05-08T07:00:00Z",
+    updated_at: "2026-05-08T07:00:00Z",
+  },
+];
+
+const memberships: MockSubscription[] = [];
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
@@ -1374,6 +1421,110 @@ const server = Bun.serve({
       syncConflict.resolution = body.resolution ?? "manual";
       syncConflict.resolved_at = "2026-05-07T00:10:00Z";
       return json(syncConflict);
+    }
+    if (url.pathname === "/api/v1/membership-plans" && req.method === "GET") {
+      return json({
+        plans: membershipPlans,
+        total: membershipPlans.length,
+        page: 1,
+        per_page: 20,
+      });
+    }
+    if (url.pathname === "/api/v1/membership-plans" && req.method === "POST") {
+      const body = (await req.json()) as Partial<MockMembershipPlan> & {
+        billing_cycle?: "monthly" | "annual";
+        stripe_price_id?: string;
+      };
+      const plan: MockMembershipPlan = {
+        id: `plan_${membershipPlans.length + 1}`,
+        tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
+        name: body.name ?? "New plan",
+        description: body.description,
+        billing_cycle: body.billing_cycle ?? "monthly",
+        price: body.price ?? { amount: 1000, currency: "AUD" },
+        benefits: body.benefits ?? [],
+        stripe_price_id: body.stripe_price_id,
+        created_at: "2026-05-08T08:00:00Z",
+        updated_at: "2026-05-08T08:00:00Z",
+      };
+      membershipPlans.push(plan);
+      return json(plan, { status: 201 });
+    }
+    if (url.pathname.startsWith("/api/v1/membership-plans/") && req.method === "GET") {
+      const planId = decodeURIComponent(url.pathname.replace("/api/v1/membership-plans/", ""));
+      const plan = membershipPlans.find((p) => p.id === planId);
+      return plan ? json(plan) : json({ error: "not_found" }, { status: 404 });
+    }
+    if (url.pathname === "/api/v1/memberships" && req.method === "GET") {
+      return json({
+        memberships: memberships,
+        total: memberships.length,
+        page: 1,
+        per_page: 20,
+      });
+    }
+    if (url.pathname === "/api/v1/memberships" && req.method === "POST") {
+      const body = (await req.json()) as { member_email?: string; plan_id?: string };
+      const plan = membershipPlans.find((p) => p.id === body.plan_id) ?? membershipPlans[0];
+      if (!plan) return json({ error: "no plan available" }, { status: 422 });
+      const sub: MockSubscription = {
+        id: `sub_${memberships.length + 1}`,
+        tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
+        member_id: `mem_${memberships.length + 1}`,
+        member_email: body.member_email ?? "alice@example.com",
+        plan_id: plan.id,
+        state: "active",
+        current_period_start: "2026-05-08T07:30:00Z",
+        current_period_end: "2026-06-08T07:30:00Z",
+        trial_ends_at: "2026-05-15T07:30:00Z",
+        created_at: "2026-05-08T07:30:00Z",
+        updated_at: "2026-05-08T07:30:00Z",
+        plan,
+      };
+      memberships.push(sub);
+      return json(sub, { status: 201 });
+    }
+    if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/cancel") && req.method === "POST") {
+      const subId = decodeURIComponent(
+        url.pathname.replace("/api/v1/memberships/", "").replace("/cancel", ""),
+      );
+      const sub = memberships.find((s) => s.id === subId);
+      if (!sub) return json({ error: "not_found" }, { status: 404 });
+      sub.state = "cancelled";
+      sub.cancelled_at = "2026-05-08T08:30:00Z";
+      sub.updated_at = "2026-05-08T08:30:00Z";
+      return json(sub);
+    }
+    if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/pause") && req.method === "POST") {
+      const subId = decodeURIComponent(
+        url.pathname.replace("/api/v1/memberships/", "").replace("/pause", ""),
+      );
+      const sub = memberships.find((s) => s.id === subId);
+      if (!sub) return json({ error: "not_found" }, { status: 404 });
+      if (sub.state !== "active") {
+        return json({ error: "invalid_transition" }, { status: 422 });
+      }
+      sub.state = "paused";
+      sub.updated_at = "2026-05-08T08:30:00Z";
+      return json(sub);
+    }
+    if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/resume") && req.method === "POST") {
+      const subId = decodeURIComponent(
+        url.pathname.replace("/api/v1/memberships/", "").replace("/resume", ""),
+      );
+      const sub = memberships.find((s) => s.id === subId);
+      if (!sub) return json({ error: "not_found" }, { status: 404 });
+      if (sub.state !== "paused") {
+        return json({ error: "invalid_transition" }, { status: 422 });
+      }
+      sub.state = "active";
+      sub.updated_at = "2026-05-08T08:30:00Z";
+      return json(sub);
+    }
+    if (url.pathname.startsWith("/api/v1/memberships/") && req.method === "GET") {
+      const subId = decodeURIComponent(url.pathname.replace("/api/v1/memberships/", ""));
+      const sub = memberships.find((s) => s.id === subId);
+      return sub ? json(sub) : json({ error: "not_found" }, { status: 404 });
     }
     if (url.pathname === "/api/v1/orders" && req.method === "POST") {
       return createOrder(req);

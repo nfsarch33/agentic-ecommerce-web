@@ -984,6 +984,155 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/membership-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List membership plans for the active tenant */
+        get: operations["listMembershipPlans"];
+        put?: never;
+        /** Create a membership plan within the tenant */
+        post: operations["createMembershipPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/membership-plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Get a membership plan */
+        get: operations["getMembershipPlan"];
+        put?: never;
+        post?: never;
+        /** Delete a membership plan */
+        delete: operations["deleteMembershipPlan"];
+        options?: never;
+        head?: never;
+        /** Update a membership plan */
+        patch: operations["updateMembershipPlan"];
+        trace?: never;
+    };
+    "/api/v1/memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List memberships for the active tenant */
+        get: operations["listMemberships"];
+        put?: never;
+        /** Create a membership (subscription) for a member */
+        post: operations["createMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Get a single membership */
+        get: operations["getMembership"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the plan attached to a membership */
+        patch: operations["updateMembership"];
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a membership (terminal) */
+        post: operations["cancelMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause a membership (active only) */
+        post: operations["pauseMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume a paused membership */
+        post: operations["resumeMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1858,6 +2007,82 @@ export interface components {
             id: number;
             sku: string;
             name: string;
+        };
+        MembershipPlanRequest: {
+            name: string;
+            description?: string;
+            /** @enum {string} */
+            billing_cycle: "monthly" | "quarterly" | "annual";
+            price: components["schemas"]["Money"];
+            benefits?: string[];
+            stripe_price_id?: string;
+        };
+        MembershipPlanResponse: {
+            /** Format: uuid */
+            id: string;
+            tenant_id: string;
+            name: string;
+            description?: string;
+            /** @enum {string} */
+            billing_cycle: "monthly" | "quarterly" | "annual";
+            price: components["schemas"]["Money"];
+            benefits: string[];
+            stripe_price_id?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        MembershipPlansListResponse: {
+            plans: components["schemas"]["MembershipPlanResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        MembershipCreateRequest: {
+            /** Format: email */
+            member_email: string;
+            /** Format: uuid */
+            plan_id: string;
+            /** @default 0 */
+            trial_days: number;
+        };
+        MembershipUpdateRequest: {
+            /** Format: uuid */
+            plan_id?: string;
+        };
+        MembershipResponse: {
+            /** Format: uuid */
+            id: string;
+            tenant_id: string;
+            /** Format: uuid */
+            member_id: string;
+            /** Format: email */
+            member_email: string;
+            /** Format: uuid */
+            plan_id: string;
+            /** @enum {string} */
+            state: "trial" | "active" | "paused" | "cancelled" | "expired";
+            /** Format: date-time */
+            current_period_start: string;
+            /** Format: date-time */
+            current_period_end: string;
+            /** Format: date-time */
+            trial_ends_at: string;
+            stripe_subscription_id?: string;
+            /** Format: date-time */
+            cancelled_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            plan: components["schemas"]["MembershipPlanResponse"];
+        };
+        MembershipsListResponse: {
+            memberships: components["schemas"]["MembershipResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
         };
         ErrorResponse: {
             error: string;
@@ -4563,6 +4788,408 @@ export interface operations {
             };
             /** @description Temporal client is not configured for the API process. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMembershipPlans: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped paginated plans. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlansListResponse"];
+                };
+            };
+            /** @description Tenant header missing or invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponse"];
+                };
+            };
+            /** @description Invalid JSON body or tenant. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Plan validation failed (cycle, currency, name). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan record. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponse"];
+                };
+            };
+            /** @description Plan not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Plan not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponse"];
+                };
+            };
+        };
+    };
+    listMemberships: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped paginated memberships. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipsListResponse"];
+                };
+            };
+        };
+    };
+    createMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership created (state=trial). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Plan or member validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership record. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+        };
+    };
+    cancelMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Cancel not allowed from current state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    pauseMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership paused. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Pause not allowed from current state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resumeMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership resumed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Resume not allowed from current state. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
