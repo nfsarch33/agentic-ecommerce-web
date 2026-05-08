@@ -714,6 +714,53 @@ const membershipPlans: MockMembershipPlan[] = [
 
 const memberships: MockSubscription[] = [];
 
+interface MockDigitalProduct {
+  id: string;
+  tenant_id: string;
+  sku: string;
+  name: string;
+  description?: string;
+  file_path: string;
+  file_size: number;
+  content_type?: string;
+  checksum?: string;
+  version: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MockLicense {
+  id: string;
+  tenant_id: string;
+  product_id: string;
+  customer_id: string;
+  key: string;
+  state: "active" | "revoked" | "expired";
+  issued_at: string;
+  expires_at?: string;
+  max_activations: number;
+  updated_at: string;
+}
+
+const digitalProducts: MockDigitalProduct[] = [
+  {
+    id: "prod_pdf_001",
+    tenant_id: "tenant_default",
+    sku: "PDF-001",
+    name: "AI Playbook PDF",
+    description: "AI agent playbook for ecommerce founders.",
+    file_path: "tenant_default/digital/ai-playbook.pdf",
+    file_size: 524288,
+    content_type: "application/pdf",
+    checksum: "sha256:e2e-fixture-001",
+    version: "1.0.0",
+    created_at: "2026-05-08T07:00:00Z",
+    updated_at: "2026-05-08T07:00:00Z",
+  },
+];
+
+const digitalLicenses: MockLicense[] = [];
+
 const corsHeaders = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
@@ -1529,6 +1576,88 @@ const server = Bun.serve({
     if (url.pathname === "/api/v1/orders" && req.method === "POST") {
       return createOrder(req);
     }
+    if (url.pathname === "/api/v1/digital-products" && req.method === "GET") {
+      return json({
+        products: digitalProducts,
+        total: digitalProducts.length,
+        page: 1,
+        per_page: 20,
+      });
+    }
+    if (url.pathname.startsWith("/api/v1/digital-products/") && req.method === "GET") {
+      const id = decodeURIComponent(url.pathname.replace("/api/v1/digital-products/", ""));
+      const prod = digitalProducts.find((p) => p.id === id);
+      if (!prod) return json({ error: "not_found" }, { status: 404 });
+      return json(prod);
+    }
+    if (url.pathname === "/api/v1/licenses" && req.method === "POST") {
+      const body = (await req.json()) as {
+        product_id?: string;
+        customer_id?: string;
+        source?: "purchase" | "gift" | "admin";
+      };
+      if (!body.product_id || !body.customer_id) {
+        return json({ error: "invalid" }, { status: 400 });
+      }
+      const lic: MockLicense = {
+        id: `lic_${digitalLicenses.length + 1}`,
+        tenant_id: "tenant_default",
+        product_id: body.product_id,
+        customer_id: body.customer_id,
+        key: "AAAAA-BBBBB-CCCCC-DDDDD-EEEEEEEE",
+        state: "active",
+        issued_at: "2026-05-08T07:00:00Z",
+        max_activations: 1,
+        updated_at: "2026-05-08T07:00:00Z",
+      };
+      digitalLicenses.push(lic);
+      return json(lic, { status: 201 });
+    }
+    if (url.pathname === "/api/v1/licenses" && req.method === "GET") {
+      return json({
+        licenses: digitalLicenses,
+        total: digitalLicenses.length,
+        page: 1,
+        per_page: 20,
+      });
+    }
+    if (url.pathname.endsWith("/revoke") && req.method === "POST") {
+      const id = decodeURIComponent(
+        url.pathname.replace("/api/v1/licenses/", "").replace("/revoke", ""),
+      );
+      const lic = digitalLicenses.find((l) => l.id === id);
+      if (!lic) return json({ error: "not_found" }, { status: 404 });
+      if (lic.state !== "active") {
+        return json({ error: "invalid_transition" }, { status: 422 });
+      }
+      lic.state = "revoked";
+      lic.updated_at = "2026-05-08T07:30:00Z";
+      return json(lic);
+    }
+    if (url.pathname === "/api/v1/me/licenses" && req.method === "GET") {
+      return json({
+        licenses: digitalLicenses,
+        total: digitalLicenses.length,
+        page: 1,
+        per_page: 20,
+      });
+    }
+    if (url.pathname.endsWith("/download") && req.method === "GET" && url.pathname.startsWith("/api/v1/me/licenses/")) {
+      const id = decodeURIComponent(
+        url.pathname.replace("/api/v1/me/licenses/", "").replace("/download", ""),
+      );
+      const lic = digitalLicenses.find((l) => l.id === id);
+      if (!lic) return json({ error: "not_found" }, { status: 404 });
+      if (lic.state !== "active") {
+        return json({ error: "gone" }, { status: 410 });
+      }
+      return json({
+        url: `https://cdn.example.com/api/v1/digital-downloads?lid=${lic.id}&pid=${lic.product_id}&tid=${lic.tenant_id}&exp=${Math.floor(Date.now() / 1000) + 300}&uses=3&sig=mocksigE2E`,
+        expires_at: "2026-05-08T07:35:00Z",
+        uses_allowed: 3,
+      });
+    }
+
     if (url.pathname === `/api/v1/orders/${orderId}` && req.method === "GET") {
       return json(
         orders.get(orderId) ?? {

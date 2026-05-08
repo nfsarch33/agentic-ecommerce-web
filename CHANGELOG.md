@@ -2,6 +2,69 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## Unreleased (v2.3.0 MVP)
+
+### Added — Digital goods UI
+
+- New domain types in `src/lib/domain/digital.ts` (`LicenseState`,
+  `LicenseTransition`, `AccessGrantSource`, `ProductType`,
+  `DigitalProduct`, `License`, `DigitalDownload`) with a transition
+  table that mirrors the backend state machine in
+  `internal/domain/digital/state.go`. Helpers `nextLicenseState`,
+  `canRevoke`, `isLicenseTerminal`, `isLicenseUsable`,
+  `licenseStateLabel`, `licenseStateTone`, and `IllegalLicenseTransitionError`
+  keep the React layer free of `if status ==` branching and reject
+  illegal moves before the network call.
+- HTTP adapters in `src/lib/adapters/api/digital-products.ts` and
+  `src/lib/adapters/api/licenses.ts` wrap the eight new backend
+  endpoints (list/get/create/update/delete digital products, list/
+  get/issue/revoke licences, list-my-licences, customer download).
+  Both adapters define their own `*ApiError` class and a
+  `fetchImpl` injection seam for unit-testing.
+- Use cases in `src/lib/usecases/`:
+  - `list-digital-products.ts` (admin list with error -> empty state)
+  - `list-my-licenses.ts` (storefront list with error -> empty state)
+  - `revoke-license.ts` (client-side state-machine guard before the
+    network call)
+  - `issue-download.ts` (rejects revoked / expired licences with a
+    `DownloadDisallowedError` before the network call)
+- Components: `LicenseStatusPill`, `DownloadLinkButton`,
+  `LicenseKeyDisplay` (with a copy-to-clipboard control),
+  `ProductTypeSelector` (radio group: physical / digital /
+  membership), `DigitalProductManagement` (admin list with empty
+  state + new-product CTA gated by role), `LicenseManagement`
+  (admin list with optimistic state-machine-safe revoke),
+  `DigitalLibraryPanel` (storefront list with download buttons that
+  disable for revoked / expired licences).
+- New pages:
+  - `/admin/digital-products` (list + empty state, RBAC-gated CTA)
+  - `/admin/licenses` (list + revoke action, viewer reads, operator
+    mutates)
+  - `/account/digital-library` (storefront customer view, downloads
+    via signed URLs)
+- AdminShell navigation extended with "Digital Products" and
+  "Licences" entries; both gated through the existing
+  `adminNavMinimumRoles` map (viewer reads).
+- E2E coverage: `e2e/digital-flow.spec.ts` adds three new
+  Playwright specs (admin list + issue + revoke; storefront panel +
+  download URL; storefront empty state). Mock backend
+  `e2e/run-with-mock.ts` extended with `/api/v1/digital-products`,
+  `/api/v1/licenses`, `/api/v1/me/licenses`, and the `download`
+  paths so the specs run hermetically.
+- OpenAPI types regenerated from the v2.3.0 backend spec
+  (`api/openapi.yaml`) into `src/lib/adapters/api/generated/schema.d.ts`.
+
+### Verification
+
+- `bun run typecheck` clean
+- `bun run lint` clean
+- `bun run test` 721 tests / 143 files pass (+72 vs baseline)
+- `bun run test:coverage` All files: 95.16% lines (gate >= 95%)
+- `bun run build` Max First Load JS 117 kB (limit 200 kB)
+- `bun run test:e2e --project=chromium` 27 specs pass / 2 skipped
+  (the deliberate v100/v200 release-flow skips); 3 new
+  digital-flow specs join the existing 24
+
 ## Unreleased (v2.2.0 MVP)
 
 ### Added -- Membership UI
