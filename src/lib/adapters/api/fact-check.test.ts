@@ -112,4 +112,57 @@ describe("searchEvidenceSources", () => {
 
     expect(mockFetch).not.toHaveBeenCalled();
   });
+
+  it("wraps fetch network failures from searchEvidenceSources", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      searchEvidenceSources({
+        baseUrl: "http://api.test",
+        query: "five tension levels",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("rejects malformed RAG search payloads (no results array)", async () => {
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ query: "x", results: null }));
+    await expect(
+      searchEvidenceSources({
+        baseUrl: "http://api.test",
+        query: "x",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/results array/);
+  });
+});
+
+describe("getLatestFactCheckResult edge cases", () => {
+  it("requires a non-empty productId", async () => {
+    await expect(
+      getLatestFactCheckResult({ baseUrl: "http://api.test", productId: "" }),
+    ).rejects.toThrow(/productId is required/);
+  });
+
+  it("wraps fetch network failures", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      getLatestFactCheckResult({
+        baseUrl: "http://api.test",
+        productId: "p_1",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("treats a bare result body (no `result` wrapper) as a parsed response", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse(rawFactCheck));
+    const result = await getLatestFactCheckResult({
+      baseUrl: "http://api.test",
+      productId: "p_1",
+      fetchImpl: mockFetch,
+    });
+    expect(result?.id).toBe("fc_1");
+  });
 });

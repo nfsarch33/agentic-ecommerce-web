@@ -186,4 +186,40 @@ describe("workflows API adapter", () => {
       fetchWorkflowList({ baseUrl: "http://api.test", fetchImpl: mockFetch({}) }),
     ).rejects.toThrow("response body must include workflows array");
   });
+
+  it("wraps network failures from sendWorkflowReviewSignal", async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      sendWorkflowReviewSignal({
+        baseUrl: "http://api.test",
+        workflowId: "wf_x",
+        signal: "approve",
+        fetchImpl,
+      }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("wraps non-2xx responses from sendWorkflowReviewSignal", async () => {
+    const fetchImpl = mockFetch({}, 503);
+    await expect(
+      sendWorkflowReviewSignal({
+        baseUrl: "http://api.test",
+        workflowId: "wf_x",
+        signal: "approve",
+        fetchImpl,
+      }),
+    ).rejects.toThrow(/HTTP 503/);
+  });
+
+  it("falls back to a synthetic running summary when the review signal response omits a workflow", async () => {
+    const fetchImpl = mockFetch({ status: "accepted" }, 202);
+    const result = await sendWorkflowReviewSignal({
+      baseUrl: "http://api.test",
+      workflowId: "wf_y",
+      signal: "approve",
+      fetchImpl,
+    });
+    expect(result.status).toBe("running");
+    expect(result.currentActivity).toContain("Review signal accepted");
+  });
 });

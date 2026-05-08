@@ -63,4 +63,40 @@ describe("LoginForm", () => {
     expect(push).toHaveBeenCalledWith("/admin/products");
     expect(setItem).not.toHaveBeenCalled();
   });
+
+  it("surfaces a formError when the BFF responds non-OK and never navigates", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: "invalid_credentials" }), {
+          status: 401,
+          headers: { "content-type": "application/json" },
+        }),
+      ),
+    );
+
+    render(<LoginForm />);
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@example.com");
+    await userEvent.type(screen.getByLabelText(/password/i), "wrong-password");
+    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /sign in failed. check your credentials/i,
+    );
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a formError when the BFF rejects with a network error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("ECONNREFUSED")));
+
+    render(<LoginForm />);
+    await userEvent.type(screen.getByLabelText(/email/i), "admin@example.com");
+    await userEvent.type(screen.getByLabelText(/password/i), "secret");
+    await userEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /unable to reach the auth service/i,
+    );
+    expect(push).not.toHaveBeenCalled();
+  });
 });

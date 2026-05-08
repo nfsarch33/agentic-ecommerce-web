@@ -67,4 +67,38 @@ describe("CartView", () => {
 
     expect(screen.getByText(/your cart is empty/i)).toBeInTheDocument();
   });
+
+  it("links to /products from the empty state", () => {
+    render(
+      <CartProvider>
+        <CartView />
+      </CartProvider>,
+    );
+    const link = screen.getByRole("link", { name: /browse products/i });
+    expect(link).toHaveAttribute("href", "/products");
+  });
+
+  it("surfaces a quantity validation error when the user enters 0", async () => {
+    render(
+      <CartProvider initialState={cartWithItems}>
+        <CartView />
+      </CartProvider>,
+    );
+
+    const quantityInput = screen.getByLabelText("Quantity for Foam roller");
+    await userEvent.clear(quantityInput);
+    await userEvent.type(quantityInput, "0");
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/positive integer/i);
+  });
+
+  it("clears the cart when the operator clicks Clear cart", async () => {
+    render(
+      <CartProvider initialState={cartWithItems}>
+        <CartView />
+      </CartProvider>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /clear cart/i }));
+    expect(screen.getByText(/your cart is empty/i)).toBeInTheDocument();
+  });
 });

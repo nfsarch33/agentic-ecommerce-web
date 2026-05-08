@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import ProductDetailPage from "./page";
+import ProductDetailPage, { generateMetadata } from "./page";
 
 vi.mock("@/lib/adapters/api/products", () => ({
   fetchProductBySlug: vi.fn(),
@@ -71,5 +71,13 @@ describe("ProductDetailPage", () => {
     expect(mockFetchProductBySlug).toHaveBeenCalledWith(
       expect.objectContaining({ slug: "widget-pro" }),
     );
+  });
+
+  it("builds humanised page metadata with a canonical URL from the slug", async () => {
+    const meta = await generateMetadata({
+      params: Promise.resolve({ slug: "widget-pro" }),
+    });
+    expect(meta.title).toContain("widget pro");
+    expect(meta.alternates?.canonical).toBe("/products/widget-pro");
   });
 });

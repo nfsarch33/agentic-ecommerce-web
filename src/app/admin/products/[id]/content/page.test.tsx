@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import ProductContentPage from "./page";
+import ProductContentPage, { generateMetadata } from "./page";
 
 vi.mock("@/lib/usecases/product-content-editor", () => ({
   loadProductContentEditor: vi.fn(),
@@ -92,5 +92,12 @@ describe("Product content admin page", () => {
     expect(mockLoadProductMedia).toHaveBeenCalledWith(
       expect.objectContaining({ baseUrl: "http://localhost:8080", productId: "p_1" }),
     );
+  });
+
+  it("builds noindex admin metadata for the product content editor", async () => {
+    const meta = await generateMetadata({ params: Promise.resolve({ id: "p_1" }) });
+    expect(meta.title).toContain("p_1");
+    expect(meta.alternates?.canonical).toBe("/admin/products/p_1/content");
+    expect(meta.robots).toMatchObject({ index: false, follow: false });
   });
 });

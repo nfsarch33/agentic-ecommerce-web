@@ -134,4 +134,67 @@ describe("fetchOrder", () => {
       OrdersApiError,
     );
   });
+
+  it("requires a baseUrl", async () => {
+    await expect(fetchOrder({ baseUrl: "", orderId: "ord_x" })).rejects.toThrow(
+      /baseUrl is required/,
+    );
+  });
+
+  it("requires an orderId", async () => {
+    await expect(fetchOrder({ baseUrl: "http://api.test", orderId: "" })).rejects.toThrow(
+      /orderId is required/,
+    );
+  });
+
+  it("URL-encodes the orderId in the request path", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse(rawOrder));
+    await fetchOrder({
+      baseUrl: "http://api.test",
+      orderId: "ord 1/2",
+      fetchImpl: mockFetch,
+    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://api.test/api/v1/orders/ord%201%2F2",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("wraps fetch network failures in OrdersApiError", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      fetchOrder({ baseUrl: "http://api.test", orderId: "ord_x", fetchImpl: mockFetch }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("wraps non-2xx responses in OrdersApiError", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ error: "not found" }, { status: 404 }));
+    await expect(
+      fetchOrder({ baseUrl: "http://api.test", orderId: "ord_x", fetchImpl: mockFetch }),
+    ).rejects.toThrow(/HTTP 404/);
+  });
+});
+
+describe("createOrder edge cases", () => {
+  it("requires a baseUrl", async () => {
+    await expect(createOrder({ baseUrl: "", order: createOrderRequest })).rejects.toThrow(
+      /baseUrl is required/,
+    );
+  });
+
+  it("wraps fetch network failures in OrdersApiError", async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error("ECONNREFUSED"));
+    await expect(
+      createOrder({ baseUrl: "http://api.test", order: createOrderRequest, fetchImpl: mockFetch }),
+    ).rejects.toThrow(/network error/);
+  });
+
+  it("rejects responses whose JSON cannot be parsed", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response("not json", { status: 200, headers: { "content-type": "application/json" } }),
+    );
+    await expect(
+      createOrder({ baseUrl: "http://api.test", order: createOrderRequest, fetchImpl: mockFetch }),
+    ).rejects.toThrow(/invalid JSON/);
+  });
 });
