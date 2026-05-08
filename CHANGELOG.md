@@ -2,6 +2,40 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## Unreleased (v2.1.0 MVP)
+
+### Added
+
+- `test/uiauto/scenarios/` JSON files mirroring the five v2.1.0
+  prioritised Playwright specs (home, products, checkout, admin-login,
+  admin-agents). Each scenario follows the
+  `uiauto-framework/docs/scenario-format.md` schema and carries
+  `tags`, `auth` metadata, and 1:1 step parity with its source spec.
+- `test/uiauto/plugins/auth_provider.go` -- AdminCookieAuthProvider
+  implementation that satisfies the
+  `pkg/uiauto/plugin.AuthProvider` seam (cited from
+  `uiauto-framework/pkg/uiauto/plugin/auth_provider.go`). Handles
+  login, cookie staging, JWT TTL refresh, and per-role secret
+  isolation. Standard-library only; covered by
+  `auth_provider_test.go` (login, refresh, error paths,
+  fixture loader).
+- `test/uiauto/fixtures/admin-credentials.example.json` -- safe
+  sample fixture aligned with the deterministic mock-API roles in
+  `e2e/run-with-mock.ts`. Real fixtures are git-ignored via
+  `test/uiauto/fixtures/.gitignore`.
+- `test/uiauto/CANDIDATES.md` -- triaged list of high-priority
+  Playwright specs for uiauto comparison plus the targeted flake
+  categories.
+- `test/uiauto/REPORT_TEMPLATE.md` -- the shape consumed by the
+  backend's `cmd/uiauto-compare` generator.
+- `test/uiauto/README.md` -- end-to-end runbook for the harness.
+
+### Operational notes
+
+- v2.1.0 is research-mode: uiauto comparison runs are advisory and
+  not part of the required CI gates. Coverage holds at 95.02% line
+  parity; no Playwright spec was renamed or removed.
+
 ## v2.0.0 - 2026-05-08
 
 ### Release Summary

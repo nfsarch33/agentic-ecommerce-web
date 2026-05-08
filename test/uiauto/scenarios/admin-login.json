@@ -1,0 +1,69 @@
+[
+  {
+    "action_types": [
+      "wait",
+      "verify",
+      "type",
+      "type",
+      "click",
+      "verify",
+      "verify",
+      "verify"
+    ],
+    "action_values": [
+      "h1[role=heading]",
+      "",
+      "viewer@example.com",
+      "viewer-password",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "auth": {
+      "fixtures_path": "test/uiauto/fixtures/admin-credentials.json",
+      "provider": "AdminCookieAuthProvider",
+      "role": "viewer"
+    },
+    "id": "admin-login",
+    "name": "Admin sign-in flow with role-limited navigation",
+    "natural_language": [
+      "Navigate to the login page",
+      "Verify the Sign in heading is visible",
+      "Type the viewer email into the email field",
+      "Type the viewer password into the password field",
+      "Click the Sign in button",
+      "Verify the Admin Dashboard heading is visible",
+      "Verify the Products navigation link is visible",
+      "Verify the viewer role banner is visible"
+    ],
+    "page_objects": [
+      "page.login",
+      "login.heading",
+      "login.email",
+      "login.password",
+      "login.submit",
+      "page.admin_dashboard",
+      "admin_shell.products_link",
+      "admin_shell.viewer_banner"
+    ],
+    "selectors_used": [
+      "/login",
+      "h1[role=heading][name~='Sign in']",
+      "input[aria-label~='Email']",
+      "input[aria-label~='Password']",
+      "button[role=button][name~='Sign in']",
+      "h1[role=heading][name~='Admin dashboard']",
+      "a[role=link][name='Products']",
+      "text=Viewer access"
+    ],
+    "source": "agentic-ecommerce-web/e2e/auth-admin.spec.ts",
+    "tags": [
+      "v2.1.0",
+      "admin",
+      "auth",
+      "auth-provider"
+    ]
+  }
+]
+

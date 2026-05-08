@@ -1,0 +1,85 @@
+[
+  {
+    "action_types": [
+      "evaluate",
+      "wait",
+      "verify",
+      "verify",
+      "verify",
+      "verify",
+      "click",
+      "verify",
+      "verify",
+      "click",
+      "verify"
+    ],
+    "action_values": [
+      "auth.signIn('operator')",
+      "h1[role=heading]",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ],
+    "auth": {
+      "fixtures_path": "test/uiauto/fixtures/admin-credentials.json",
+      "provider": "AdminCookieAuthProvider",
+      "role": "operator"
+    },
+    "id": "admin-agents",
+    "name": "Admin agents dashboard history and manual run",
+    "natural_language": [
+      "Sign in as an operator using the AuthProvider plugin",
+      "Navigate to the agents dashboard",
+      "Verify the Agent Dashboard heading is visible",
+      "Verify the Sourcing Agent heading is visible",
+      "Verify the 82% success badge is visible",
+      "Verify the 2 queued runs badge is visible",
+      "Click the Show history for sourcing agent button",
+      "Verify the Found three supplier candidates summary is visible",
+      "Verify the candidates count of 3 appears in the run output",
+      "Click the Run sourcing agent now button",
+      "Verify the Queued manual run status banner appears"
+    ],
+    "page_objects": [
+      "auth.operator_session",
+      "page.admin_agents",
+      "agents.heading",
+      "agents.card_sourcing",
+      "agents.badge_success_82",
+      "agents.badge_queued_2",
+      "agents.history_button_sourcing",
+      "agents.history_summary",
+      "agents.history_output",
+      "agents.run_button_sourcing",
+      "agents.status_banner"
+    ],
+    "selectors_used": [
+      "auth-provider://operator",
+      "/admin/agents",
+      "h1[role=heading][name='Agent Dashboard']",
+      "h2[role=heading][name='Sourcing Agent']",
+      "text=82% success",
+      "text=2 queued",
+      "button[aria-label~='Show history for sourcing agent']",
+      "text=Found three supplier candidates.",
+      "text=\"candidates\": 3",
+      "button[aria-label~='Run sourcing agent now']",
+      "div[role=status][text~='Queued manual run']"
+    ],
+    "source": "agentic-ecommerce-web/e2e/admin-agents.spec.ts",
+    "tags": [
+      "v2.1.0",
+      "admin",
+      "agents",
+      "auth-provider",
+      "flake-candidate"
+    ]
+  }
+]
+
