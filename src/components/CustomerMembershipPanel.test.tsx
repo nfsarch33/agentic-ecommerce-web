@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { CustomerMembershipPanel } from "./CustomerMembershipPanel";
 import type { MembershipPlan, Subscription } from "@/lib/domain/membership";
