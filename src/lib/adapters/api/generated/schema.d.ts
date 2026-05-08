@@ -1307,6 +1307,233 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/marketplace/plugins": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List marketplace plugin manifests */
+        get: operations["listMarketplacePlugins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /** Read a marketplace plugin manifest */
+        get: operations["getMarketplacePlugin"];
+        put?: never;
+        post?: never;
+        /** Uninstall the per-tenant installation */
+        delete: operations["uninstallMarketplacePlugin"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}/install": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Install a marketplace plugin for the current tenant */
+        post: operations["installMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}/activate": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate an installed plugin */
+        post: operations["activateMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deactivate an active plugin */
+        post: operations["deactivateMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/installations/{slug}/settings": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /** Read per-tenant per-plugin settings */
+        get: operations["getMarketplaceInstallationSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update per-tenant per-plugin settings */
+        patch: operations["updateMarketplaceInstallationSettings"];
+        trace?: never;
+    };
+    "/api/v1/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tenants (super-admin) */
+        get: operations["listTenants"];
+        put?: never;
+        /** Provision a tenant */
+        post: operations["createTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Read a tenant */
+        get: operations["getTenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update name or plan */
+        patch: operations["updateTenant"];
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend an active tenant */
+        post: operations["suspendTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate a tenant (provisioning|suspended -> active) */
+        post: operations["activateTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a tenant (terminal) */
+        post: operations["archiveTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2337,6 +2564,73 @@ export interface components {
             /** Format: date-time */
             expires_at: string;
             uses_allowed: number;
+        };
+        MarketplacePluginManifest: {
+            /** @description Kebab-case unique identifier. */
+            slug: string;
+            name: string;
+            version: string;
+            vendor: string;
+            description?: string;
+            category?: string;
+            homepage_url?: string;
+            event_subscriptions?: string[];
+            permissions?: string[];
+            dependencies?: components["schemas"]["MarketplacePluginDependency"][];
+        };
+        MarketplacePluginDependency: {
+            slug: string;
+            /** @description Semver constraint: ^X.Y.Z, =X.Y.Z, or empty (treated as caret). */
+            constraint?: string;
+        };
+        MarketplacePluginsListResponse: {
+            plugins: components["schemas"]["MarketplacePluginManifest"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        MarketplaceInstallation: {
+            tenant_id: string;
+            slug: string;
+            installed_version: string;
+            /** @enum {string} */
+            state: "installed" | "active" | "deactivated";
+            installed_at: string;
+            activated_at?: string;
+            updated_at: string;
+        };
+        MarketplaceSettingsResponse: {
+            settings: {
+                [key: string]: unknown;
+            };
+        };
+        TenantResponse: {
+            id: string;
+            slug: string;
+            name: string;
+            plan: string;
+            /** @enum {string} */
+            status: "provisioning" | "active" | "suspended" | "archived";
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TenantsListResponse: {
+            tenants: components["schemas"]["TenantResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        CreateTenantRequest: {
+            id?: string;
+            slug: string;
+            name: string;
+            plan?: string;
+        };
+        UpdateTenantRequest: {
+            name?: string;
+            plan?: string;
         };
     };
     responses: never;
@@ -5851,6 +6145,500 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
+            };
+        };
+    };
+    listMarketplacePlugins: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of marketplace plugin manifests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplacePluginsListResponse"];
+                };
+            };
+        };
+    };
+    getMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Manifest for the requested slug. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplacePluginManifest"];
+                };
+            };
+            /** @description Plugin not in catalogue. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    uninstallMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Installation not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    installMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation row in state=installed. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceInstallation"];
+                };
+            };
+            /** @description Plugin not found in catalogue. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Plugin is already installed for this tenant. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    activateMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation row in state=active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceInstallation"];
+                };
+            };
+            /** @description Installation not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid state transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sandbox budget exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deactivateMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation row in state=deactivated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceInstallation"];
+                };
+            };
+            /** @description Invalid state transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMarketplaceInstallationSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings blob. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateMarketplaceInstallationSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Settings updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSettingsResponse"];
+                };
+            };
+        };
+    };
+    listTenants: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of tenants. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantsListResponse"];
+                };
+            };
+        };
+    };
+    createTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description Tenant created in status=provisioning. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid slug or name. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Slug already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Quota exceeded. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant aggregate. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Tenant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description Tenant updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Tenant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    suspendTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant transitioned to status=suspended. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid status transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    activateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant transitioned to status=active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid status transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    archiveTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant transitioned to status=archived. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid status transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
