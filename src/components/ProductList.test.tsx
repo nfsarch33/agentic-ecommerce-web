@@ -1,14 +1,18 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ProductList } from "./ProductList";
 import { CartProvider } from "./CartProvider";
 import { Product } from "@/lib/domain/product";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 describe("ProductList", () => {
   it("renders one ProductCard per product", () => {
     const products = [
       Product.fromInput({
-        id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+        id: "p_1",
         sku: "ROLLER-001",
         title: "Foam roller",
         slug: "foam-roller",
@@ -16,7 +20,7 @@ describe("ProductList", () => {
         stock: 5,
       }),
       Product.fromInput({
-        id: "118f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+        id: "p_2",
         sku: "MAT-001",
         title: "Yoga mat",
         slug: "yoga-mat",

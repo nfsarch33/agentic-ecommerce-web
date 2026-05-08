@@ -363,54 +363,50 @@ const recentEvents = [
 
 const tenantSettings = {
   tenant_id: "tenant_default",
+  display_name: "Demo Store",
   branding: {
-    store_name: "Demo Store",
     logo_url: "https://cdn.example/logo.svg",
     primary_color: "#2563eb",
     accent_color: "#10b981",
   },
-  woocommerce: {},
-  ai: {
-    content_tone: "friendly",
-    model_tier: "fast",
-    auto_generate_seo: true,
-    fact_check_required: true,
+  preferences: {
+    default_locale: "en-AU",
+    currency: "AUD",
+    timezone: "Australia/Melbourne",
+    ai_tone: "friendly",
+    compliance_strict_mode: true,
+    data_retention_days: 365,
   },
-  compliance: { seo_score_min: 80 },
   updated_at: "2026-05-08T00:00:00Z",
 };
 
 const complianceReportSummary = {
   tenant_id: "tenant_default",
-  total_checks: 10,
-  passed_checks: 7,
-  failed_checks: 2,
-  pass_rate: 0.7,
+  period: "30d",
+  generated_at: "2026-05-08T00:00:00Z",
+  totals: { checks: 10, passed: 7, failed: 2, needs_review: 1 },
+  average_score: 83,
   trends: [
-    { date: "2026-05-01", passed: 3, failed: 1, total: 4 },
-    { date: "2026-05-02", passed: 4, failed: 1, total: 6 },
+    { date: "2026-05-01", passed: 3, failed: 1, needs_review: 0, average_score: 84 },
+    { date: "2026-05-02", passed: 4, failed: 1, needs_review: 1, average_score: 82 },
   ],
-  rule_stats: {
-    rule_alt_text: { rule_id: "Image alt text", passed: 8, failed: 2, total: 10 },
-    rule_claims: { rule_id: "No exaggerated claims", passed: 6, failed: 0, total: 6 },
-  },
+  rule_coverage: [
+    { rule_id: "rule_alt_text", rule_name: "Image alt text", checked: 10, passed: 8, failed: 2 },
+    { rule_id: "rule_claims", rule_name: "No exaggerated claims", checked: 6, passed: 6, failed: 0 },
+  ],
 };
 
 type MockCustomComplianceRule = {
   id: string;
   tenant_id: string;
+  code: string;
   name: string;
   description: string;
-  severity: "info" | "warning" | "error" | "critical";
+  category: "content" | "seo" | "media" | "legal";
+  severity: "info" | "warning" | "critical";
   enabled: boolean;
-  definition: {
-    type: "contains_any";
-    field: "title" | "description" | "meta_description" | "seo_title";
-    values: string[];
-    fail_reason?: string;
-  };
+  condition: { field: string; operator: "contains" | "does_not_contain" | "equals" | "not_equals" | "min_score" | "max_score"; value: string };
   version: number;
-  created_at: string;
   updated_at: string;
 };
 
@@ -418,18 +414,14 @@ const customComplianceRules: MockCustomComplianceRule[] = [
   {
     id: "custom_health_claims",
     tenant_id: "tenant_default",
+    code: "copy.health_claims",
     name: "Health claim guardrail",
     description: "Reject unsupported medical claims.",
+    category: "legal",
     severity: "critical",
     enabled: true,
-    definition: {
-      type: "contains_any",
-      field: "description",
-      values: ["cure"],
-      fail_reason: "Reject unsupported medical claims.",
-    },
+    condition: { field: "description", operator: "does_not_contain", value: "cure" },
     version: 1,
-    created_at: "2026-05-08T00:00:00Z",
     updated_at: "2026-05-08T00:00:00Z",
   },
 ];
@@ -482,7 +474,7 @@ const workflowDetail: MockWorkflow = {
       status: "completed",
       started_at: "2026-05-07T04:40:30Z",
       completed_at: "2026-05-07T04:41:00Z",
-      message: "Primary product media is valid.",
+      message: "MIS media validation passed.",
       attempt: 1,
     },
     {
@@ -535,13 +527,7 @@ const workflows: MockWorkflow[] = [
 type MockWebhook = {
   id: string;
   url: string;
-  event_types: Array<
-    | "product.approved"
-    | "order.placed"
-    | "product.created"
-    | "product.updated"
-    | "compliance.checked"
-  >;
+  event_types: Array<"product.approved" | "order.placed" | "product.created" | "product.updated" | "compliance.checked">;
   description?: string;
   secret_configured: boolean;
   active: boolean;
@@ -578,13 +564,14 @@ const webhooks: MockWebhook[] = [
   },
 ];
 
-const localN8NDeliveries: Array<{
-  id: string;
-  event_type: string;
+type MockN8nDelivery = {
+  event_type: "product.approved";
   status: "delivered";
   target_url: string;
   occurred_at: string;
-}> = [];
+};
+
+const n8nDeliveries: MockN8nDelivery[] = [];
 
 type MockMediaAsset = {
   id: string;
@@ -782,6 +769,7 @@ function workflowSummary(workflow: MockWorkflow): Omit<MockWorkflow, "activities
   };
 }
 
+const appPort = Number(process.env.PORT ?? 3100);
 const apiPort = Number(process.env.E2E_MOCK_API_PORT ?? 18080);
 const releaseFlowMode = process.env.E2E_RELEASE_FLOW === "true";
 const server = Bun.serve({
@@ -802,20 +790,33 @@ const server = Bun.serve({
     if (url.pathname === "/api/v1/auth/logout" && req.method === "POST") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
-    if (url.pathname === "/api/v1/tenant/settings" && req.method === "GET") {
-      return json(tenantSettings);
+    if (
+      (url.pathname === "/api/v1/tenants/current/settings" || url.pathname === "/api/v1/tenant/settings") &&
+      req.method === "GET"
+    ) {
+      return json({ settings: tenantSettings });
     }
-    if (url.pathname === "/api/v1/tenant/settings" && req.method === "PUT") {
+    if (
+      (url.pathname === "/api/v1/tenants/current/settings" || url.pathname === "/api/v1/tenant/settings") &&
+      (req.method === "PATCH" || req.method === "PUT")
+    ) {
       const body = (await req.json()) as {
-        branding?: typeof tenantSettings.branding;
-        ai?: typeof tenantSettings.ai;
-        compliance?: typeof tenantSettings.compliance;
+        display_name?: string;
+        branding?: Partial<typeof tenantSettings.branding> & { store_name?: string };
+        preferences?: Partial<typeof tenantSettings.preferences>;
+        ai?: { content_tone?: string };
+        compliance?: { seo_score_min?: number };
       };
-      tenantSettings.branding = body.branding ?? tenantSettings.branding;
-      tenantSettings.ai = body.ai ?? tenantSettings.ai;
-      tenantSettings.compliance = body.compliance ?? tenantSettings.compliance;
+      tenantSettings.display_name = body.display_name ?? body.branding?.store_name ?? tenantSettings.display_name;
+      tenantSettings.branding = { ...tenantSettings.branding, ...body.branding };
+      tenantSettings.preferences = {
+        ...tenantSettings.preferences,
+        ...body.preferences,
+        ...(body.ai?.content_tone ? { ai_tone: body.ai.content_tone } : {}),
+        ...(body.compliance?.seo_score_min !== undefined ? { compliance_strict_mode: body.compliance.seo_score_min > 0 } : {}),
+      };
       tenantSettings.updated_at = "2026-05-08T00:10:00Z";
-      return json(tenantSettings);
+      return json({ settings: tenantSettings });
     }
     if (url.pathname === "/api/v1/products" && req.method === "GET") {
       return json({ products: [product], total: 1, page: 1, per_page: 20 });
@@ -879,26 +880,13 @@ const server = Bun.serve({
       webhooks.unshift(webhook);
       return json({ ...webhook, webhook }, { status: 201 });
     }
-    if (
-      url.pathname.startsWith("/api/v1/webhooks/") &&
-      url.pathname.endsWith("/test") &&
-      req.method === "POST"
-    ) {
-      const webhookId = decodeURIComponent(
-        url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""),
-      );
+    if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
+      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
       const webhook = webhooks.find((candidate) => candidate.id === webhookId);
       if (!webhook) return json({ error: "not_found" }, { status: 404 });
       const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
       webhook.last_delivery_at = "2026-05-08T00:06:00Z";
       webhook.updated_at = "2026-05-08T00:06:00Z";
-      localN8NDeliveries.unshift({
-        id: `n8n_delivery_${localN8NDeliveries.length + 1}`,
-        event_type: body.event_type ?? webhook.event_types[0],
-        status: "delivered",
-        target_url: webhook.url,
-        occurred_at: "2026-05-08T00:06:00Z",
-      });
       return json(
         {
           delivery: {
@@ -914,19 +902,6 @@ const server = Bun.serve({
         { status: 202 },
       );
     }
-    if (url.pathname === "/__mock/n8n/deliveries" && req.method === "GET") {
-      return json({ deliveries: localN8NDeliveries });
-    }
-    if (url.pathname.startsWith("/mock-n8n/") && req.method === "POST") {
-      localN8NDeliveries.unshift({
-        id: `n8n_delivery_${localN8NDeliveries.length + 1}`,
-        event_type: url.pathname.replace("/mock-n8n/", ""),
-        status: "delivered",
-        target_url: url.pathname,
-        occurred_at: "2026-05-08T00:07:00Z",
-      });
-      return json({ status: "delivered" });
-    }
     if (url.pathname.startsWith("/api/v1/webhooks/") && req.method === "DELETE") {
       const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", ""));
       const index = webhooks.findIndex((candidate) => candidate.id === webhookId);
@@ -934,11 +909,42 @@ const server = Bun.serve({
       webhooks.splice(index, 1);
       return new Response(null, { status: 204, headers: corsHeaders });
     }
+    if (url.pathname === "/__mock/n8n/deliveries" && req.method === "GET") {
+      return json({ deliveries: n8nDeliveries });
+    }
     if (url.pathname === "/api/v1/workflows" && req.method === "GET") {
       const status = url.searchParams.get("status");
       const limit = Number(url.searchParams.get("limit") ?? "50");
       const list = status ? workflows.filter((workflow) => workflow.status === status) : workflows;
       return json({ workflows: list.slice(0, limit).map(workflowSummary) });
+    }
+    if (url.pathname === "/api/v1/workflows/content-generation" && req.method === "POST") {
+      return json(
+        {
+          workflow_id: "wf_content_generation_release",
+          status: "completed",
+          activities: [
+            "content_generation.generate",
+            "content_generation.fact_check",
+            "content_generation.evaluate",
+          ],
+        },
+        { status: 202 },
+      );
+    }
+    if (url.pathname === "/api/v1/workflows/media-processing" && req.method === "POST") {
+      return json(
+        {
+          workflow_id: "wf_media_processing_release",
+          status: "completed",
+          activities: [
+            "media_processing.source",
+            "media_processing.validate",
+            "media_processing.link_product",
+          ],
+        },
+        { status: 202 },
+      );
     }
     if (url.pathname === "/api/v1/workflows/product-publish" && req.method === "POST") {
       const body = (await req.json()) as { product_id?: string; description?: string };
@@ -957,18 +963,18 @@ const server = Bun.serve({
             name: "Check compliance",
             status: "completed",
             started_at: "2026-05-07T04:50:00Z",
-            completed_at: "2026-05-07T04:50:20Z",
+            completed_at: "2026-05-07T04:50:30Z",
             message: body.description
-              ? "Checking operator-approved copy."
-              : "Checking product copy.",
+              ? "Operator-approved copy passed CCE checks."
+              : "Product copy passed CCE checks.",
             attempt: 1,
           },
           {
             id: "act_media_new",
             name: "Validate media",
             status: "completed",
-            started_at: "2026-05-07T04:50:20Z",
-            completed_at: "2026-05-07T04:50:45Z",
+            started_at: "2026-05-07T04:50:30Z",
+            completed_at: "2026-05-07T04:51:00Z",
             message: "MIS media validation passed.",
             attempt: 1,
           },
@@ -976,58 +982,13 @@ const server = Bun.serve({
             id: "act_review_new",
             name: "Human review",
             status: "waiting_review",
-            started_at: "2026-05-07T04:50:45Z",
+            started_at: "2026-05-07T04:51:00Z",
             message: "Waiting for operator approval.",
-          },
-          {
-            id: "act_publish_new",
-            name: "Publish to WooCommerce",
-            status: "pending",
-            message: "Mocked WooCommerce publish waits for review approval.",
           },
         ],
       };
       workflows.unshift(workflow);
       return json({ workflow: workflowSummary(workflow) }, { status: 202 });
-    }
-    if (url.pathname === "/api/v1/workflows/content-generation" && req.method === "POST") {
-      const body = (await req.json()) as { product_id?: string; requested_by?: string };
-      return json(
-        {
-          workflow_id: `content-generation-${body.product_id ?? product.id}-release`,
-          run_id: "run_content_generation_release",
-          status: "completed",
-          task_queue: "ec-workflows",
-          activities: [
-            "content_generation.generate",
-            "content_generation.fact_check",
-            "content_generation.evaluate",
-            "content_generation.record_fact_check",
-          ],
-          requested_by: body.requested_by ?? "release-demo",
-        },
-        { status: 202 },
-      );
-    }
-    if (url.pathname === "/api/v1/workflows/media-processing" && req.method === "POST") {
-      const body = (await req.json()) as { product_id?: string; source_url?: string };
-      return json(
-        {
-          workflow_id: `media-processing-${body.product_id ?? product.id}-release`,
-          run_id: "run_media_processing_release",
-          status: "completed",
-          task_queue: "ec-workflows",
-          activities: [
-            "media_processing.source",
-            "media_processing.process",
-            "media_processing.quality",
-            "media_processing.store",
-            "media_processing.link_product",
-          ],
-          source_url: body.source_url,
-        },
-        { status: 202 },
-      );
     }
     if (url.pathname.startsWith("/api/v1/workflows/") && req.method === "GET") {
       const workflowId = decodeURIComponent(url.pathname.replace("/api/v1/workflows/", ""));
@@ -1044,29 +1005,34 @@ const server = Bun.serve({
       workflow.current_activity = "Published to WooCommerce";
       workflow.updated_at = "2026-05-07T04:55:00Z";
       workflow.completed_at = "2026-05-07T04:55:00Z";
-      workflow.activities = workflow.activities.map((activity) =>
-        activity.status === "waiting_review"
-          ? { ...activity, status: "completed", completed_at: "2026-05-07T04:55:00Z" }
-          : activity.name === "Publish to WooCommerce"
-            ? {
-                ...activity,
-                status: "completed",
-                started_at: activity.started_at ?? "2026-05-07T04:54:00Z",
-                completed_at: "2026-05-07T04:55:00Z",
-                message: "Published to mocked WooCommerce.",
-                attempt: activity.attempt ?? 1,
-              }
+      workflow.activities = [
+        ...workflow.activities.map((activity) =>
+          activity.status === "waiting_review"
+            ? { ...activity, status: "completed" as const, completed_at: "2026-05-07T04:55:00Z" }
             : activity,
-      );
-      const target =
-        webhooks.find((candidate) => candidate.active)?.url ?? "http://127.0.0.1/mock-n8n";
-      localN8NDeliveries.unshift({
-        id: `n8n_delivery_${localN8NDeliveries.length + 1}`,
-        event_type: "product.approved",
-        status: "delivered",
-        target_url: target,
-        occurred_at: "2026-05-07T04:55:00Z",
-      });
+        ),
+        {
+          id: "act_publish",
+          name: "Publish to WooCommerce",
+          status: "completed",
+          started_at: "2026-05-07T04:55:00Z",
+          completed_at: "2026-05-07T04:55:10Z",
+          message: "Published to mocked WooCommerce.",
+          attempt: 1,
+        },
+      ];
+      for (const webhook of webhooks.filter(
+        (candidate) => candidate.active && candidate.event_types.includes("product.approved"),
+      )) {
+        n8nDeliveries.unshift({
+          event_type: "product.approved",
+          status: "delivered",
+          target_url: webhook.url,
+          occurred_at: "2026-05-07T04:55:10Z",
+        });
+        webhook.last_delivery_at = "2026-05-07T04:55:10Z";
+        webhook.updated_at = "2026-05-07T04:55:10Z";
+      }
       return json({ workflow: workflowSummary(workflow) }, { status: 202 });
     }
     if (url.pathname === "/api/v1/media" && req.method === "GET") {
@@ -1181,11 +1147,11 @@ const server = Bun.serve({
       return json({ rules: [complianceRule] });
     }
     if (url.pathname === "/api/v1/compliance/reports/summary" && req.method === "GET") {
-      return json(complianceReportSummary);
+      return json({ report: complianceReportSummary });
     }
     if (url.pathname === "/api/v1/compliance/reports/export" && req.method === "GET") {
       if (url.searchParams.get("format") === "json") {
-        return json(complianceReportSummary);
+        return json({ report: complianceReportSummary });
       }
       return new Response("rule,passed,failed\nalt_text,8,2\n", {
         headers: {
@@ -1199,35 +1165,62 @@ const server = Bun.serve({
       return json({ rules: customComplianceRules });
     }
     if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "POST") {
-      const body = (await req.json()) as Omit<
-        MockCustomComplianceRule,
-        "tenant_id" | "version" | "created_at" | "updated_at"
-      >;
+      const body = (await req.json()) as Partial<MockCustomComplianceRule> & {
+        id?: string;
+        definition?: { field?: string; values?: string[] };
+      };
       const rule: MockCustomComplianceRule = {
-        ...body,
-        id: body.id,
-        tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
+        id: `custom_${customComplianceRules.length + 1}`,
+        tenant_id: req.headers.get("x-tenant-id") ?? body.tenant_id ?? "tenant_default",
+        code: body.code ?? body.id ?? `custom_${customComplianceRules.length + 1}`,
+        name: body.name ?? "Custom rule",
+        description: body.description ?? body.name ?? "Custom compliance rule.",
+        category: body.category ?? "content",
+        severity: body.severity ?? "warning",
+        enabled: body.enabled ?? true,
+        condition: body.condition ?? {
+          field: body.definition?.field ?? "description",
+          operator: "does_not_contain",
+          value: body.definition?.values?.[0] ?? "",
+        },
         version: 1,
-        created_at: "2026-05-08T00:20:00Z",
         updated_at: "2026-05-08T00:20:00Z",
       };
       customComplianceRules.unshift(rule);
-      return json(rule, { status: 201 });
+      return json({ rule }, { status: 201 });
     }
-    if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "PUT") {
-      const ruleId = decodeURIComponent(
-        url.pathname.replace("/api/v1/compliance/custom-rules/", ""),
-      );
-      const rule = customComplianceRules.find((candidate) => candidate.id === ruleId);
+    if (
+      url.pathname.startsWith("/api/v1/compliance/custom-rules/") &&
+      (req.method === "PATCH" || req.method === "PUT")
+    ) {
+      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
+      const rule = customComplianceRules.find((candidate) => candidate.id === ruleId || candidate.code === ruleId);
       if (!rule) return json({ error: "not_found" }, { status: 404 });
-      const body = (await req.json()) as Partial<MockCustomComplianceRule>;
-      Object.assign(rule, body, { updated_at: "2026-05-08T00:21:00Z", version: rule.version + 1 });
-      return json(rule);
+      const body = (await req.json()) as Partial<MockCustomComplianceRule> & {
+        id?: string;
+        definition?: { field?: string; values?: string[] };
+      };
+      Object.assign(rule, {
+        code: body.code ?? body.id ?? rule.code,
+        name: body.name ?? rule.name,
+        description: body.description ?? rule.description,
+        category: body.category ?? rule.category,
+        severity: body.severity ?? rule.severity,
+        enabled: body.enabled ?? rule.enabled,
+        condition: body.condition ?? (body.definition
+          ? {
+              field: body.definition.field ?? rule.condition.field,
+              operator: "does_not_contain",
+              value: body.definition.values?.[0] ?? rule.condition.value,
+            }
+          : rule.condition),
+        updated_at: "2026-05-08T00:21:00Z",
+        version: rule.version + 1,
+      });
+      return json({ rule });
     }
     if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "DELETE") {
-      const ruleId = decodeURIComponent(
-        url.pathname.replace("/api/v1/compliance/custom-rules/", ""),
-      );
+      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
       const index = customComplianceRules.findIndex((candidate) => candidate.id === ruleId);
       if (index === -1) return json({ error: "not_found" }, { status: 404 });
       customComplianceRules.splice(index, 1);
@@ -1262,8 +1255,7 @@ const server = Bun.serve({
       return json({ recommendations: [sourcingRecommendation] });
     }
     if (
-      url.pathname ===
-        `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
+      url.pathname === `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
       req.method === "POST"
     ) {
       const body = (await req.json()) as {
@@ -1271,11 +1263,7 @@ const server = Bun.serve({
         adjusted_unit_cost_cents?: number;
       };
       sourcingRecommendation.status =
-        body.decision === "approve"
-          ? "approved"
-          : body.decision === "reject"
-            ? "rejected"
-            : "adjusted";
+        body.decision === "approve" ? "approved" : body.decision === "reject" ? "rejected" : "adjusted";
       if (body.adjusted_unit_cost_cents !== undefined) {
         sourcingRecommendation.candidates[0].unit_cost_cents = body.adjusted_unit_cost_cents;
       }
@@ -1295,10 +1283,8 @@ const server = Bun.serve({
         min_margin_percent?: number;
       };
       pricingStrategy.enabled = body.enabled ?? pricingStrategy.enabled;
-      pricingStrategy.target_margin_percent =
-        body.target_margin_percent ?? pricingStrategy.target_margin_percent;
-      pricingStrategy.min_margin_percent =
-        body.min_margin_percent ?? pricingStrategy.min_margin_percent;
+      pricingStrategy.target_margin_percent = body.target_margin_percent ?? pricingStrategy.target_margin_percent;
+      pricingStrategy.min_margin_percent = body.min_margin_percent ?? pricingStrategy.min_margin_percent;
       pricingStrategy.updated_at = "2026-05-08T01:21:00Z";
       return json({ strategy: pricingStrategy });
     }
@@ -1311,18 +1297,12 @@ const server = Bun.serve({
     ) {
       return json({ schedules: [agentSchedule] });
     }
-    if (
-      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` &&
-      req.method === "POST"
-    ) {
+    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` && req.method === "POST") {
       agentSchedule.enabled = true;
       agentSchedule.updated_at = "2026-05-08T01:22:00Z";
       return json({ schedule: agentSchedule });
     }
-    if (
-      url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` &&
-      req.method === "POST"
-    ) {
+    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` && req.method === "POST") {
       agentSchedule.enabled = false;
       agentSchedule.updated_at = "2026-05-08T01:22:00Z";
       return json({ schedule: agentSchedule });
@@ -1434,6 +1414,7 @@ const next = Bun.spawn(["bun", "run", "dev:e2e"], {
   stdin: "inherit",
   env: {
     ...process.env,
+    PORT: String(appPort),
     MC_API_BASE_URL: apiBaseUrl,
     NEXT_PUBLIC_MC_API_BASE_URL: apiBaseUrl,
     NEXT_PUBLIC_N8N_URL: process.env.NEXT_PUBLIC_N8N_URL ?? "https://n8n.example.com",

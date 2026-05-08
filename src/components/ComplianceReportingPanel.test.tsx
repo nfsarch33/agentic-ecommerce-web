@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ComplianceReportSummary, CustomComplianceRule } from "@/lib/domain/compliance";
@@ -38,7 +38,7 @@ const customRule: CustomComplianceRule = {
 
 describe("ComplianceReportingPanel", () => {
   it("renders pass/fail trends, rule coverage, and export controls", async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const exportReportImpl = vi.fn().mockResolvedValue({
       filename: "compliance-report.csv",
       mimeType: "text/csv",
@@ -75,7 +75,7 @@ describe("ComplianceReportingPanel", () => {
   });
 
   it("creates, edits, disables, and deletes custom tenant rules", async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const createRuleImpl = vi
       .fn()
       .mockResolvedValue({ ...customRule, id: "custom_seo_title", name: "SEO title guardrail" });
@@ -94,39 +94,43 @@ describe("ComplianceReportingPanel", () => {
       />,
     );
 
-    await user.type(screen.getByLabelText(/rule name/i), "SEO title guardrail");
-    await user.type(screen.getByLabelText(/rule code/i), "seo.title_length");
-    await user.type(screen.getByLabelText(/description/i), "Require clear SEO titles.");
-    await user.type(screen.getByLabelText(/field/i), "title");
-    await user.type(screen.getByLabelText(/value/i), "sale");
+    fireEvent.change(screen.getByLabelText(/rule name/i), { target: { value: "SEO title guardrail" } });
+    fireEvent.change(screen.getByLabelText(/rule code/i), { target: { value: "seo.title_length" } });
+    fireEvent.change(screen.getByLabelText(/description/i), { target: { value: "Require clear SEO titles." } });
+    fireEvent.change(screen.getByLabelText(/field/i), { target: { value: "title" } });
+    fireEvent.change(screen.getByLabelText(/value/i), { target: { value: "sale" } });
     await user.click(screen.getByRole("button", { name: /create rule/i }));
 
-    expect(createRuleImpl).toHaveBeenCalledWith(
-      expect.objectContaining({
-        baseUrl: "http://api.test",
-        rule: expect.objectContaining({ tenantId: "tenant_default", name: "SEO title guardrail" }),
-      }),
+    await waitFor(() =>
+      expect(createRuleImpl).toHaveBeenCalledWith(
+        expect.objectContaining({
+          baseUrl: "http://api.test",
+          rule: expect.objectContaining({ tenantId: "tenant_default", name: "SEO title guardrail" }),
+        }),
+      ),
     );
-    expect(await screen.findByText("SEO title guardrail")).toBeInTheDocument();
+    expect(await screen.findByRole("article", { name: /seo title guardrail/i })).toBeInTheDocument();
 
     const healthRule = screen.getByRole("article", { name: /health claim guardrail/i });
     await user.click(within(healthRule).getByRole("button", { name: /disable/i }));
-    expect(updateRuleImpl).toHaveBeenCalledWith({
-      baseUrl: "http://api.test",
-      ruleId: "custom_health_claims",
-      patch: expect.objectContaining({ tenantId: "tenant_default", enabled: false }),
-    });
-    expect(await screen.findByRole("status")).toHaveTextContent(/custom rule disabled/i);
-
-    await user.click(
-      within(screen.getByRole("article", { name: /health claim guardrail/i })).getByRole("button", {
-        name: /delete/i,
+    await waitFor(() =>
+      expect(updateRuleImpl).toHaveBeenCalledWith({
+        baseUrl: "http://api.test",
+        ruleId: "custom_health_claims",
+        patch: { tenantId: "tenant_default", enabled: false },
       }),
     );
-    expect(deleteRuleImpl).toHaveBeenCalledWith({
-      baseUrl: "http://api.test",
-      tenantId: "tenant_default",
-      ruleId: "custom_health_claims",
-    });
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/custom rule disabled/i));
+
+    await user.click(
+      within(screen.getByRole("article", { name: /health claim guardrail/i })).getByRole("button", { name: /delete/i }),
+    );
+    await waitFor(() =>
+      expect(deleteRuleImpl).toHaveBeenCalledWith({
+        baseUrl: "http://api.test",
+        tenantId: "tenant_default",
+        ruleId: "custom_health_claims",
+      }),
+    );
   });
 });

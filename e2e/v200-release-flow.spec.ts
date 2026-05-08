@@ -20,7 +20,7 @@ test("v2.0.0 release flow covers storefront, Temporal, MIS, mocked WooCommerce, 
     .first()
     .click();
   await page.getByRole("link", { name: /view cart/i }).click();
-  await expect(page.getByRole("heading", { name: "Cart" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /your cart/i })).toBeVisible();
   await page.getByRole("link", { name: /checkout/i }).click();
 
   await page.getByLabel(/email/i).fill("shopper@example.com");

@@ -2,8 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 // Playwright runs Next.js with a deterministic mock mc-api by default.
 // CI can override webServer.url to hit a containerised build.
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = Number(process.env.PORT ?? 3100);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
+const reuseExistingServer = process.env.PLAYWRIGHT_REUSE_SERVER === "true";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -29,7 +30,7 @@ export default defineConfig({
   webServer: {
     command: "bun run e2e:web",
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer,
     timeout: 120_000,
   },
 });

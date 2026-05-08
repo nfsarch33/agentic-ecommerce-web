@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useCart } from "./CartProvider";
 import type { CartAddItem } from "@/lib/domain/cart";
@@ -11,11 +12,12 @@ export interface AddToCartButtonProps {
 }
 
 export function AddToCartButton({ item, disabled = false }: AddToCartButtonProps) {
+  const router = useRouter();
   const { dispatch } = useCart();
   const [added, setAdded] = useState(false);
 
   return (
-    <div className="mt-1 flex items-center gap-3">
+    <div className="mt-1 flex flex-wrap items-center gap-2">
       <button
         type="button"
         disabled={disabled}
@@ -28,7 +30,14 @@ export function AddToCartButton({ item, disabled = false }: AddToCartButtonProps
         {added ? "Added to cart" : "Add to cart"}
       </button>
       {added && (
-        <Link className="text-sm text-blue-600 hover:underline" href="/cart">
+        <Link
+          className="text-sm font-medium text-blue-700 hover:underline"
+          href="/cart"
+          onClick={(event) => {
+            event.preventDefault();
+            router.push("/cart");
+          }}
+        >
           View cart
         </Link>
       )}

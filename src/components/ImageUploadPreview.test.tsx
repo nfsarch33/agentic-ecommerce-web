@@ -1,17 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ImageUploadPreview } from "./ImageUploadPreview";
 
 const objectUrls: string[] = [];
 
-vi.stubGlobal("URL", {
-  createObjectURL: vi.fn(() => {
-    const url = `blob:http://localhost/${objectUrls.length + 1}`;
-    objectUrls.push(url);
-    return url;
-  }),
-  revokeObjectURL: vi.fn(),
+beforeEach(() => {
+  vi.stubGlobal("URL", {
+    createObjectURL: vi.fn(() => {
+      const url = `blob:http://localhost/${objectUrls.length + 1}`;
+      objectUrls.push(url);
+      return url;
+    }),
+    revokeObjectURL: vi.fn(),
+  });
 });
 
 afterEach(() => {

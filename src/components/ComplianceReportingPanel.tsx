@@ -152,16 +152,7 @@ export function ComplianceReportingPanel({
       const updated = await updateRuleImpl({
         baseUrl: apiBaseUrl,
         ruleId: rule.id,
-        patch: {
-          tenantId: reportSummary.tenantId,
-          code: rule.code,
-          name: rule.name,
-          description: rule.description,
-          category: rule.category,
-          severity: rule.severity,
-          enabled: !rule.enabled,
-          condition: rule.condition,
-        },
+        patch: { tenantId: reportSummary.tenantId, enabled: !rule.enabled },
       });
       setRules((current) =>
         current.map((candidate) => (candidate.id === updated.id ? updated : candidate)),
