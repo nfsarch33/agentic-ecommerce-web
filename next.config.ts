@@ -34,6 +34,50 @@ function mediaCdnRemotePattern(): NonNullable<NextConfig["images"]>["remotePatte
 
 const mediaCdnPattern = mediaCdnRemotePattern();
 
+// SECURITY HEADERS (v2.9.0 carryover from v2.8.0 OWASP audit).
+//
+// We ship six headers on every response:
+//  - Content-Security-Policy             reduces XSS / data exfil blast radius
+//  - X-Frame-Options: DENY               clickjacking
+//  - X-Content-Type-Options: nosniff     MIME sniffing
+//  - Referrer-Policy                     no leak of internal paths to third parties
+//  - Strict-Transport-Security           force HTTPS (production only)
+//  - Permissions-Policy                  disable browser features we do not use
+//
+// CSP keeps `'unsafe-inline'` + `'unsafe-eval'` in script-src because
+// Next.js dev mode injects inline scripts via the React Refresh
+// runtime and the production runtime needs `'unsafe-eval'` for the
+// turbopack runtime. v3.0.0+ should aim to remove these by adopting
+// nonces; for v2.9.0 the CSP frame-ancestors + form-action +
+// base-uri restrictions already cut the most common attack surfaces.
+const securityHeaders = [
+  {
+    key: "Content-Security-Policy",
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https:",
+      "connect-src 'self' https://api.stripe.com",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "base-uri 'self'",
+    ].join("; "),
+  },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  {
+    key: "Strict-Transport-Security",
+    value: "max-age=31536000; includeSubDomains",
+  },
+  {
+    key: "Permissions-Policy",
+    value: "camera=(), microphone=(), geolocation=()",
+  },
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
@@ -47,6 +91,15 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
 
   poweredByHeader: false,
+
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
