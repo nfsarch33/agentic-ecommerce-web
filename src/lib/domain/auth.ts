@@ -36,6 +36,8 @@ const adminNavMinimumRoles: Record<string, Role> = {
   orders: "viewer",
   memberships: "viewer",
   "membership-plans": "operator",
+  "digital-products": "viewer",
+  licenses: "viewer",
   sync: "operator",
   agents: "operator",
   compliance: "operator",

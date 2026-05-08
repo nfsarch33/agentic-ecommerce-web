@@ -23,7 +23,7 @@ describe("AdminShell", () => {
       </AdminShell>,
     );
 
-    expect(screen.getByRole("link", { name: /products/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Products" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /media/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /orders/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
@@ -39,7 +39,7 @@ describe("AdminShell", () => {
       </AdminShell>,
     );
 
-    expect(screen.getByRole("link", { name: /products/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Products" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /settings/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /agents/i })).not.toBeInTheDocument();
     expect(screen.getByText(/viewer access/i)).toBeInTheDocument();
