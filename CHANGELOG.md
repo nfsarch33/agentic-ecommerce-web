@@ -2,6 +2,71 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## Unreleased (v2.9.0 Developer Experience + Storefront + CSP)
+
+### Added — /developers portal
+
+- `/developers` -- landing page with cards for Getting Started, Plugin SDK,
+  API reference, Marketplace storefront, Submission flow, OpenAPI raw spec.
+- `/developers/api` -- API reference page summarising v1 stable + v2 preview
+  endpoints with the `ApiVersionToggle` component (radio toggle between v1 and
+  v2, links to the canonical OpenAPI spec files).
+- `/developers/sdk` -- Plugin SDK reference: links to source + README, table of
+  public symbols (Plugin, Manifest, NewTestSandbox, etc.), example plugin
+  snippet.
+- `/developers/getting-started` -- 10-minute path quickstart driven by the new
+  `GettingStartedSteps` component (5 steps: register tenant, scaffold module,
+  implement Plugin interface, run sandbox smoke test, submit for review).
+
+### Added — Public marketplace storefront
+
+- `/marketplace` -- public catalogue. No auth required for browse. Renders
+  `MarketplaceCategoryFilter` + `MarketplaceSearchBar` + grid of
+  `PluginCatalogCard`.
+- `/marketplace/[slug]` -- plugin detail page with breadcrumbs, manifest
+  summary, permissions list, event subscriptions, install CTA linking to the
+  admin marketplace.
+- `/marketplace/categories/[category]` -- filtered category view sharing the
+  same filter + search header as the storefront landing.
+- `/marketplace/search?q=...` -- search across plugin name + vendor + slug +
+  description.
+- `src/lib/usecases/list-public-marketplace.ts` -- shared usecase for the
+  storefront pages. Accepts an optional `category` and `query`; falls back to
+  `tenant_public` when no tenant id is provided. Filtering is client-side
+  pending a v2 preview backend search endpoint.
+
+### Added — Security headers (v2.8.0 carryover)
+
+- `next.config.ts` `headers()` returns six headers on every response:
+  `Content-Security-Policy` (default-src self, scoped script-src, font/img
+  sources, frame-ancestors none, form-action self, base-uri self),
+  `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`,
+  `Strict-Transport-Security`, `Permissions-Policy`.
+- CSP intentionally keeps `'unsafe-inline'` + `'unsafe-eval'` in script-src
+  for v2.9.0 compatibility with Next.js dev mode + turbopack runtime; v3.0.0+
+  should adopt nonces. The frame-ancestors + form-action + base-uri
+  restrictions cut the most common attack surfaces.
+
+### Added — Components
+
+- `ApiVersionToggle` -- radio switch between v1 stable and v2 preview spec.
+- `GettingStartedSteps` -- numbered step cards with optional code snippets.
+- `PluginCatalogCard` -- public-facing variant of `PluginCard` linking to
+  `/marketplace/[slug]` (vs the admin install panel).
+- `MarketplaceCategoryFilter` -- pill-style category navigation.
+- `MarketplaceSearchBar` -- form posting to `/marketplace/search?q=`.
+
+### Test plan
+
+- `bun run typecheck` clean
+- `bun run lint` clean
+- `bun run test` clean (coverage maintained ≥95%)
+- `bun run build` clean (first-load JS within 200 kB budget)
+- New unit tests cover `ApiVersionToggle`, `GettingStartedSteps`,
+  `PluginCatalogCard`, `MarketplaceCategoryFilter`, `MarketplaceSearchBar`,
+  `list-public-marketplace` usecase
+
 ## Unreleased (v2.5.0 MVP)
 
 ### Added — Tenant self-service registration + billing UI
