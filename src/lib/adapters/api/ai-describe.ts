@@ -1,3 +1,11 @@
+// runx-public-repo-gate: allow-file fleet_host_alias
+// runx-public-repo-gate: allow-file network_topology
+// (Documented v3.6.0: the host alias names + Tailscale prefix
+// constants are intentional product behaviour. The fleet bridge URL
+// validator below uses these literals to enforce the network policy
+// at runtime; replacing them with placeholders would defeat the
+// validation.)
+//
 // Adapter: MiniMax-routed AI description.
 //
 // HARD NETWORK POLICY: this app NEVER calls api.minimaxi.com directly.
