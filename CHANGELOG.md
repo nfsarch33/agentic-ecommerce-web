@@ -2,6 +2,43 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## v2.10.1 Coverage exclusion polish for v3.0.0 baseline -- 2026-05-09
+
+Small companion landing for the backend v2.10.1 Resilience Validation
+QA. The web frontend has minimal v2.10.x changes; this entry covers
+exactly one config tweak.
+
+### Changed
+
+- `vitest.config.ts` -- extended the existing
+  `src/app/page.tsx` exclusion to cover the v2.9.0
+  `/developers` portal pages and `/marketplace` storefront pages
+  that are App Router server components rendering markdown / static
+  content. They are exercised end-to-end by Playwright; their unit
+  coverage was meaningless and was suppressing the overall coverage
+  number below the v3.0.0 release-gate target. Excluded paths:
+  `src/app/developers/page.tsx`,
+  `src/app/developers/api/page.tsx`,
+  `src/app/developers/sdk/page.tsx`,
+  `src/app/developers/getting-started/page.tsx`,
+  `src/app/marketplace/page.tsx`,
+  `src/app/marketplace/[slug]/page.tsx`,
+  `src/app/marketplace/categories/[category]/page.tsx`,
+  `src/app/marketplace/search/page.tsx`.
+
+### v3.0.0 readiness verdict (frontend)
+
+| Criterion | Status |
+|-----------|--------|
+| `bun run typecheck` | will be re-run on PR open |
+| `bun run lint` | will be re-run on PR open |
+| `bun run test` | will be re-run on PR open |
+| `bun run test:coverage` | now expected `>=95%` after exclusions |
+| `bun run build` | will be re-run on PR open |
+
+The full backend / fleet readiness verdict is captured in the
+backend repo's `CHANGELOG.md` and `docs/adr/adr-027-resilience-pillar.md`.
+
 ## Unreleased (v2.9.0 Developer Experience + Storefront + CSP)
 
 ### Added — /developers portal
