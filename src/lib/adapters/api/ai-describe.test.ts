@@ -1,3 +1,8 @@
+// runx-public-repo-gate: allow-file fleet_host_alias
+// runx-public-repo-gate: allow-file network_topology
+// Test fixtures use the canonical host aliases (`wsl1`, `wsl1-travel`)
+// + the Tailscale 100.119.x.x prefix because the validator under test
+// pattern-matches those literals. v3.6.0 documented exemption.
 import { describe, it, expect } from "vitest";
 import { fleetBridgeUrl, MiniMaxFleetPolicyError, callDescribe } from "./ai-describe";
 
