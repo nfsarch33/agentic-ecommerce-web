@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
-import { PaymentDashboard } from "@/components/PaymentDashboard";
+import nextDynamic from "next/dynamic";
 import { adminPageMetadata } from "@/lib/seo-metadata";
+
+const PaymentDashboard = nextDynamic(
+  () => import("@/components/PaymentDashboard").then((m) => m.PaymentDashboard),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center py-20" role="status" aria-label="Loading payments">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+      </div>
+    ),
+  },
+);
 
 export const dynamic = "force-dynamic";
 

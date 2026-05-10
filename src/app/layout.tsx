@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CartProvider } from "@/components/CartProvider";
+import { SWRProvider } from "@/lib/swr-config";
 import { resolveDeploymentConfig } from "@/lib/server/deployment-config";
 import { publicPageMetadata } from "@/lib/seo-metadata";
 import "./globals.css";
@@ -23,7 +24,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-white text-gray-900 antialiased">
-        <CartProvider>{children}</CartProvider>
+        <SWRProvider>
+          <CartProvider>{children}</CartProvider>
+        </SWRProvider>
       </body>
     </html>
   );

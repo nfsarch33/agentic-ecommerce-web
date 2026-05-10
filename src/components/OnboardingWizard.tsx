@@ -3,12 +3,12 @@
 // File scope: v3.9.1 Existing #10 onboarding wizard (multi-step
 // form). Renders the four step components and orchestrates the
 // HTTP requests to the BFF route at /api/onboarding/*.
+//
+// v5.6.0: step components are lazy-loaded per step to reduce the
+// initial chunk size — only the active step's code is fetched.
 
+import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { IdentityStep } from "@/components/onboarding/IdentityStep";
-import { ChannelsStep } from "@/components/onboarding/ChannelsStep";
-import { ComplianceStep } from "@/components/onboarding/ComplianceStep";
-import { SeedingStep } from "@/components/onboarding/SeedingStep";
 import {
   parseWizardState,
   type OnboardingWizardState,
@@ -17,6 +17,34 @@ import {
   type WizardIdentity,
   type WizardSeeding,
 } from "@/lib/domain/onboarding-wizard";
+
+function StepSkeleton() {
+  return (
+    <div className="animate-pulse space-y-4 rounded-md border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="h-5 w-48 rounded bg-gray-200" />
+      <div className="h-9 w-full rounded bg-gray-100" />
+      <div className="h-9 w-full rounded bg-gray-100" />
+      <div className="h-9 w-3/4 rounded bg-gray-100" />
+    </div>
+  );
+}
+
+const IdentityStep = dynamic(
+  () => import("@/components/onboarding/IdentityStep").then((m) => m.IdentityStep),
+  { loading: () => <StepSkeleton /> },
+);
+const ChannelsStep = dynamic(
+  () => import("@/components/onboarding/ChannelsStep").then((m) => m.ChannelsStep),
+  { loading: () => <StepSkeleton /> },
+);
+const ComplianceStep = dynamic(
+  () => import("@/components/onboarding/ComplianceStep").then((m) => m.ComplianceStep),
+  { loading: () => <StepSkeleton /> },
+);
+const SeedingStep = dynamic(
+  () => import("@/components/onboarding/SeedingStep").then((m) => m.SeedingStep),
+  { loading: () => <StepSkeleton /> },
+);
 
 export interface OnboardingWizardProps {
   readonly tenantId?: string;
