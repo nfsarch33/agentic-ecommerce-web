@@ -4,7 +4,7 @@ import AgentActivityPage from "./page";
 
 vi.mock("next/dynamic", () => ({
   __esModule: true,
-  default: (loader: () => Promise<{ default: React.ComponentType }>, opts?: { loading?: () => React.ReactNode }) => {
+  default: (_loader: () => Promise<{ default: React.ComponentType }>, _opts?: { loading?: () => React.ReactNode }) => {
     const Stub = () => <div data-testid="feed-mock">FEED</div>;
     return Stub;
   },

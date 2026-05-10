@@ -2,12 +2,10 @@
   "dependencies": {
     "next": "^16.2.6",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "swr": "^2.4.1"
+    "react-dom": "^19.1.0"
   },
-  "description": "Public Next.js 16 App Router frontend for the Agentic Ecommerce platform",
+  "description": "Public Next.js 15 App Router frontend for the Agentic Ecommerce stack",
   "devDependencies": {
-    "@next/bundle-analyzer": "^16.2.6",
     "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@testing-library/dom": "^10.4.0",
@@ -38,13 +36,12 @@
   "license": "Apache-2.0",
   "name": "agentic-ecommerce-web",
   "overrides": {
-    "postcss": "^8.5.0"
+    "postcss": "^8.5.14"
   },
   "private": true,
   "scripts": {
     "api:generate": "bun run scripts/generate-api-types.ts",
     "build": "bun run scripts/build-with-bundle-budget.ts",
-    "build:analyze": "ANALYZE=true next build",
     "build:next": "next build",
     "contract:check": "bun run api:generate \u0026\u0026 git diff --exit-code -- src/lib/adapters/api/generated/schema.d.ts",
     "dev": "next dev --turbopack",
@@ -68,6 +65,6 @@
     "typecheck": "tsc --noEmit"
   },
   "type": "module",
-  "version": "5.0.0"
+  "version": "6.0.0"
 }
 

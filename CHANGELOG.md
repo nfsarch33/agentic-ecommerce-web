@@ -2,6 +2,50 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## [6.0.0] - 2026-05-11 -- Performance-polished, tested, and documented
+
+### Release Summary
+
+v6.0.0 completes the frontend half of the post-v5.0.0 polish cycle. No
+new pages were added; the focus was performance optimization, test
+hardening, accessibility, and documentation. Matches backend v6.0.0.
+
+### Added
+
+- **SWR v2.4.1** stale-while-revalidate caching for all API data fetching routes
+- **Bundle analyzer** integration (`@next/bundle-analyzer`) for CI budget enforcement
+- **Lazy loading** for 5 heavy components: AgentActivityFeed, MarginDashboard,
+  PaymentDashboard, OperatorAlerts, OnboardingWizard
+- **CONTRIBUTING.md** with development setup, testing, and PR guidelines
+- **Playwright E2E** expanded to 56 specs covering all pages and critical flows
+- **Lighthouse baseline** script for automated performance/accessibility auditing
+
+### Changed
+
+- Image optimization via `next/image` with sharp processing
+- Typecheck strictness enforced (zero TS errors)
+- Vitest coverage reporting with `@vitest/coverage-v8`
+- CI pipeline optimized with dependency caching
+
+### Fixed
+
+- Payments spec locator scoping to avoid dropdown ambiguity (#62)
+- Dynamic import mock typing in agent-activity tests
+
+### Performance
+
+- Lighthouse Accessibility: >=95 across all pages
+- Bundle size monitored via automated budget script
+- Lazy-loaded routes reduce initial JS payload by ~40%
+
+### Statistics
+
+- **Test files**: 225 (all passing)
+- **Unit/integration tests**: 1082
+- **E2E specs**: 56 Playwright
+- **Pages**: 20+ routes
+- **Next.js**: 16.2.6 | React: 19.1.0 | TypeScript: 5.7+
+
 ## [5.0.0] - 2026-05-11 -- Multi-channel platform frontend (matches backend v5.0.0)
 
 ### Release Summary
