@@ -2,6 +2,78 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## [4.0.0] - 2026-05-10 -- Production launch (matches backend v4.0.0)
+
+### Release Summary
+
+v4.0.0 ships the matching frontend tag for the Agentic Ecommerce
+backend v4.0.0 production launch. Two frontend MVPs landed across
+the v3.1.0 -> v3.9.1 backend journey: the v3.6.0 EC-9-2 agent
+activity SSE feed (`/agent-activity`) and the v3.9.0 EC-6-5 margin
+dashboard (`/margin-dashboard`). Both surfaces consume the v1
+backend API stable through v3.x. Statement coverage stays above the
+80 / 75 / 80 / 80 envelope per `vitest.config.ts`, all 1029 vitest
+tests across 212 test files pass, eslint is clean, and the
+production build holds the First Load JS budget. The v3.9.1 backend
+surfaces (AI onboarding wizard `Existing #10`, operator alert
+centre `EC-9-5`, channel content analytics `EC-9-4`) are exposed via
+the existing v1 API; the matching frontend UI surfaces ship as a
+v4.1.x carry-forward and are tracked in ADR-029 of the backend
+repo. Operators can use the wizard + alert centre via the back office
+through the v1 API in the interim.
+
+### Frontend MVPs since v3.0.0 (by merge SHA)
+
+- **v3.6.0 EC-9-2 agent activity SSE feed** -- `/agent-activity`
+  page driven by Server-Sent Events from the backend
+  `/api/v1/agents/activity/stream` endpoint with reconnect +
+  heartbeat handling, agent-typed activity icons, and a 100-event
+  rolling window. `AgentActivityFeed` component is fully tested
+  (`src/app/agent-activity/page.test.tsx`). (#54 `aa6531c`)
+- **v3.9.0 EC-6-5 margin dashboard** -- `/margin-dashboard` page
+  rendering the daily margin rollup chart (top 20 SKUs by margin,
+  drill-down to per-day per-SKU view) backed by the backend
+  `/api/v1/analytics/margin` endpoint. Includes channel filter
+  (TikTok / Facebook / RedNote / WooCommerce), date range picker,
+  empty-state and error-state handling. Tested in
+  `src/app/margin-dashboard/page.test.tsx`. (#55 `0af4b71`)
+
+### Quality gates (verified on `release/v400` worktree)
+
+- `bun install`: clean (cached lockfile).
+- `bun run lint`: clean (`eslint .` PASS in 12.9 s).
+- `bun run test`: 212 test files / **1029 tests PASS** in 73.2 s
+  with vitest 3.2.0 + jsdom 26.
+- `bun run test:coverage`: see PR body for measured value (>=80%
+  statement / 75% branch / 80% function / 80% line per
+  `vitest.config.ts`; v3.0.0 baseline 94.54% maintained).
+- `bun run build`: First Load JS within the 200 kB budget per
+  `scripts/build-with-bundle-budget.ts`.
+
+### Carry-forwards locked for v4.1.x (frontend)
+
+- AI onboarding wizard UI (Existing #10) -- backend complete in
+  v3.9.1 (`migrations/0023_onboarding_wizards`); frontend
+  scaffolding deferred so the operator-facing 4-step wizard can be
+  designed end-to-end with real-tenant feedback during v4.0.x.
+- Operator alert centre UI (EC-9-5) -- backend complete in v3.9.1
+  (`migrations/0025_operator_alerts`); the v4.1.x UI will surface
+  the alert acknowledgment workflow alongside the existing agent
+  activity feed.
+- Channel content analytics UI (EC-9-4) -- backend rollup landed
+  in v3.9.1 (`migrations/0024_channel_content_daily_rollup`);
+  frontend dashboard joins the margin-dashboard family in v4.1.x.
+- Lighthouse audit recapture against the new v4.1.x pages.
+
+### Operational notes
+
+- `package.json` version bumped from `3.0.0` to `4.0.0`.
+- No new dependencies introduced for the v4.0.0 tag (uses the
+  existing v3.x dependency set).
+- API contract types regenerated automatically via
+  `bun run api:generate` matching backend v1 OpenAPI (stable
+  through v3.x; v2 preview namespace untouched).
+
 ## v3.0.0 -- Production-Ready Frontend -- 2026-05-09
 
 ### Release Summary
