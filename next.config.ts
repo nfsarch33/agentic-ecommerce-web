@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { fileURLToPath } from "node:url";
 import { dirname } from "node:path";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
 // Public-repo Next.js config.
 //
@@ -103,15 +104,24 @@ const securityHeaders = [
   },
 ];
 
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
   outputFileTracingRoot: here,
   allowedDevOrigins: ["localhost", "127.0.0.1"],
-  ...(mediaCdnPattern ? { images: { remotePatterns: [mediaCdnPattern] } } : {}),
+
+  images: {
+    formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      ...(mediaCdnPattern ? [mediaCdnPattern] : []),
+    ],
+  },
 
   typescript: { ignoreBuildErrors: false },
-  eslint: { ignoreDuringBuilds: false },
 
   typedRoutes: true,
 
@@ -127,4 +137,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

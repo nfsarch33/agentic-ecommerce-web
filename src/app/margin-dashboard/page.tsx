@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
-import { MarginDashboard } from "@/components/MarginDashboard";
+import nextDynamic from "next/dynamic";
 import { adminPageMetadata } from "@/lib/seo-metadata";
+
+const MarginDashboard = nextDynamic(
+  () => import("@/components/MarginDashboard").then((m) => m.MarginDashboard),
+  {
+    loading: () => (
+      <div className="animate-pulse rounded-md border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-400">
+        Loading margin dashboard...
+      </div>
+    ),
+  },
+);
 
 export const dynamic = "force-dynamic";
 
