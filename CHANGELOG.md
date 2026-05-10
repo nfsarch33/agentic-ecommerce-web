@@ -2,6 +2,77 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## [5.0.0] - 2026-05-11 -- Multi-channel platform frontend (matches backend v5.0.0)
+
+### Release Summary
+
+v5.0.0 ships the matching frontend tag for the Agentic Ecommerce
+backend v5.0.0 release. The v4.x cycle added the payment dashboard
+(`/payments`) with the Next.js 16 upgrade (Pair 5 frontend companion
+PR #59). Combined with the v4.0.0 surfaces (agent activity feed,
+margin dashboard) and the v3.x surfaces (marketplace, developer
+portal, billing, memberships, digital goods, registration), the
+frontend now covers the full platform:
+
+- **Home + products** -- storefront browse, detail, cart, checkout
+- **Payments** -- transaction history, payment status tracking
+- **Agent activity** -- real-time SSE feed of agent decisions
+- **Margin dashboard** -- ROI heatmap, dead-stock filter, commission breakdown
+- **Operator alerts** -- alert acknowledgment workflow (admin observability)
+- **Onboarding** -- 4-step registration wizard with channel pre-flight
+- **Marketplace** -- public plugin catalogue + developer portal
+- **Admin** -- products, orders, agents, memberships, digital goods, marketplace, billing, compliance
+
+### Added
+
+- **Payment dashboard** (`/payments`) -- transaction history with
+  provider filter (Stripe / Alipay / WeChat / PayPal), status
+  tracking, webhook event log. Component: `PaymentDashboard`.
+  (PR #59 `1e11010`, Pair 5 frontend companion)
+
+### Changed
+
+- **Next.js 16.2.6** upgrade from Next.js 15 (PR #59, Pair 5)
+- **React 19** maintained across the upgrade
+- `package.json` version bumped from `4.0.0` to `5.0.0`
+- `package.json` description updated to reflect Next.js 16
+
+### Quality Gates (verified on `release/v500-prep` worktree)
+
+- `bun run lint`: clean
+- `bun run test`: 1071+ tests PASS across 212+ test files
+- `bun run test:coverage`: >= 94% statement coverage maintained
+- `bun run build`: First Load JS within 200 kB budget
+
+### Operational Notes
+
+- `eslint-config-next` upgraded to `^16.2.6` matching framework
+- Vitest 3.2 + jsdom 26 test runner
+- Tailwind CSS v4 styling
+- TypeScript strict mode with `noUncheckedIndexedAccess`
+
+### Surfaces (cumulative v5.0.0 inventory)
+
+- Public storefront: `/`, `/products`, `/products/[slug]`, `/cart`,
+  `/checkout`, `/checkout/success`
+- Payments: `/payments`
+- Agent activity: `/agent-activity`
+- Margin dashboard: `/margin-dashboard`
+- Marketplace (public): `/marketplace`, `/marketplace/[slug]`,
+  `/marketplace/categories/[category]`, `/marketplace/search`
+- Developer portal: `/developers`, `/developers/api`,
+  `/developers/sdk`, `/developers/getting-started`
+- Registration: `/register`, `/register/verify`,
+  `/register/onboarding`
+- Login: `/login`
+- Admin: `/admin`, `/admin/products`, `/admin/orders`,
+  `/admin/agents`, `/admin/memberships`, `/admin/membership-plans`,
+  `/admin/digital-products`, `/admin/licenses`,
+  `/admin/marketplace`, `/admin/marketplace/[slug]`,
+  `/admin/marketplace/submissions`, `/admin/billing`,
+  `/admin/billing/invoices`, `/admin/billing/usage`,
+  `/admin/observability`
+
 ## [4.0.0] - 2026-05-10 -- Production launch (matches backend v4.0.0)
 
 ### Release Summary
