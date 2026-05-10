@@ -57,15 +57,17 @@ test.describe("Payment dashboard", () => {
 
   test("shows provider names", async ({ page }) => {
     await page.goto("/payments");
-    await expect(page.getByText("stripe")).toBeVisible();
-    await expect(page.getByText("paypal")).toBeVisible();
-    await expect(page.getByText("alipay")).toBeVisible();
+    const table = page.locator("table");
+    await expect(table.getByText("stripe")).toBeVisible();
+    await expect(table.getByText("paypal")).toBeVisible();
+    await expect(table.getByText("alipay")).toBeVisible();
   });
 
   test("shows status badges", async ({ page }) => {
     await page.goto("/payments");
-    await expect(page.locator("text=succeeded").first()).toBeVisible();
-    await expect(page.getByText("pending")).toBeVisible();
+    const table = page.locator("table");
+    await expect(table.locator("text=succeeded").first()).toBeVisible();
+    await expect(table.getByText("pending")).toBeVisible();
   });
 
   test("has provider filter dropdown", async ({ page }) => {
