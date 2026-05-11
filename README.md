@@ -97,6 +97,7 @@ bun run build
 Relevant QA docs:
 
 - `docs/v650-frontend-performance-seo.md`
+- `docs/v651-cross-cycle-kpi-dashboard.md`
 - `docs/uiauto-playwright-comparison.md`
 - `docs/v650-evomap-evoloop.md`
 

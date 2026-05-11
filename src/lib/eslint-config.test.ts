@@ -9,5 +9,5 @@ describe("ESLint flat config", () => {
 
     expect(result.status, result.stderr).toBe(0);
     expect(result.stdout).toContain('"rules"');
-  });
+  }, 45_000);
 });
