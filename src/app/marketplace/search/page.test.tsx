@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-import MarketplaceSearchPage from "./page";
+import MarketplaceSearchPage, { generateMetadata } from "./page";
 
 describe("/marketplace/search page", () => {
   beforeEach(() => usecase.mockReset());
@@ -64,5 +64,12 @@ describe("/marketplace/search page", () => {
     const ui = await MarketplaceSearchPage({ searchParams: Promise.resolve({ q: "stripe" }) });
     render(ui);
     expect(screen.getByTestId("marketplace-search-error")).toHaveTextContent("HTTP 500");
+  });
+
+  it("generates query-specific metadata with an encoded canonical URL", async () => {
+    const meta = await generateMetadata({ searchParams: Promise.resolve({ q: "stripe payments" }) });
+    expect(meta.title).toContain('Search "stripe payments"');
+    expect(meta.alternates?.canonical).toBe("/marketplace/search?q=stripe%20payments");
+    expect(meta.robots).toEqual({ index: true, follow: true });
   });
 });

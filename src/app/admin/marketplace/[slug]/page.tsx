@@ -27,9 +27,13 @@ export default async function PluginDetailPage({ params }: { params: Promise<{ s
   const { slug } = await params;
   const baseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
   const tenantId = process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID ?? DEFAULT_TENANT_ID;
+  const manifest = await loadPluginDetail({ baseUrl, tenantId, slug });
+  return <PluginDetailPanel manifest={manifest} baseUrl={baseUrl} tenantId={tenantId} />;
+}
+
+async function loadPluginDetail(input: { readonly baseUrl: string; readonly tenantId: string; readonly slug: string }) {
   try {
-    const manifest = await fetchMarketplacePlugin({ baseUrl, tenantId, slug });
-    return <PluginDetailPanel manifest={manifest} baseUrl={baseUrl} tenantId={tenantId} />;
+    return await fetchMarketplacePlugin(input);
   } catch (err) {
     if (err instanceof MarketplaceApiError && err.status === 404) {
       notFound();

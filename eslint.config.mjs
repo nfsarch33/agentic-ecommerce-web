@@ -1,10 +1,10 @@
-// ESLint v9 flat config wired to next/core-web-vitals + TypeScript.
-import { FlatCompat } from "@eslint/eslintrc";
-
-const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
+// ESLint v9 flat config wired to Next.js core web vitals and TypeScript rules.
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...nextVitals,
+  ...nextTypescript,
   {
     ignores: [
       ".next/**",

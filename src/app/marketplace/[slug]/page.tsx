@@ -6,6 +6,7 @@ import {
   fetchMarketplacePlugin,
 } from "@/lib/adapters/api/marketplace";
 import { publicPageMetadata } from "@/lib/seo-metadata";
+import { jsonLdMarkup, marketplacePluginJsonLd } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,10 @@ export default async function MarketplacePluginDetailPage({ params }: PageProps)
       data-testid={`marketplace-detail-${manifest.slug}`}
       className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12"
     >
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={jsonLdMarkup(marketplacePluginJsonLd(manifest, `/marketplace/${manifest.slug}`))}
+      />
       <nav aria-label="Breadcrumbs" className="text-sm text-slate-500">
         <Link href="/marketplace" className="hover:text-slate-800">
           Marketplace

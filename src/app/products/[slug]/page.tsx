@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { fetchProductBySlug } from "@/lib/adapters/api/products";
 import { formatMoney, isInStock } from "@/lib/domain/product";
 import { publicPageMetadata } from "@/lib/seo-metadata";
+import { jsonLdMarkup, productJsonLd } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,10 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         </Link>
       </nav>
       <article>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={jsonLdMarkup(productJsonLd(product, `/products/${product.slug}`))}
+        />
         <h1 className="text-3xl font-semibold tracking-tight">{product.title}</h1>
         {product.description && (
           <p className="mt-4 text-gray-700">{product.description}</p>

@@ -24,9 +24,13 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   await requireServerSession();
   const { id } = await params;
   const baseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
+  const tenant = await loadTenantDetail({ baseUrl, id });
+  return <TenantManagement tenants={[tenant]} baseUrl={baseUrl} />;
+}
+
+async function loadTenantDetail(input: { readonly baseUrl: string; readonly id: string }) {
   try {
-    const tenant = await fetchTenant({ baseUrl, id });
-    return <TenantManagement tenants={[tenant]} baseUrl={baseUrl} />;
+    return await fetchTenant(input);
   } catch (err) {
     if (err instanceof TenantsApiError && err.status === 404) {
       notFound();

@@ -65,7 +65,6 @@ export function PaymentDashboard({
       setErrorMessage("fetch unavailable");
       return;
     }
-    setPhase("loading");
     try {
       const params = new URLSearchParams();
       if (tenantId) params.set("tenant_id", tenantId);
@@ -87,7 +86,9 @@ export function PaymentDashboard({
   }, [fetcher, tenantId, statusFilter, providerFilter]);
 
   useEffect(() => {
-    void loadPayments();
+    queueMicrotask(() => {
+      void loadPayments();
+    });
   }, [loadPayments]);
 
   if (phase === "loading") {
@@ -117,7 +118,10 @@ export function PaymentDashboard({
       <div className="mb-4 flex flex-wrap gap-3">
         <select
           value={providerFilter}
-          onChange={(e) => setProviderFilter(e.target.value)}
+          onChange={(e) => {
+            setPhase("loading");
+            setProviderFilter(e.target.value);
+          }}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           aria-label="Filter by provider"
         >
@@ -129,7 +133,10 @@ export function PaymentDashboard({
         </select>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setPhase("loading");
+            setStatusFilter(e.target.value);
+          }}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           aria-label="Filter by status"
         >

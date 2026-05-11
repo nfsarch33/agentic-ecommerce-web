@@ -49,6 +49,37 @@ describe("/marketplace/[slug] page", () => {
     expect(screen.getByTestId("marketplace-detail-install-link")).toBeInTheDocument();
   });
 
+  it("renders SoftwareApplication JSON-LD from the fetched manifest", async () => {
+    fetchPlugin.mockResolvedValueOnce({
+      slug: "stripe-payments",
+      name: "Stripe Payments",
+      version: "1.0.0",
+      vendor: "Agentic Labs",
+      description: "Stripe checkout + webhook bridge.",
+      category: "payments",
+      homepageUrl: "https://stripe.example",
+      eventSubscriptions: ["order.placed"],
+      permissions: ["catalog.read"],
+      dependencies: [],
+    });
+    const ui = await MarketplacePluginDetailPage({ params: Promise.resolve({ slug: "stripe-payments" }) });
+    const { container } = render(ui);
+    const script = container.querySelector('script[type="application/ld+json"]');
+    expect(script).not.toBeNull();
+    const jsonLd = JSON.parse(script?.textContent ?? "{}") as Record<string, unknown>;
+    expect(jsonLd["@type"]).toBe("SoftwareApplication");
+    expect(jsonLd["name"]).toBe("Stripe Payments");
+    expect(jsonLd["applicationCategory"]).toBe("payments");
+    expect(jsonLd["softwareVersion"]).toBe("1.0.0");
+    expect(jsonLd["url"]).toBe("/marketplace/stripe-payments");
+    expect(jsonLd["publisher"]).toEqual(
+      expect.objectContaining({
+        "@type": "Organization",
+        name: "Agentic Labs",
+      }),
+    );
+  });
+
   it("renders the error block when the API returns a non-404 error", async () => {
     const { MarketplaceApiError } = await import("@/lib/adapters/api/marketplace");
     fetchPlugin.mockRejectedValueOnce(new MarketplaceApiError("network down", 500));

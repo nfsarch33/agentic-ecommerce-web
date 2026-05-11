@@ -124,9 +124,6 @@ describe("MarginDashboard", () => {
 
   it("renders an error state when fetch is unavailable", () => {
     render(<MarginDashboard tenantId="tenant-1" fetchImpl={undefined as unknown as typeof fetch} />);
-    // Either loading or immediate error -- the unavailable branch
-    // uses setState after mount.
-    // Verify no crash occurred.
-    expect(screen.queryByTestId("margin-dashboard-summary")).toBeNull();
+    expect(screen.getByTestId("margin-dashboard-error")).toHaveTextContent("fetch unavailable");
   });
 });

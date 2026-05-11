@@ -14,12 +14,13 @@ export function RegistrationVerifyClient({ baseUrl }: RegistrationVerifyClientPr
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get("token") ?? "";
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() =>
+    token ? null : "Verification token missing.",
+  );
   const [registration, setRegistration] = useState<RegistrationRequest | null>(null);
 
   useEffect(() => {
     if (!token) {
-      setError("Verification token missing.");
       return;
     }
     let cancelled = false;

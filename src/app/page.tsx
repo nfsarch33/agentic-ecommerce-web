@@ -1,4 +1,14 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo-metadata";
+
+export const metadata: Metadata = {
+  ...publicPageMetadata({
+    title: "Agentic Ecommerce",
+    description: "AI-assisted ecommerce storefront with an operator admin console and workflow automation.",
+    canonical: "/",
+  }),
+};
 
 export default function HomePage() {
   return (

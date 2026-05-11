@@ -15,10 +15,11 @@ describe("LicenseKeyDisplay", () => {
     });
   });
 
-  it("hides the copy button when clipboard is unavailable", () => {
+  it("keeps the copy button render-stable when clipboard is unavailable", async () => {
     render(<LicenseKeyDisplay licenseKey="AAAAA" clipboard={undefined as unknown as { writeText: (t: string) => Promise<void> }} />);
     expect(screen.getByTestId("license-key")).toHaveTextContent("AAAAA");
-    expect(screen.queryByTestId("license-key-copy")).toBeNull();
+    await userEvent.click(screen.getByTestId("license-key-copy"));
+    expect(screen.getByTestId("license-key-copy")).toHaveTextContent("Copy");
   });
 
   it("recovers when the clipboard write rejects", async () => {
