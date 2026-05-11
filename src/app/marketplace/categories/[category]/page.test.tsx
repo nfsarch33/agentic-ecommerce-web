@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-import MarketplaceCategoryPage from "./page";
+import MarketplaceCategoryPage, { generateMetadata } from "./page";
 
 describe("/marketplace/categories/[category] page", () => {
   beforeEach(() => usecase.mockReset());
@@ -58,5 +58,12 @@ describe("/marketplace/categories/[category] page", () => {
     const ui = await MarketplaceCategoryPage({ params: Promise.resolve({ category: "payments" }) });
     render(ui);
     expect(screen.getByTestId("marketplace-category-error")).toHaveTextContent("HTTP 500");
+  });
+
+  it("generates category metadata with canonical SEO fields", async () => {
+    const meta = await generateMetadata({ params: Promise.resolve({ category: "payments" }) });
+    expect(meta.title).toContain("payments plugins");
+    expect(meta.alternates?.canonical).toBe("/marketplace/categories/payments");
+    expect(meta.robots).toEqual({ index: true, follow: true });
   });
 });

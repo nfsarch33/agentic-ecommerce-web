@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   ALLOWED_COMPLIANCE,
   type WizardCompliance,
@@ -39,14 +39,6 @@ export function ComplianceStep({
   const [selected, setSelected] = useState<readonly string[]>(
     initial?.compliance ?? detectDefaults(identity),
   );
-
-  useEffect(() => {
-    if (initial?.compliance) return;
-    const defaults = detectDefaults(identity);
-    if (defaults.length > 0) {
-      setSelected(defaults);
-    }
-  }, [identity, initial]);
 
   function toggle(flag: string): void {
     setSelected((prev) =>

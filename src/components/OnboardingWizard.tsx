@@ -59,15 +59,15 @@ interface WizardData {
 }
 
 export function OnboardingWizard({ tenantId, fetchImpl }: OnboardingWizardProps) {
-  const [phase, setPhase] = useState<Phase>("loading");
-  const [data, setData] = useState<WizardData>({});
-
   const fetcher = fetchImpl ?? (typeof fetch !== "undefined" ? fetch : undefined);
+  const [phase, setPhase] = useState<Phase>(() => (fetcher ? "loading" : "error"));
+  const [data, setData] = useState<WizardData>(() =>
+    fetcher ? {} : { errorMessage: "fetch unavailable" },
+  );
+  const renderedPhase = fetcher ? phase : "error";
 
   useEffect(() => {
     if (!fetcher) {
-      setPhase("error");
-      setData({ errorMessage: "fetch unavailable" });
       return;
     }
     let cancelled = false;
@@ -107,21 +107,21 @@ export function OnboardingWizard({ tenantId, fetchImpl }: OnboardingWizardProps)
     };
   }, [fetcher, tenantId]);
 
-  if (phase === "loading") {
+  if (renderedPhase === "loading") {
     return (
       <section data-testid="onboarding-loading" className="rounded-md border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
         Starting onboarding wizard...
       </section>
     );
   }
-  if (phase === "error") {
+  if (renderedPhase === "error") {
     return (
       <section data-testid="onboarding-error" className="rounded-md border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700">
         Onboarding failed to start: {data.errorMessage ?? "unknown"}
       </section>
     );
   }
-  if (phase === "completed" && data.state) {
+  if (renderedPhase === "completed" && data.state) {
     return (
       <section data-testid="onboarding-completed" className="space-y-3 rounded-md border border-emerald-200 bg-emerald-50 p-4">
         <h2 className="text-base font-semibold text-emerald-800">Onboarding complete</h2>

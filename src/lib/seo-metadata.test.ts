@@ -12,6 +12,21 @@ describe("SEO metadata helpers", () => {
     expect(metadata.alternates?.canonical).toBe("/products");
     expect(metadata.description).toContain("product inventory");
     expect(metadata.robots).toEqual({ index: true, follow: true });
+    expect(metadata.openGraph).toEqual(
+      expect.objectContaining({
+        title: "Products | Agentic Ecommerce",
+        description: "Browse live product inventory from the Agentic Ecommerce storefront.",
+        url: "/products",
+        siteName: "Agentic Ecommerce",
+        type: "website",
+      }),
+    );
+    expect(metadata.twitter).toEqual(
+      expect.objectContaining({
+        card: "summary_large_image",
+        title: "Products | Agentic Ecommerce",
+      }),
+    );
   });
 
   it("keeps admin console pages out of search indexes", () => {

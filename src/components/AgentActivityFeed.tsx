@@ -54,14 +54,13 @@ export function AgentActivityFeed({
   const counterRef = useRef(0);
 
   const Source = useMemo(() => EventSourceImpl ?? (typeof EventSource !== "undefined" ? EventSource : undefined), [EventSourceImpl]);
+  const renderedState = Source || typeof window === "undefined" ? state : "error";
 
   useEffect(() => {
     if (!Source) {
-      setState("error");
       return;
     }
     const source = new Source(streamUrl);
-    setState("connecting");
     source.onopen = () => setState("open");
     source.onerror = () => setState("error");
 
@@ -116,7 +115,7 @@ export function AgentActivityFeed({
       <header className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Agent activity</h2>
         <div className="flex items-center gap-3 text-sm">
-          <ConnectionBadge state={state} />
+          <ConnectionBadge state={renderedState} />
           {droppedCount > 0 ? (
             <span className="rounded-full bg-red-50 px-3 py-1 font-medium text-red-700">
               {droppedCount} dropped

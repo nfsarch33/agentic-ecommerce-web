@@ -86,13 +86,19 @@ bun run build
 | Gate | Command | Threshold |
 |------|---------|-----------|
 | TypeScript strict | `bun run typecheck` | zero errors |
-| Unit tests | `bun run test` | 1071+ tests, >= 80% lines |
+| Unit tests | `bun run test` | 1089 tests, >= 80% lines |
 | ESLint | `bun run lint` | zero errors |
 | Production build | `bun run build` | First Load JS < 200 kB |
 | Bundle regression | `bun run qa:bundle` | all routes under budget |
 | Playwright smoke | `bun run test:e2e` | green on Chromium |
-| Stable E2E | `bun run test:e2e:stable` | serial Chromium, 2 retries |
+| Stable E2E | `bun run test:e2e:stable` | serial Chromium, 56 pass / 2 expected skips |
 | Lighthouse | `bun run qa:lighthouse` | performance + SEO >= 90 |
+
+Relevant QA docs:
+
+- `docs/v650-frontend-performance-seo.md`
+- `docs/uiauto-playwright-comparison.md`
+- `docs/v650-evomap-evoloop.md`
 
 ## Hard Network Policy
 

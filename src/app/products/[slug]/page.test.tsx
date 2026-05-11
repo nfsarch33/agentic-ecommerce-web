@@ -65,6 +65,27 @@ describe("ProductDetailPage", () => {
     expect(link).toHaveAttribute("href", "/products");
   });
 
+  it("renders Product JSON-LD from the fetched product", async () => {
+    mockFetchProductBySlug.mockResolvedValue(fakeProduct as never);
+    const page = await ProductDetailPage({ params: Promise.resolve({ slug: "widget-pro" }) });
+    const { container } = render(page);
+    const script = container.querySelector('script[type="application/ld+json"]');
+    expect(script).not.toBeNull();
+    const jsonLd = JSON.parse(script?.textContent ?? "{}") as Record<string, unknown>;
+    expect(jsonLd["@type"]).toBe("Product");
+    expect(jsonLd["name"]).toBe("Widget Pro");
+    expect(jsonLd["sku"]).toBe("WIDGET-PRO");
+    expect(jsonLd["url"]).toBe("/products/widget-pro");
+    expect(jsonLd["offers"]).toEqual(
+      expect.objectContaining({
+        "@type": "Offer",
+        price: "49.99",
+        priceCurrency: "AUD",
+        availability: "https://schema.org/InStock",
+      }),
+    );
+  });
+
   it("calls fetchProductBySlug with correct slug", async () => {
     mockFetchProductBySlug.mockResolvedValue(fakeProduct as never);
     await ProductDetailPage({ params: Promise.resolve({ slug: "widget-pro" }) });

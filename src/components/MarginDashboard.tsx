@@ -42,21 +42,21 @@ interface DashboardData {
 
 const DEFAULT_PERIOD = "30d" as const;
 
-export function MarginDashboard({
-  tenantId,
-  period = DEFAULT_PERIOD,
-  fetchImpl,
-}: MarginDashboardProps) {
+export function MarginDashboard(props: MarginDashboardProps) {
+  const { tenantId, period = DEFAULT_PERIOD, fetchImpl } = props;
+  const hasFetchOverride = Object.prototype.hasOwnProperty.call(props, "fetchImpl");
   const [state, setState] = useState<LoadState>("loading");
   const [data, setData] = useState<DashboardData>({ alerts: [] });
-  const [error, setError] = useState<string | null>(null);
 
-  const fetcher = useMemo(() => fetchImpl ?? (typeof fetch !== "undefined" ? fetch : undefined), [fetchImpl]);
+  const fetcher = useMemo(
+    () => (hasFetchOverride ? fetchImpl : typeof fetch !== "undefined" ? fetch : undefined),
+    [fetchImpl, hasFetchOverride],
+  );
+  const [error, setError] = useState<string | null>(() => (fetcher ? null : "fetch unavailable"));
+  const renderedState = fetcher ? state : "error";
 
   useEffect(() => {
     if (!fetcher) {
-      setState("error");
-      setError("fetch unavailable");
       return;
     }
     let cancelled = false;
@@ -90,7 +90,7 @@ export function MarginDashboard({
     };
   }, [fetcher, tenantId, period]);
 
-  if (state === "loading") {
+  if (renderedState === "loading") {
     return (
       <section data-testid="margin-dashboard-loading" className="rounded-md border border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
         Loading margin dashboard...
@@ -98,7 +98,7 @@ export function MarginDashboard({
     );
   }
 
-  if (state === "error") {
+  if (renderedState === "error") {
     return (
       <section data-testid="margin-dashboard-error" className="rounded-md border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-700">
         Failed to load margin dashboard: {error ?? "unknown error"}

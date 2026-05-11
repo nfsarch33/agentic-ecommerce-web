@@ -38,6 +38,10 @@ Reports are written to `reports/lighthouse/`. Override thresholds with
 `LIGHTHOUSE_PERFORMANCE_MIN`, `LIGHTHOUSE_ACCESSIBILITY_MIN`,
 `LIGHTHOUSE_BEST_PRACTICES_MIN`, and `LIGHTHOUSE_SEO_MIN`.
 
+The v6.5.0 cleanup cycle expanded this gate to a static public route matrix
+and backend-backed mock route matrix. See `docs/v650-frontend-performance-seo.md`
+for the recorded scores and route list.
+
 ## Bundle Regression
 
 The current v1.8.0 budget is intentionally conservative: every route must stay
