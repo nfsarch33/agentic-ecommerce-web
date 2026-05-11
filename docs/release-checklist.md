@@ -10,7 +10,7 @@ Use this checklist before tagging `agentic-ecommerce-web` v2.0.0.
 - `docs/admin-operations.md` documents workflow status, Media Intelligence, tenant settings, compliance reporting, and n8n/webhook operations.
 - `docs/deployment.md` documents Docker Compose, AWS/GCP deployment notes, health checks, CDN/media, reverse proxy/TLS, environment variables, and security headers.
 - `docs/v180-frontend-qa.md` documents Lighthouse, bundle budget, stable E2E, contract, and security gates.
-- `docs/v650-frontend-performance-seo.md`, `docs/uiauto-playwright-comparison.md`, and `docs/v650-evomap-evoloop.md` capture the v6.5.0 performance, SEO, uiauto, and self-improvement evidence.
+- `docs/v650-frontend-performance-seo.md`, `docs/uiauto-playwright-comparison.md`, `docs/v650-evomap-evoloop.md`, and `docs/v651-cross-cycle-kpi-dashboard.md` capture the v6.5.x performance, SEO, uiauto, KPI, and self-improvement evidence.
 - `docs/bff-routes.md` documents frontend BFF route boundaries and upstream backend API links.
 - `.env.production.example` includes the production frontend origin, backend API URLs, CDN media URL, n8n URL, Temporal UI URL, and auth cookie security settings.
 
