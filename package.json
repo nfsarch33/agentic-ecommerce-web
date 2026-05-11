@@ -4,7 +4,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
-  "description": "Public Next.js 15 App Router frontend for the Agentic Ecommerce stack",
+  "description": "Public Next.js 16 App Router frontend for the Agentic Ecommerce stack",
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@tailwindcss/postcss": "^4.0.0",
@@ -67,4 +67,3 @@
   "type": "module",
   "version": "6.0.0"
 }
-
