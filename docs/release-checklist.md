@@ -1,11 +1,11 @@
-# v2.0.0 Frontend Release Checklist
+# v6.6.0 Frontend Release Checklist
 
-Use this checklist before tagging `agentic-ecommerce-web` v2.0.0.
+Use this checklist before tagging `agentic-ecommerce-web` v6.6.0.
 
 ## Version and Docs
 
-- `package.json` contains version `2.0.0`.
-- `CHANGELOG.md` includes the v2.0.0 release entry.
+- `package.json` contains version `6.6.0`.
+- `CHANGELOG.md` includes the v6.6.0 release entry.
 - `README.md` links quickstart, architecture, deployment, BFF routes, admin operations, quality gates, and security boundaries.
 - `docs/admin-operations.md` documents workflow status, Media Intelligence, tenant settings, compliance reporting, and n8n/webhook operations.
 - `docs/deployment.md` documents Docker Compose, AWS/GCP deployment notes, health checks, CDN/media, reverse proxy/TLS, environment variables, and security headers.
@@ -50,12 +50,12 @@ bun run api:generate
 git diff -- src/lib/adapters/api/generated/schema.d.ts
 ```
 
-Expected result: generated schema reflects the backend `api/openapi.yaml` intended for v2.0.0, and any diff is reviewed with the backend PR.
+Expected result: generated schema reflects the backend `api/openapi.yaml` intended for v6.6.0, and any diff is reviewed with the backend PR.
 
 ## Deployment Gates
 
 ```bash
-docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v2.0.0} .
+docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v6.6.0} .
 ```
 
 Then run the full-stack Docker Compose smoke from the backend repo using the matching `WEB_IMAGE_TAG`. AWS ECS/GCP Cloud Run infrastructure, Temporal, n8n, media object storage, and CDN provisioning remain backend/infra-owned; the frontend artifact is ready when the image builds and `/healthz` plus `/readyz` behave as documented.

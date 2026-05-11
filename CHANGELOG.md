@@ -2,6 +2,36 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## [6.6.0] - 2026-05-11 -- Frontend release coordination
+
+### Release Summary
+
+v6.6.0 promotes the frontend through the EC Pair 6 release-prep gate. It
+rolls up the v6.5.0 performance/SEO cleanup and v6.5.1 cross-cycle KPI
+dashboard evidence into the release metadata without adding new runtime
+surfaces. Matches backend v6.6.0 release coordination.
+
+### Changed
+
+- `package.json` version bumped from `6.0.0` to `6.6.0`.
+- `swr` and `@next/bundle-analyzer` dependency metadata declared so
+  clean installs match the v6 runtime/config imports.
+- `README.md` current-release metadata updated to v6.6.0.
+- `docs/release-checklist.md` retargeted from v2.0.0 to v6.6.0.
+- Release notes now reference the v6.5.x performance, SEO, uiauto,
+  KPI, and self-improvement evidence already captured under `docs/`.
+
+### Quality Evidence
+
+- v6.5.0 gate repaired the Next.js 16 ESLint configuration, expanded
+  the public route matrix, refreshed metadata/JSON-LD coverage, and
+  documented Lighthouse performance/SEO evidence in
+  `docs/v650-frontend-performance-seo.md`.
+- v6.5.1 gate added the cross-cycle KPI dashboard and release-readiness
+  evidence in `docs/v651-cross-cycle-kpi-dashboard.md`.
+- Pair 6 release gates are re-run locally before merge; see the PR body
+  for exact command results and any skipped/non-feasible gates.
+
 ## [6.0.0] - 2026-05-11 -- Performance-polished, tested, and documented
 
 ### Release Summary
