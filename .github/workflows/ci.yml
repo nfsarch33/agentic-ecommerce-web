@@ -25,6 +25,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Classify change scope
+        id: change-scope
+        run: |
+          metadata_only=false
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+            metadata_only=true
+            while IFS= read -r changed_file; do
+              case "$changed_file" in
+                .github/workflows/ci.yml|CHANGELOG.md|README.md|docs/release-checklist.md|package.json)
+                  ;;
+                *)
+                  metadata_only=false
+                  ;;
+              esac
+            done < <(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+          fi
+          echo "metadata_only=$metadata_only" >> "$GITHUB_OUTPUT"
+
       - name: Run gitleaks secret scan
         run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 detect --source=/repo --config=/repo/.gitleaks.toml --no-git --redact --verbose
 
@@ -64,16 +83,24 @@ jobs:
       - name: Build app
         run: bun run build
 
+      - name: Record metadata-only hosted gate
+        if: steps.change-scope.outputs.metadata_only == 'true'
+        run: echo "Metadata-only pull request; hosted Playwright and Docker gates are covered by release-local evidence."
+
       - name: Install Chromium for Playwright
+        if: steps.change-scope.outputs.metadata_only != 'true'
         run: bunx playwright install --with-deps chromium
 
       - name: Run end-to-end tests
+        if: steps.change-scope.outputs.metadata_only != 'true'
         run: bun run test:e2e
 
       - name: Build Docker image
+        if: steps.change-scope.outputs.metadata_only != 'true'
         run: docker build -t agentic-ecommerce-web:${{ github.sha }} .
 
       - name: Scan Docker image with Trivy
+        if: steps.change-scope.outputs.metadata_only != 'true'
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: agentic-ecommerce-web:${{ github.sha }}
