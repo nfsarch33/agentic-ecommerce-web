@@ -75,6 +75,13 @@ test("product content page manages product media panel", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: "Product media" })).toBeVisible();
   await expect(page.getByText("Resistance band hero image")).toBeVisible();
+  const imageEditReview = page.getByRole("region", { name: /image edit variants/i });
+  await expect(imageEditReview).toBeVisible();
+  await expect(imageEditReview.getByText("Lifestyle edit variant")).toBeVisible();
+  await expect(imageEditReview.getByText("Pending approval")).toBeVisible();
+  await imageEditReview.getByRole("button", { name: /approve lifestyle edit variant/i }).click();
+  await expect(imageEditReview.getByText("Approved for publish")).toBeVisible();
+
   await page.getByRole("button", { name: /validate resistance band hero image/i }).click();
   await expect(page.getByText("Media validation complete.")).toBeVisible();
   await expect(page.getByText("QA passed")).toBeVisible();

@@ -22,6 +22,22 @@ export interface ProductMediaPanelProps {
   readonly initialAssets: readonly MediaAsset[];
   readonly sourceMediaImpl?: (opts: SourceMediaOptions) => Promise<MediaAsset>;
   readonly validateMediaAssetImpl?: (opts: ValidateMediaAssetOptions) => Promise<MediaAsset>;
+  readonly reviewImageVariantImpl?: (
+    opts: ReviewImageVariantOptions,
+  ) => Promise<ReviewImageVariantResult>;
+}
+
+export type ImageVariantDecision = "approved" | "rejected";
+
+export interface ReviewImageVariantOptions {
+  readonly productId: string;
+  readonly mediaId: string;
+  readonly decision: ImageVariantDecision;
+}
+
+export interface ReviewImageVariantResult {
+  readonly mediaId: string;
+  readonly decision: ImageVariantDecision;
 }
 
 const toneClasses: Record<StatusTone, string> = {
@@ -51,12 +67,35 @@ function assetTitle(asset: MediaAsset): string {
   return asset.metadata.title || asset.originalFilename;
 }
 
+function isImageEditVariant(asset: MediaAsset): boolean {
+  return asset.metadata.tags.includes("image_edit_variant");
+}
+
+function imageVariantStatusLabel(decision?: ImageVariantDecision): string {
+  if (decision === "approved") return "Approved for publish";
+  if (decision === "rejected") return "Rejected";
+  return "Pending approval";
+}
+
+function imageVariantStatusTone(decision?: ImageVariantDecision): StatusTone {
+  if (decision === "approved") return "green";
+  if (decision === "rejected") return "red";
+  return "amber";
+}
+
+async function defaultReviewImageVariant(
+  opts: ReviewImageVariantOptions,
+): Promise<ReviewImageVariantResult> {
+  return { mediaId: opts.mediaId, decision: opts.decision };
+}
+
 export function ProductMediaPanel({
   apiBaseUrl,
   productId,
   initialAssets,
   sourceMediaImpl = sourceMedia,
   validateMediaAssetImpl = validateMediaAsset,
+  reviewImageVariantImpl = defaultReviewImageVariant,
 }: ProductMediaPanelProps) {
   const [assets, setAssets] = useState<readonly MediaAsset[]>(initialAssets);
   const [sourceUrl, setSourceUrl] = useState("");
@@ -64,8 +103,14 @@ export function ProductMediaPanel({
   const [altText, setAltText] = useState("");
   const [tags, setTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reviewingVariantId, setReviewingVariantId] = useState<string | null>(null);
+  const [variantDecisions, setVariantDecisions] = useState<
+    Readonly<Record<string, ImageVariantDecision>>
+  >({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const imageEditVariants = assets.filter(isImageEditVariant);
 
   async function handleSourceMedia(): Promise<void> {
     setMessage(null);
@@ -116,6 +161,35 @@ export function ProductMediaPanel({
       setError(err instanceof Error ? err.message : "Unable to validate media.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleReviewImageVariant(
+    asset: MediaAsset,
+    decision: ImageVariantDecision,
+  ): Promise<void> {
+    setMessage(null);
+    setError(null);
+    setReviewingVariantId(asset.id);
+    try {
+      const result = await reviewImageVariantImpl({
+        productId,
+        mediaId: asset.id,
+        decision,
+      });
+      setVariantDecisions((current) => ({
+        ...current,
+        [result.mediaId]: result.decision,
+      }));
+      setMessage(
+        result.decision === "approved"
+          ? "Image edit variant approved."
+          : "Image edit variant rejected.",
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to review image edit variant.");
+    } finally {
+      setReviewingVariantId(null);
     }
   }
 
@@ -204,6 +278,82 @@ export function ProductMediaPanel({
       >
         Add product media
       </button>
+
+      {imageEditVariants.length > 0 && (
+        <section
+          aria-label="Image edit variants"
+          className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-950">Image edit variants</h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Review generated product image variants before publishing.
+              </p>
+            </div>
+            <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">
+              {imageEditVariants.length} pending review
+            </span>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            {imageEditVariants.map((variant) => {
+              const decision = variantDecisions[variant.id];
+              const previewUrl = variant.objectStoreLocation?.url ?? variant.sourceUrl;
+              const reviewing = reviewingVariantId === variant.id;
+              return (
+                <article key={`variant-${variant.id}`} className="rounded-md bg-white p-4 shadow-sm">
+                  <div className="flex gap-4">
+                    {previewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- Backend-provided media preview URLs are external supplier/CDN assets.
+                      <img
+                        src={previewUrl}
+                        alt={variant.metadata.altText || assetTitle(variant)}
+                        className="h-24 w-24 flex-none rounded-md border border-gray-200 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-24 w-24 flex-none items-center justify-center rounded-md border border-dashed border-gray-300 text-xs text-gray-500">
+                        Preview pending
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <StatusBadge
+                        label={imageVariantStatusLabel(decision)}
+                        tone={imageVariantStatusTone(decision)}
+                      />
+                      <h4 className="mt-3 text-base font-semibold text-gray-950">
+                        {assetTitle(variant)}
+                      </h4>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {variant.metadata.altText || "Variant alt text missing"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={reviewing}
+                      onClick={() => void handleReviewImageVariant(variant, "approved")}
+                      aria-label={`Approve ${assetTitle(variant)}`}
+                      className="rounded-md bg-[var(--color-brand-500)] px-3 py-2 text-sm font-medium text-white disabled:bg-gray-300"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      type="button"
+                      disabled={reviewing}
+                      onClick={() => void handleReviewImageVariant(variant, "rejected")}
+                      aria-label={`Reject ${assetTitle(variant)}`}
+                      className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-800 disabled:text-gray-400"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         {assets.length === 0 && (
