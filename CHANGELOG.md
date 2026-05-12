@@ -16,12 +16,15 @@ stack while the next feature work resumes at the remaining v7 sprint pairs.
 - `package.json` version bumped from `6.6.0` to `7.5.1`.
 - `README.md` current-release metadata updated to v7.5.1.
 - `docs/release-checklist.md` retargeted from v6.6.0 to v7.5.1.
+- Hosted CI now classifies metadata-only release PRs so Playwright browser
+  downloads and Docker scans do not block publication after release-local QA
+  evidence is recorded.
 
 ### Quality Evidence
 
 - Full frontend QA is re-run before tag publication.
-- Any Lighthouse skip must be recorded in the release notes with the last
-  passing v6.5.1 Lighthouse evidence.
+- Lighthouse baseline must pass or the release notes must record a skip with
+  last passing evidence.
 
 ## [6.6.0] - 2026-05-11 -- Frontend release coordination
 
