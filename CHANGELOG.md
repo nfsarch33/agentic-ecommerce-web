@@ -2,6 +2,32 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## [8.0.0] - 2026-05-13 -- Frontend v8 media UX release
+
+### Release Summary
+
+v8.0.0 publishes the frontend v8 media UX work merged after v7.5.1 and aligns
+frontend release metadata with the backend v8.0.0 publication. The runtime delta
+is limited to the v8 media variant review experience and its QA evidence from
+PRs #69 and #70; this release branch only updates metadata, final evidence, and
+the release metadata guard.
+
+### Changed
+
+- `package.json` version bumped from `7.5.1` to `8.0.0`.
+- `README.md` current-release metadata updated to v8.0.0.
+- `docs/release-checklist.md` retargeted from v7.5.1 to v8.0.0.
+- Added `docs/v8-frontend-release-final.md` for release evidence and
+  carry-forwards.
+- Added a Vitest release metadata guard so package, README, changelog,
+  checklist, and final-evidence drift fails before tagging.
+
+### Quality Evidence
+
+- Full frontend QA is re-run before tag publication.
+- uiauto/OmniParser comparison remains remote-resource gated; release notes must
+  record any skipped live vision gate with rationale.
+
 ## [7.5.1] - 2026-05-12 -- Frontend metadata and QA sync
 
 ### Release Summary

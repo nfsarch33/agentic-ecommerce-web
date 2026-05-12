@@ -61,7 +61,7 @@ OmniParser, VLM, or local LLM inference.
 
 Live remote OmniParser is still not enabled for frontend merge gates. The rule
 for future work is unchanged: OmniParser, VLM, and image-understanding workloads
-must not run on the MacBook. They must use an approved remote win1/wsl1 route
+must not run on the MacBook. They must use an approved remote GPU host route
 through runx aliases once that route is documented and resource guarded.
 
 ## Carry-Forwards
