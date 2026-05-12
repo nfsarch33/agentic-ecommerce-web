@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ProductMediaPanel } from "./ProductMediaPanel";
@@ -41,6 +41,31 @@ const asset: MediaAsset = {
   updatedAt: "2026-05-08T01:00:00Z",
 };
 
+const imageEditVariant: MediaAsset = {
+  ...asset,
+  id: "media_variant_lifestyle",
+  sourceUrl: "https://cdn.example/products/p_1/lifestyle-edit.webp",
+  originalFilename: "lifestyle-edit.webp",
+  processingStatus: "processed",
+  metadata: {
+    altText: "Generated lifestyle image with resistance bands arranged on a training mat",
+    title: "Lifestyle edit variant",
+    tags: ["image_edit_variant", "lifestyle"],
+  },
+  qaResult: {
+    status: "needs_review",
+    score: 81,
+    checkedAt: "2026-05-12T11:10:00Z",
+    checks: [
+      {
+        code: "approval",
+        status: "needs_review",
+        message: "Operator approval required before publishing.",
+      },
+    ],
+  },
+};
+
 describe("ProductMediaPanel", () => {
   it("shows an empty state before product media is linked", () => {
     render(<ProductMediaPanel apiBaseUrl="https://api.example" productId="p_1" initialAssets={[]} />);
@@ -74,6 +99,38 @@ describe("ProductMediaPanel", () => {
       expect.objectContaining({ baseUrl: "https://api.example", mediaId: "media_hero" }),
     );
     expect(await screen.findByText("QA passed")).toBeInTheDocument();
+  });
+
+  it("reviews generated image edit variants before publishing", async () => {
+    const user = userEvent.setup();
+    const reviewImageVariantImpl = vi.fn().mockResolvedValue({
+      mediaId: "media_variant_lifestyle",
+      decision: "approved",
+    });
+
+    render(
+      <ProductMediaPanel
+        apiBaseUrl="https://api.example"
+        productId="p_1"
+        initialAssets={[asset, imageEditVariant]}
+        reviewImageVariantImpl={reviewImageVariantImpl}
+      />,
+    );
+
+    const reviewRegion = screen.getByRole("region", { name: /image edit variants/i });
+    expect(within(reviewRegion).getByText("Lifestyle edit variant")).toBeInTheDocument();
+    expect(within(reviewRegion).getByText("Pending approval")).toBeInTheDocument();
+
+    await user.click(
+      within(reviewRegion).getByRole("button", { name: /approve lifestyle edit variant/i }),
+    );
+
+    expect(reviewImageVariantImpl).toHaveBeenCalledWith({
+      mediaId: "media_variant_lifestyle",
+      productId: "p_1",
+      decision: "approved",
+    });
+    expect(await within(reviewRegion).findByText("Approved for publish")).toBeInTheDocument();
   });
 
   it("sources media already linked to the product", async () => {

@@ -665,6 +665,42 @@ const mediaAssets: MockMediaAsset[] = [
     created_at: "2026-05-08T00:00:00Z",
     updated_at: "2026-05-08T01:00:00Z",
   },
+  {
+    id: "media_variant_lifestyle",
+    product_id: product.id,
+    source_url: "https://cdn.example/products/resistance-band/lifestyle-edit.webp",
+    original_filename: "lifestyle-edit.webp",
+    mime_type: "image/webp",
+    size_bytes: 220000,
+    width: 1600,
+    height: 1200,
+    processing_status: "processed",
+    object_store_location: {
+      provider: "local",
+      bucket: "media",
+      key: "products/resistance-band/lifestyle-edit.webp",
+      url: "https://cdn.example/products/resistance-band/lifestyle-edit.webp",
+    },
+    metadata: {
+      alt_text: "Generated lifestyle image with resistance bands arranged on a training mat",
+      title: "Lifestyle edit variant",
+      tags: ["image_edit_variant", "lifestyle"],
+    },
+    qa_result: {
+      status: "needs_review",
+      score: 81,
+      checked_at: "2026-05-12T11:10:00Z",
+      checks: [
+        {
+          code: "approval",
+          status: "needs_review",
+          message: "Operator approval required before publishing.",
+        },
+      ],
+    },
+    created_at: "2026-05-12T11:08:00Z",
+    updated_at: "2026-05-12T11:10:00Z",
+  },
 ];
 
 type MockMembershipPlan = {
