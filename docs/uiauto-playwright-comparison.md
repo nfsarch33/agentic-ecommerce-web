@@ -32,3 +32,27 @@ This note captures the v6.5.0 frontend-testing position for EC and the v7 path t
 - Route live visual interpretation to an approved remote worker through the approved runx alias once an OmniParser bridge or equivalent alias exists.
 - Keep Playwright as the merge-blocking deterministic gate; use uiauto as an additional review signal until it has stable failure semantics.
 - Close browsers and Sentrux desktop processes after each cycle.
+
+## v8 Pair 5 QA Update
+
+Pair 5 keeps Playwright as the deterministic gate for the product image variant
+review UX. The new browser coverage lives in `e2e/admin-media.spec.ts` under the
+product-content media review flow and covers the `admin-media` route family.
+
+The safe uiauto path remains fixtures mode. The documented command is:
+
+```text
+runx env scrub -- make uiauto-compare
+```
+
+In the Codex app shell used for Pair 5 QA, the scrub command correctly blocked
+because inherited GitHub token env vars were present. The clean-session variant
+that completed was:
+
+```text
+runx env personal-shell --exec 'make uiauto-compare'
+```
+
+Result: total 5, agreed 4, disagreed 1, both pass 4, Playwright-only pass 1,
+uiauto-only pass 0, self-heal 4. Live OmniParser and VLM interpretation remain
+remote-only carry-forwards and were not run on the MacBook.
