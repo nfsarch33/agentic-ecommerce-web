@@ -2,6 +2,27 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## [7.5.1] - 2026-05-12 -- Frontend metadata and QA sync
+
+### Release Summary
+
+v7.5.1 aligns frontend release metadata with the backend v7.5.1 release. It is
+a metadata and QA sync release only: there is no frontend runtime feature delta
+after v6.6.0. The release keeps the public Next.js frontend versioned with the
+stack while the next feature work resumes at the remaining v7 sprint pairs.
+
+### Changed
+
+- `package.json` version bumped from `6.6.0` to `7.5.1`.
+- `README.md` current-release metadata updated to v7.5.1.
+- `docs/release-checklist.md` retargeted from v6.6.0 to v7.5.1.
+
+### Quality Evidence
+
+- Full frontend QA is re-run before tag publication.
+- Any Lighthouse skip must be recorded in the release notes with the last
+  passing v6.5.1 Lighthouse evidence.
+
 ## [6.6.0] - 2026-05-11 -- Frontend release coordination
 
 ### Release Summary
