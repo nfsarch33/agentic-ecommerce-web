@@ -11,6 +11,7 @@ node_modules
 
 # testing
 /coverage
+/.gitlab-artifacts
 /playwright-report
 /reports/bundle
 /reports/lighthouse

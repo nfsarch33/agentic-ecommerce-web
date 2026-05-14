@@ -8,6 +8,11 @@ backend.
 
 Current release: **v9.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
 
+Active v8.x CI runs on self-hosted GitLab CE on `wsl1`, with GitHub retained as
+the canonical repo and PR host. GitLab publishes commit status back to GitHub
+and drives the blocking `wsl1` Playwright/local-stack smoke plus advisory
+`win1` UI automation.
+
 ## Pages
 
 | Page | Path | Description |
@@ -35,6 +40,7 @@ Current release: **v9.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/relea
 | Testing | Vitest 3.2, Testing Library, Playwright |
 | Build | Bun >= 1.3.0 |
 | Linting | ESLint 9 + eslint-config-next |
+| CI/CD | GitLab CE (self-hosted on `wsl1`), GitHub status bridge |
 
 ## Architecture
 
@@ -92,6 +98,7 @@ bun run build
 | Bundle regression | `bun run qa:bundle` | all routes under budget |
 | Playwright smoke | `bun run test:e2e` | green on Chromium |
 | Stable E2E | `bun run test:e2e:stable` | serial Chromium, 56 pass / 2 expected skips |
+| Local stack smoke | `bun run test:e2e:local-stack` | `wsl1` self-hosted GitLab path |
 | Lighthouse | `bun run qa:lighthouse` | performance + SEO >= 90 |
 
 Relevant QA docs:
