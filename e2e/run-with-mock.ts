@@ -1,3 +1,25 @@
+interface BunServer {
+  stop(force?: boolean): void;
+}
+
+interface BunSubprocess {
+  kill(): void;
+  exited: Promise<number>;
+}
+
+declare const Bun: {
+  serve(options: { port: number; hostname: string; fetch(req: Request): Response | Promise<Response> }): BunServer;
+  spawn(
+    cmd: string[],
+    options: {
+      stdout: "inherit";
+      stderr: "inherit";
+      stdin: "inherit";
+      env: NodeJS.ProcessEnv;
+    },
+  ): BunSubprocess;
+};
+
 const product = {
   id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
   sku: "BAND-001",
@@ -860,7 +882,7 @@ async function createOrder(req: Request): Promise<Response> {
 async function login(req: Request): Promise<Response> {
   const body = (await req.json()) as { email?: string };
   const email = body.email ?? "viewer@example.com";
-  const role = email.startsWith("admin")
+  const role: "admin" | "operator" | "viewer" = email.startsWith("admin")
     ? "admin"
     : email.startsWith("operator")
       ? "operator"
@@ -899,826 +921,953 @@ function workflowSummary(workflow: MockWorkflow): Omit<MockWorkflow, "activities
   };
 }
 
+type MockRouteHandler = (req: Request, url: URL) => Promise<Response | null>;
+
+async function runRouteHandlers(
+  req: Request,
+  url: URL,
+  handlers: ReadonlyArray<MockRouteHandler>,
+): Promise<Response | null> {
+  for (const handler of handlers) {
+    const response = await handler(req, url);
+    if (response) return response;
+  }
+  return null;
+}
+
+async function handleSessionRequest(req: Request, url: URL): Promise<Response | null> {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+  if (url.pathname === "/healthz") return json({ status: "ok" });
+  if (url.pathname === "/api/v1/auth/login" && req.method === "POST") {
+    return login(req);
+  }
+  if (url.pathname === "/api/v1/auth/me" && req.method === "GET") {
+    return sessionFromAuthorization(req);
+  }
+  if (url.pathname === "/api/v1/auth/logout" && req.method === "POST") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+  return null;
+}
+
+async function handleTenantSettingsRequest(req: Request, url: URL): Promise<Response | null> {
+  const isTenantSettingsPath =
+    url.pathname === "/api/v1/tenants/current/settings" || url.pathname === "/api/v1/tenant/settings";
+  if (isTenantSettingsPath && req.method === "GET") {
+    return json({ settings: tenantSettings });
+  }
+  if (isTenantSettingsPath && (req.method === "PATCH" || req.method === "PUT")) {
+    const body = (await req.json()) as {
+      display_name?: string;
+      branding?: Partial<typeof tenantSettings.branding> & { store_name?: string };
+      preferences?: Partial<typeof tenantSettings.preferences>;
+      ai?: { content_tone?: string };
+      compliance?: { seo_score_min?: number };
+    };
+    tenantSettings.display_name = body.display_name ?? body.branding?.store_name ?? tenantSettings.display_name;
+    tenantSettings.branding = { ...tenantSettings.branding, ...body.branding };
+    tenantSettings.preferences = {
+      ...tenantSettings.preferences,
+      ...body.preferences,
+      ...(body.ai?.content_tone ? { ai_tone: body.ai.content_tone } : {}),
+      ...(body.compliance?.seo_score_min !== undefined ? { compliance_strict_mode: body.compliance.seo_score_min > 0 } : {}),
+    };
+    tenantSettings.updated_at = "2026-05-08T00:10:00Z";
+    return json({ settings: tenantSettings });
+  }
+  return null;
+}
+
+async function handleCoreRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [handleSessionRequest, handleTenantSettingsRequest]);
+}
+
+async function handleCatalogProductRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/products" && req.method === "GET") {
+    return json({ products: [product], total: 1, page: 1, per_page: 20 });
+  }
+  if (url.pathname === "/api/v1/products/resistance-band-set" && req.method === "GET") {
+    return json(product);
+  }
+  if (url.pathname === `/api/v1/products/${product.id}` && req.method === "GET") {
+    return json(product);
+  }
+  if (url.pathname === `/api/v1/products/${product.id}/ai-suggestions` && req.method === "GET") {
+    return json({ suggestions: [aiSuggestion] });
+  }
+  if (url.pathname === `/api/v1/products/${product.id}/generate-description` && req.method === "POST") {
+    return json({
+      suggestion: {
+        ...aiSuggestion,
+        id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+        description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
+        created_at: "2026-05-07T00:12:00Z",
+        fact_check_result: factCheckResult,
+      },
+    });
+  }
+  if (url.pathname === `/api/v1/products/${product.id}/fact-check-results/latest` && req.method === "GET") {
+    return json({ result: factCheckResult });
+  }
+  return null;
+}
+
+async function handleCatalogRagRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/rag/search" && req.method === "GET") {
+    return json({ query: url.searchParams.get("q") ?? "", results: [evidenceSource] });
+  }
+  if (url.pathname === "/api/v1/rag/evidence/search" && req.method === "POST") {
+    return json({ sources: [evidenceSource] });
+  }
+  return null;
+}
+
+async function handleCatalogRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [handleCatalogProductRequest, handleCatalogRagRequest]);
+}
+
+async function handleWebhookRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/webhooks" && req.method === "GET") {
+    return json({ webhooks });
+  }
+  if (url.pathname === "/api/v1/webhooks" && req.method === "POST") {
+    const body = (await req.json()) as {
+      url?: string;
+      event_types?: MockWebhook["event_types"];
+      description?: string;
+      secret?: string;
+    };
+    const webhook: MockWebhook = {
+      id: `wh_${webhooks.length + 1}`,
+      url: body.url ?? "https://hooks.n8n.example/webhook/product-approved",
+      event_types: body.event_types ?? ["product.approved"],
+      description: body.description,
+      secret_configured: Boolean(body.secret),
+      active: true,
+      created_at: "2026-05-08T00:05:00Z",
+      updated_at: "2026-05-08T00:05:00Z",
+      failure_count: 0,
+    };
+    webhooks.unshift(webhook);
+    return json({ ...webhook, webhook }, { status: 201 });
+  }
+  if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
+    const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
+    const webhook = webhooks.find((candidate) => candidate.id === webhookId);
+    if (!webhook) return json({ error: "not_found" }, { status: 404 });
+    const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
+    webhook.last_delivery_at = "2026-05-08T00:06:00Z";
+    webhook.updated_at = "2026-05-08T00:06:00Z";
+    return json(
+      {
+        delivery: {
+          id: `del_${webhook.id}`,
+          webhook_id: webhook.id,
+          event_type: body.event_type ?? webhook.event_types[0],
+          status: "delivered",
+          response_status: 200,
+          attempt: 1,
+          occurred_at: "2026-05-08T00:06:00Z",
+        },
+      },
+      { status: 202 },
+    );
+  }
+  if (url.pathname.startsWith("/api/v1/webhooks/") && req.method === "DELETE") {
+    const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", ""));
+    const index = webhooks.findIndex((candidate) => candidate.id === webhookId);
+    if (index === -1) return json({ error: "not_found" }, { status: 404 });
+    webhooks.splice(index, 1);
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+  if (url.pathname === "/__mock/n8n/deliveries" && req.method === "GET") {
+    return json({ deliveries: n8nDeliveries });
+  }
+  return null;
+}
+
+async function handleWorkflowCollectionRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/workflows" && req.method === "GET") {
+    const status = url.searchParams.get("status");
+    const limit = Number(url.searchParams.get("limit") ?? "50");
+    const list = status ? workflows.filter((workflow) => workflow.status === status) : workflows;
+    return json({ workflows: list.slice(0, limit).map(workflowSummary) });
+  }
+  if (url.pathname === "/api/v1/workflows/content-generation" && req.method === "POST") {
+    return json(
+      {
+        workflow_id: "wf_content_generation_release",
+        status: "completed",
+        activities: [
+          "content_generation.generate",
+          "content_generation.fact_check",
+          "content_generation.evaluate",
+        ],
+      },
+      { status: 202 },
+    );
+  }
+  if (url.pathname === "/api/v1/workflows/media-processing" && req.method === "POST") {
+    return json(
+      {
+        workflow_id: "wf_media_processing_release",
+        status: "completed",
+        activities: [
+          "media_processing.source",
+          "media_processing.validate",
+          "media_processing.link_product",
+        ],
+      },
+      { status: 202 },
+    );
+  }
+  return null;
+}
+
+async function handleWorkflowPublishRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/workflows/product-publish" && req.method === "POST") {
+    const body = (await req.json()) as { product_id?: string; description?: string };
+    const workflow: MockWorkflow = {
+      ...workflowDetail,
+      id: `wf_product_publish_${workflows.length + 1}`,
+      status: "waiting_review",
+      product_id: body.product_id ?? product.id,
+      product_title: product.title,
+      current_activity: "Human review",
+      started_at: "2026-05-07T04:50:00Z",
+      updated_at: "2026-05-07T04:52:00Z",
+      activities: [
+        {
+          id: "act_compliance_new",
+          name: "Check compliance",
+          status: "completed",
+          started_at: "2026-05-07T04:50:00Z",
+          completed_at: "2026-05-07T04:50:30Z",
+          message: body.description
+            ? "Operator-approved copy passed CCE checks."
+            : "Product copy passed CCE checks.",
+          attempt: 1,
+        },
+        {
+          id: "act_media_new",
+          name: "Validate media",
+          status: "completed",
+          started_at: "2026-05-07T04:50:30Z",
+          completed_at: "2026-05-07T04:51:00Z",
+          message: "MIS media validation passed.",
+          attempt: 1,
+        },
+        {
+          id: "act_review_new",
+          name: "Human review",
+          status: "waiting_review",
+          started_at: "2026-05-07T04:51:00Z",
+          message: "Waiting for operator approval.",
+        },
+      ],
+    };
+    workflows.unshift(workflow);
+    return json({ workflow: workflowSummary(workflow) }, { status: 202 });
+  }
+  return null;
+}
+
+async function handleWorkflowDetailRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname.startsWith("/api/v1/workflows/") && req.method === "GET") {
+    const workflowId = decodeURIComponent(url.pathname.replace("/api/v1/workflows/", ""));
+    const workflow = workflows.find((candidate) => candidate.id === workflowId);
+    return workflow ? json(workflow) : json({ error: "not_found" }, { status: 404 });
+  }
+  if (url.pathname.endsWith("/signals/review") && req.method === "POST") {
+    const workflowId = decodeURIComponent(
+      url.pathname.replace("/api/v1/workflows/", "").replace("/signals/review", ""),
+    );
+    const workflow = workflows.find((candidate) => candidate.id === workflowId);
+    if (!workflow) return json({ error: "not_found" }, { status: 404 });
+    workflow.status = "completed";
+    workflow.current_activity = "Published to WooCommerce";
+    workflow.updated_at = "2026-05-07T04:55:00Z";
+    workflow.completed_at = "2026-05-07T04:55:00Z";
+    workflow.activities = [
+      ...workflow.activities.map((activity) =>
+        activity.status === "waiting_review"
+          ? { ...activity, status: "completed" as const, completed_at: "2026-05-07T04:55:00Z" }
+          : activity,
+      ),
+      {
+        id: "act_publish",
+        name: "Publish to WooCommerce",
+        status: "completed",
+        started_at: "2026-05-07T04:55:00Z",
+        completed_at: "2026-05-07T04:55:10Z",
+        message: "Published to mocked WooCommerce.",
+        attempt: 1,
+      },
+    ];
+    for (const webhook of webhooks.filter(
+      (candidate) => candidate.active && candidate.event_types.includes("product.approved"),
+    )) {
+      n8nDeliveries.unshift({
+        event_type: "product.approved",
+        status: "delivered",
+        target_url: webhook.url,
+        occurred_at: "2026-05-07T04:55:10Z",
+      });
+      webhook.last_delivery_at = "2026-05-07T04:55:10Z";
+      webhook.updated_at = "2026-05-07T04:55:10Z";
+    }
+    return json({ workflow: workflowSummary(workflow) }, { status: 202 });
+  }
+  return null;
+}
+
+async function handleWorkflowRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [
+    handleWorkflowCollectionRequest,
+    handleWorkflowPublishRequest,
+    handleWorkflowDetailRequest,
+  ]);
+}
+
+async function handleMediaCollectionRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/media" && req.method === "GET") {
+    const productId = url.searchParams.get("product_id");
+    const status = url.searchParams.get("status");
+    const list = mediaAssets.filter((asset) => {
+      if (productId && asset.product_id !== productId) return false;
+      if (status && asset.processing_status !== status) return false;
+      return true;
+    });
+    return json({ assets: list });
+  }
+  if (url.pathname === "/api/v1/media/source" && req.method === "POST") {
+    const body = (await req.json()) as {
+      url?: string;
+      alt_text?: string;
+      source_url?: string;
+      product_id?: string;
+      file?: { name?: string; type?: string; size?: number };
+      metadata?: { alt_text?: string; title?: string; tags?: string[] };
+    };
+    const sourceURL = body.url ?? body.source_url;
+    const filename = body.file?.name ?? sourceURL?.split("/").pop() ?? "sourced-media.png";
+    const asset: MockMediaAsset = {
+      id: `media_${mediaAssets.length + 1}`,
+      product_id: body.product_id,
+      source_url: sourceURL,
+      original_filename: filename,
+      mime_type: body.file?.type ?? "image/png",
+      size_bytes: body.file?.size ?? 180000,
+      width: 1600,
+      height: 1200,
+      processing_status: "sourced",
+      object_store_location: {
+        provider: "local",
+        bucket: "media",
+        key: `products/${body.product_id ?? "library"}/${filename}`,
+        url: sourceURL,
+      },
+      metadata: {
+        alt_text: body.alt_text ?? body.metadata?.alt_text ?? "",
+        title: body.metadata?.title ?? filename,
+        tags: body.metadata?.tags ?? [],
+      },
+      qa_result: {
+        status: "pending",
+        score: 0,
+        checked_at: "2026-05-08T01:05:00Z",
+        checks: [{ code: "queued", status: "pending", message: "Media QA has not run yet." }],
+      },
+      created_at: "2026-05-08T01:05:00Z",
+      updated_at: "2026-05-08T01:05:00Z",
+    };
+    mediaAssets.unshift(asset);
+    return json({ asset }, { status: 202 });
+  }
+  if (url.pathname === "/api/v1/media/process" && req.method === "POST") {
+    const body = (await req.json()) as { media_id?: string };
+    const asset = mediaAssets.find((candidate) => candidate.id === body.media_id);
+    if (!asset) return json({ error: "not_found" }, { status: 404 });
+    asset.processing_status = "processed";
+    asset.updated_at = "2026-05-08T01:07:00Z";
+    return json({ asset }, { status: 202 });
+  }
+  return null;
+}
+
+async function handleMediaAssetRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname.startsWith("/api/v1/media/") && url.pathname.endsWith("/validate") && req.method === "POST") {
+    const mediaId = decodeURIComponent(url.pathname.replace("/api/v1/media/", "").replace("/validate", ""));
+    const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+    if (!asset) return json({ error: "not_found" }, { status: 404 });
+    asset.processing_status = "validated";
+    asset.qa_result = {
+      status: "passed",
+      score: 94,
+      checked_at: "2026-05-08T01:08:00Z",
+      checks: [{ code: "resolution", status: "passed", message: "Media passed validation." }],
+    };
+    asset.updated_at = "2026-05-08T01:08:00Z";
+    return json({ asset });
+  }
+  if (url.pathname.startsWith("/api/v1/media/") && url.pathname.endsWith("/metadata") && req.method === "PATCH") {
+    const mediaId = decodeURIComponent(url.pathname.replace("/api/v1/media/", "").replace("/metadata", ""));
+    const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+    if (!asset) return json({ error: "not_found" }, { status: 404 });
+    const body = (await req.json()) as {
+      metadata?: { alt_text?: string; title?: string; tags?: string[] };
+    };
+    asset.metadata = {
+      alt_text: body.metadata?.alt_text ?? asset.metadata.alt_text,
+      title: body.metadata?.title ?? asset.metadata.title,
+      tags: body.metadata?.tags ?? asset.metadata.tags,
+    };
+    asset.updated_at = "2026-05-08T01:09:00Z";
+    return json({ asset });
+  }
+  if (url.pathname.startsWith("/api/v1/media/") && req.method === "GET") {
+    const mediaId = decodeURIComponent(url.pathname.replace("/api/v1/media/", ""));
+    const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+    return asset ? json(asset) : json({ error: "not_found" }, { status: 404 });
+  }
+  return null;
+}
+
+async function handleMediaRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [handleMediaCollectionRequest, handleMediaAssetRequest]);
+}
+
+async function handleComplianceOverviewRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/compliance/rules" && req.method === "GET") {
+    return json({ rules: [complianceRule] });
+  }
+  if (url.pathname === "/api/v1/compliance/reports/summary" && req.method === "GET") {
+    return json({ report: complianceReportSummary });
+  }
+  if (url.pathname === "/api/v1/compliance/reports/export" && req.method === "GET") {
+    if (url.searchParams.get("format") === "json") {
+      return json({ report: complianceReportSummary });
+    }
+    return new Response("rule,passed,failed\nalt_text,8,2\n", {
+      headers: {
+        "content-type": "text/csv",
+        "content-disposition": 'attachment; filename="compliance-report.csv"',
+        ...corsHeaders,
+      },
+    });
+  }
+  return null;
+}
+
+async function handleCustomComplianceRuleRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "GET") {
+    return json({ rules: customComplianceRules });
+  }
+  if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "POST") {
+    const body = (await req.json()) as Partial<MockCustomComplianceRule> & {
+      id?: string;
+      definition?: { field?: string; values?: string[] };
+    };
+    const rule: MockCustomComplianceRule = {
+      id: `custom_${customComplianceRules.length + 1}`,
+      tenant_id: req.headers.get("x-tenant-id") ?? body.tenant_id ?? "tenant_default",
+      code: body.code ?? body.id ?? `custom_${customComplianceRules.length + 1}`,
+      name: body.name ?? "Custom rule",
+      description: body.description ?? body.name ?? "Custom compliance rule.",
+      category: body.category ?? "content",
+      severity: body.severity ?? "warning",
+      enabled: body.enabled ?? true,
+      condition: body.condition ?? {
+        field: body.definition?.field ?? "description",
+        operator: "does_not_contain",
+        value: body.definition?.values?.[0] ?? "",
+      },
+      version: 1,
+      updated_at: "2026-05-08T00:20:00Z",
+    };
+    customComplianceRules.unshift(rule);
+    return json({ rule }, { status: 201 });
+  }
+  if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && (req.method === "PATCH" || req.method === "PUT")) {
+    const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
+    const rule = customComplianceRules.find((candidate) => candidate.id === ruleId || candidate.code === ruleId);
+    if (!rule) return json({ error: "not_found" }, { status: 404 });
+    const body = (await req.json()) as Partial<MockCustomComplianceRule> & {
+      id?: string;
+      definition?: { field?: string; values?: string[] };
+    };
+    Object.assign(rule, {
+      code: body.code ?? body.id ?? rule.code,
+      name: body.name ?? rule.name,
+      description: body.description ?? rule.description,
+      category: body.category ?? rule.category,
+      severity: body.severity ?? rule.severity,
+      enabled: body.enabled ?? rule.enabled,
+      condition: body.condition ?? (body.definition
+        ? {
+            field: body.definition.field ?? rule.condition.field,
+            operator: "does_not_contain",
+            value: body.definition.values?.[0] ?? rule.condition.value,
+          }
+        : rule.condition),
+      updated_at: "2026-05-08T00:21:00Z",
+      version: rule.version + 1,
+    });
+    return json({ rule });
+  }
+  if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "DELETE") {
+    const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
+    const index = customComplianceRules.findIndex((candidate) => candidate.id === ruleId);
+    if (index === -1) return json({ error: "not_found" }, { status: 404 });
+    customComplianceRules.splice(index, 1);
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+  return null;
+}
+
+async function handleProductComplianceRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === `/api/v1/products/${product.id}/compliance-check` && req.method === "POST") {
+    return json(releaseFlowMode ? passingComplianceResult : complianceResult);
+  }
+  if (url.pathname === `/api/v1/products/${product.id}/seo-suggestions` && req.method === "POST") {
+    return json({
+      product_id: product.id,
+      title: "Resistance Band Set for Home Workouts",
+      meta_description: "Resistance band set for home workouts and progressive strength training.",
+      slug: "resistance-band-set",
+      score: 71,
+      keyword_density: { "resistance band set": 10.71 },
+      pass: false,
+      reasons: ["seo score below minimum"],
+    });
+  }
+  return null;
+}
+
+async function handleComplianceRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [
+    handleComplianceOverviewRequest,
+    handleCustomComplianceRuleRequest,
+    handleProductComplianceRequest,
+  ]);
+}
+
+async function handleAgentRecommendationRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/agents" && req.method === "GET") {
+    return json({ agents: [agentSummary] });
+  }
+  if (url.pathname === "/api/v1/agents/sourcing/recommendations" && req.method === "GET") {
+    return json({ recommendations: [sourcingRecommendation] });
+  }
+  if (url.pathname === `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` && req.method === "POST") {
+    const body = (await req.json()) as {
+      decision?: "approve" | "reject" | "adjust";
+      adjusted_unit_cost_cents?: number;
+    };
+    sourcingRecommendation.status =
+      body.decision === "approve" ? "approved" : body.decision === "reject" ? "rejected" : "adjusted";
+    if (body.adjusted_unit_cost_cents !== undefined) {
+      const primaryCandidate = sourcingRecommendation.candidates[0];
+      if (primaryCandidate) {
+        primaryCandidate.unit_cost_cents = body.adjusted_unit_cost_cents;
+      }
+    }
+    sourcingRecommendation.updated_at = "2026-05-08T01:20:00Z";
+    return json({ recommendation: sourcingRecommendation }, { status: 202 });
+  }
+  return null;
+}
+
+async function handleAgentPricingRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/agents/pricing/strategies" && req.method === "GET") {
+    return json({ strategies: [pricingStrategy] });
+  }
+  if (url.pathname === `/api/v1/agents/pricing/strategies/${pricingStrategy.id}` && req.method === "PATCH") {
+    const body = (await req.json()) as {
+      enabled?: boolean;
+      target_margin_percent?: number;
+      min_margin_percent?: number;
+    };
+    pricingStrategy.enabled = body.enabled ?? pricingStrategy.enabled;
+    pricingStrategy.target_margin_percent = body.target_margin_percent ?? pricingStrategy.target_margin_percent;
+    pricingStrategy.min_margin_percent = body.min_margin_percent ?? pricingStrategy.min_margin_percent;
+    pricingStrategy.updated_at = "2026-05-08T01:21:00Z";
+    return json({ strategy: pricingStrategy });
+  }
+  if (url.pathname === "/api/v1/agents/pricing/recommendations" && req.method === "GET") {
+    return json({ recommendations: [pricingRecommendation] });
+  }
+  return null;
+}
+
+async function handleAgentScheduleRequest(req: Request, url: URL): Promise<Response | null> {
+  if ((url.pathname === "/api/v1/agents/schedules" || url.pathname === "/api/v1/agent-schedules") && req.method === "GET") {
+    return json({ schedules: [agentSchedule] });
+  }
+  if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` && req.method === "POST") {
+    agentSchedule.enabled = true;
+    agentSchedule.updated_at = "2026-05-08T01:22:00Z";
+    return json({ schedule: agentSchedule });
+  }
+  if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` && req.method === "POST") {
+    agentSchedule.enabled = false;
+    agentSchedule.updated_at = "2026-05-08T01:22:00Z";
+    return json({ schedule: agentSchedule });
+  }
+  if (url.pathname === `/api/v1/agents/schedules/${agentSchedule.id}` && req.method === "PATCH") {
+    const body = (await req.json()) as {
+      enabled?: boolean;
+      frequency?: "hourly" | "daily" | "weekly" | "custom";
+      cron_expression?: string;
+      timezone?: string;
+      parameters?: Record<string, unknown>;
+    };
+    agentSchedule.enabled = body.enabled ?? agentSchedule.enabled;
+    agentSchedule.frequency = body.frequency ?? agentSchedule.frequency;
+    agentSchedule.cron_expression = body.cron_expression ?? agentSchedule.cron_expression;
+    agentSchedule.timezone = body.timezone ?? agentSchedule.timezone;
+    agentSchedule.parameters = body.parameters ?? agentSchedule.parameters;
+    agentSchedule.updated_at = "2026-05-08T01:22:00Z";
+    return json({ schedule: agentSchedule });
+  }
+  return null;
+}
+
+async function handleAgentActivityRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/events/recent" && req.method === "GET") {
+    const limit = Number(url.searchParams.get("limit") ?? "20");
+    return json({ events: recentEvents.slice(0, limit) });
+  }
+  if (url.pathname === `/api/v1/agents/${agentSummary.id}/history` && req.method === "GET") {
+    return json({ runs: agentRuns });
+  }
+  if (url.pathname === `/api/v1/agents/${agentSummary.id}/run` && req.method === "POST") {
+    const nextRun: MockAgentRun = {
+      ...agentRun,
+      id: `run_${agentRuns.length + 1}`,
+      status: "queued",
+      trigger: "manual",
+      started_at: undefined,
+      finished_at: undefined,
+      duration_ms: undefined,
+      summary: "Manual run queued by operator.",
+      output: undefined,
+      created_at: "2026-05-07T04:32:00Z",
+    };
+    agentSummary.queued_runs += 1;
+    agentSummary.status = "queued";
+    agentRuns.unshift(nextRun);
+    return json({ run: nextRun }, { status: 202 });
+  }
+  return null;
+}
+
+async function handleSyncRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/sync/status" && req.method === "GET") {
+    return json({
+      total_events: 3,
+      pending_conflicts: syncConflict.status === "pending" ? 1 : 0,
+      last_event: {
+        id: "518f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
+        type: "conflict_detected",
+        product_id: product.id,
+        remote_id: syncConflict.remote_id,
+        created_at: "2026-05-07T00:05:00Z",
+      },
+      updated_at: "2026-05-07T00:06:00Z",
+    });
+  }
+  if (url.pathname === "/api/v1/sync/conflicts" && req.method === "GET") {
+    return json({ conflicts: [syncConflict] });
+  }
+  if (url.pathname === `/api/v1/sync/conflicts/${syncConflict.id}/resolve` && req.method === "POST") {
+    const body = (await req.json()) as { resolution?: "local" | "remote" | "manual" };
+    syncConflict.status = "resolved";
+    syncConflict.resolution = body.resolution ?? "manual";
+    syncConflict.resolved_at = "2026-05-07T00:10:00Z";
+    return json(syncConflict);
+  }
+  return null;
+}
+
+async function handleAgentAndSyncRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [
+    handleAgentRecommendationRequest,
+    handleAgentPricingRequest,
+    handleAgentScheduleRequest,
+    handleAgentActivityRequest,
+    handleSyncRequest,
+  ]);
+}
+
+async function handleMembershipPlanRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/membership-plans" && req.method === "GET") {
+    return json({
+      plans: membershipPlans,
+      total: membershipPlans.length,
+      page: 1,
+      per_page: 20,
+    });
+  }
+  if (url.pathname === "/api/v1/membership-plans" && req.method === "POST") {
+    const body = (await req.json()) as Partial<MockMembershipPlan> & {
+      billing_cycle?: "monthly" | "annual";
+      stripe_price_id?: string;
+    };
+    const plan: MockMembershipPlan = {
+      id: `plan_${membershipPlans.length + 1}`,
+      tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
+      name: body.name ?? "New plan",
+      description: body.description,
+      billing_cycle: body.billing_cycle ?? "monthly",
+      price: body.price ?? { amount: 1000, currency: "AUD" },
+      benefits: body.benefits ?? [],
+      stripe_price_id: body.stripe_price_id,
+      created_at: "2026-05-08T08:00:00Z",
+      updated_at: "2026-05-08T08:00:00Z",
+    };
+    membershipPlans.push(plan);
+    return json(plan, { status: 201 });
+  }
+  if (url.pathname.startsWith("/api/v1/membership-plans/") && req.method === "GET") {
+    const planId = decodeURIComponent(url.pathname.replace("/api/v1/membership-plans/", ""));
+    const plan = membershipPlans.find((candidate) => candidate.id === planId);
+    return plan ? json(plan) : json({ error: "not_found" }, { status: 404 });
+  }
+  return null;
+}
+
+async function handleMembershipSubscriptionRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/memberships" && req.method === "GET") {
+    return json({
+      memberships,
+      total: memberships.length,
+      page: 1,
+      per_page: 20,
+    });
+  }
+  if (url.pathname === "/api/v1/memberships" && req.method === "POST") {
+    const body = (await req.json()) as { member_email?: string; plan_id?: string };
+    const plan = membershipPlans.find((candidate) => candidate.id === body.plan_id) ?? membershipPlans[0];
+    if (!plan) return json({ error: "no plan available" }, { status: 422 });
+    const subscription: MockSubscription = {
+      id: `sub_${memberships.length + 1}`,
+      tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
+      member_id: `mem_${memberships.length + 1}`,
+      member_email: body.member_email ?? "alice@example.com",
+      plan_id: plan.id,
+      state: "active",
+      current_period_start: "2026-05-08T07:30:00Z",
+      current_period_end: "2026-06-08T07:30:00Z",
+      trial_ends_at: "2026-05-15T07:30:00Z",
+      created_at: "2026-05-08T07:30:00Z",
+      updated_at: "2026-05-08T07:30:00Z",
+      plan,
+    };
+    memberships.push(subscription);
+    return json(subscription, { status: 201 });
+  }
+  if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/cancel") && req.method === "POST") {
+    const subscriptionId = decodeURIComponent(url.pathname.replace("/api/v1/memberships/", "").replace("/cancel", ""));
+    const subscription = memberships.find((candidate) => candidate.id === subscriptionId);
+    if (!subscription) return json({ error: "not_found" }, { status: 404 });
+    subscription.state = "cancelled";
+    subscription.cancelled_at = "2026-05-08T08:30:00Z";
+    subscription.updated_at = "2026-05-08T08:30:00Z";
+    return json(subscription);
+  }
+  if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/pause") && req.method === "POST") {
+    const subscriptionId = decodeURIComponent(url.pathname.replace("/api/v1/memberships/", "").replace("/pause", ""));
+    const subscription = memberships.find((candidate) => candidate.id === subscriptionId);
+    if (!subscription) return json({ error: "not_found" }, { status: 404 });
+    if (subscription.state !== "active") {
+      return json({ error: "invalid_transition" }, { status: 422 });
+    }
+    subscription.state = "paused";
+    subscription.updated_at = "2026-05-08T08:30:00Z";
+    return json(subscription);
+  }
+  if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/resume") && req.method === "POST") {
+    const subscriptionId = decodeURIComponent(url.pathname.replace("/api/v1/memberships/", "").replace("/resume", ""));
+    const subscription = memberships.find((candidate) => candidate.id === subscriptionId);
+    if (!subscription) return json({ error: "not_found" }, { status: 404 });
+    if (subscription.state !== "paused") {
+      return json({ error: "invalid_transition" }, { status: 422 });
+    }
+    subscription.state = "active";
+    subscription.updated_at = "2026-05-08T08:30:00Z";
+    return json(subscription);
+  }
+  if (url.pathname.startsWith("/api/v1/memberships/") && req.method === "GET") {
+    const subscriptionId = decodeURIComponent(url.pathname.replace("/api/v1/memberships/", ""));
+    const subscription = memberships.find((candidate) => candidate.id === subscriptionId);
+    return subscription ? json(subscription) : json({ error: "not_found" }, { status: 404 });
+  }
+  return null;
+}
+
+export async function handleMembershipRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [handleMembershipPlanRequest, handleMembershipSubscriptionRequest]);
+}
+
+async function handleOrderRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/orders" && req.method === "POST") {
+    return createOrder(req);
+  }
+  if (url.pathname === `/api/v1/orders/${orderId}` && req.method === "GET") {
+    return json(
+      orders.get(orderId) ?? {
+        id: orderId,
+        customer_email: "shopper@example.com",
+        items: [],
+        status: "pending",
+        totals: {
+          subtotal: { amount: 0, currency: "AUD" },
+          shipping: { amount: 0, currency: "AUD" },
+          total: { amount: 0, currency: "AUD" },
+        },
+        shipping_address: {
+          name: "Jane Shopper",
+          line1: "1 Market Street",
+          city: "Sydney",
+          region: "NSW",
+          postal_code: "2000",
+          country: "AU",
+        },
+        created_at: "2026-05-07T00:00:00Z",
+        updated_at: "2026-05-07T00:00:00Z",
+      },
+    );
+  }
+  return null;
+}
+
+async function handleDigitalProductCatalogRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/digital-products" && req.method === "GET") {
+    return json({
+      products: digitalProducts,
+      total: digitalProducts.length,
+      page: 1,
+      per_page: 20,
+    });
+  }
+  if (url.pathname.startsWith("/api/v1/digital-products/") && req.method === "GET") {
+    const productId = decodeURIComponent(url.pathname.replace("/api/v1/digital-products/", ""));
+    const digitalProduct = digitalProducts.find((candidate) => candidate.id === productId);
+    if (!digitalProduct) return json({ error: "not_found" }, { status: 404 });
+    return json(digitalProduct);
+  }
+  return null;
+}
+
+async function handleLicenseRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/licenses" && req.method === "POST") {
+    const body = (await req.json()) as {
+      product_id?: string;
+      customer_id?: string;
+      source?: "purchase" | "gift" | "admin";
+    };
+    if (!body.product_id || !body.customer_id) {
+      return json({ error: "invalid" }, { status: 400 });
+    }
+    const license: MockLicense = {
+      id: `lic_${digitalLicenses.length + 1}`,
+      tenant_id: "tenant_default",
+      product_id: body.product_id,
+      customer_id: body.customer_id,
+      key: "AAAAA-BBBBB-CCCCC-DDDDD-EEEEEEEE",
+      state: "active",
+      issued_at: "2026-05-08T07:00:00Z",
+      max_activations: 1,
+      updated_at: "2026-05-08T07:00:00Z",
+    };
+    digitalLicenses.push(license);
+    return json(license, { status: 201 });
+  }
+  if (url.pathname === "/api/v1/licenses" && req.method === "GET") {
+    return json({
+      licenses: digitalLicenses,
+      total: digitalLicenses.length,
+      page: 1,
+      per_page: 20,
+    });
+  }
+  if (url.pathname.endsWith("/revoke") && req.method === "POST") {
+    const licenseId = decodeURIComponent(url.pathname.replace("/api/v1/licenses/", "").replace("/revoke", ""));
+    const license = digitalLicenses.find((candidate) => candidate.id === licenseId);
+    if (!license) return json({ error: "not_found" }, { status: 404 });
+    if (license.state !== "active") {
+      return json({ error: "invalid_transition" }, { status: 422 });
+    }
+    license.state = "revoked";
+    license.updated_at = "2026-05-08T07:30:00Z";
+    return json(license);
+  }
+  return null;
+}
+
+async function handleCustomerLicenseRequest(req: Request, url: URL): Promise<Response | null> {
+  if (url.pathname === "/api/v1/me/licenses" && req.method === "GET") {
+    return json({
+      licenses: digitalLicenses,
+      total: digitalLicenses.length,
+      page: 1,
+      per_page: 20,
+    });
+  }
+  if (url.pathname.endsWith("/download") && req.method === "GET" && url.pathname.startsWith("/api/v1/me/licenses/")) {
+    const licenseId = decodeURIComponent(url.pathname.replace("/api/v1/me/licenses/", "").replace("/download", ""));
+    const license = digitalLicenses.find((candidate) => candidate.id === licenseId);
+    if (!license) return json({ error: "not_found" }, { status: 404 });
+    if (license.state !== "active") {
+      return json({ error: "gone" }, { status: 410 });
+    }
+    return json({
+      url: `https://cdn.example.com/api/v1/digital-downloads?lid=${license.id}&pid=${license.product_id}&tid=${license.tenant_id}&exp=${Math.floor(Date.now() / 1000) + 300}&uses=3&sig=mocksigE2E`,
+      expires_at: "2026-05-08T07:35:00Z",
+      uses_allowed: 3,
+    });
+  }
+  return null;
+}
+
+async function handleDigitalProductRequest(req: Request, url: URL): Promise<Response | null> {
+  return runRouteHandlers(req, url, [
+    handleOrderRequest,
+    handleDigitalProductCatalogRequest,
+    handleLicenseRequest,
+    handleCustomerLicenseRequest,
+  ]);
+}
+
 const appPort = Number(process.env.PORT ?? 3100);
 const apiPort = Number(process.env.E2E_MOCK_API_PORT ?? 18080);
 const releaseFlowMode = process.env.E2E_RELEASE_FLOW === "true";
-const server = Bun.serve({
+const server = typeof Bun === "undefined" ? null : Bun.serve({
   port: apiPort,
   hostname: "127.0.0.1",
-  async fetch(req) {
+  async fetch(req: Request) {
     const url = new URL(req.url);
-    if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
-    }
-    if (url.pathname === "/healthz") return json({ status: "ok" });
-    if (url.pathname === "/api/v1/auth/login" && req.method === "POST") {
-      return login(req);
-    }
-    if (url.pathname === "/api/v1/auth/me" && req.method === "GET") {
-      return sessionFromAuthorization(req);
-    }
-    if (url.pathname === "/api/v1/auth/logout" && req.method === "POST") {
-      return new Response(null, { status: 204, headers: corsHeaders });
-    }
-    if (
-      (url.pathname === "/api/v1/tenants/current/settings" || url.pathname === "/api/v1/tenant/settings") &&
-      req.method === "GET"
-    ) {
-      return json({ settings: tenantSettings });
-    }
-    if (
-      (url.pathname === "/api/v1/tenants/current/settings" || url.pathname === "/api/v1/tenant/settings") &&
-      (req.method === "PATCH" || req.method === "PUT")
-    ) {
-      const body = (await req.json()) as {
-        display_name?: string;
-        branding?: Partial<typeof tenantSettings.branding> & { store_name?: string };
-        preferences?: Partial<typeof tenantSettings.preferences>;
-        ai?: { content_tone?: string };
-        compliance?: { seo_score_min?: number };
-      };
-      tenantSettings.display_name = body.display_name ?? body.branding?.store_name ?? tenantSettings.display_name;
-      tenantSettings.branding = { ...tenantSettings.branding, ...body.branding };
-      tenantSettings.preferences = {
-        ...tenantSettings.preferences,
-        ...body.preferences,
-        ...(body.ai?.content_tone ? { ai_tone: body.ai.content_tone } : {}),
-        ...(body.compliance?.seo_score_min !== undefined ? { compliance_strict_mode: body.compliance.seo_score_min > 0 } : {}),
-      };
-      tenantSettings.updated_at = "2026-05-08T00:10:00Z";
-      return json({ settings: tenantSettings });
-    }
-    if (url.pathname === "/api/v1/products" && req.method === "GET") {
-      return json({ products: [product], total: 1, page: 1, per_page: 20 });
-    }
-    if (url.pathname === "/api/v1/products/resistance-band-set" && req.method === "GET") {
-      return json(product);
-    }
-    if (url.pathname === `/api/v1/products/${product.id}` && req.method === "GET") {
-      return json(product);
-    }
-    if (url.pathname === `/api/v1/products/${product.id}/ai-suggestions` && req.method === "GET") {
-      return json({ suggestions: [aiSuggestion] });
-    }
-    if (
-      url.pathname === `/api/v1/products/${product.id}/generate-description` &&
-      req.method === "POST"
-    ) {
-      return json({
-        suggestion: {
-          ...aiSuggestion,
-          id: "718f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
-          description: "Fresh AI copy focused on ecommerce conversion and practical home workouts.",
-          created_at: "2026-05-07T00:12:00Z",
-          fact_check_result: factCheckResult,
-        },
-      });
-    }
-    if (
-      url.pathname === `/api/v1/products/${product.id}/fact-check-results/latest` &&
-      req.method === "GET"
-    ) {
-      return json({ result: factCheckResult });
-    }
-    if (url.pathname === "/api/v1/rag/search" && req.method === "GET") {
-      return json({ query: url.searchParams.get("q") ?? "", results: [evidenceSource] });
-    }
-    if (url.pathname === "/api/v1/rag/evidence/search" && req.method === "POST") {
-      return json({ sources: [evidenceSource] });
-    }
-    if (url.pathname === "/api/v1/webhooks" && req.method === "GET") {
-      return json({ webhooks });
-    }
-    if (url.pathname === "/api/v1/webhooks" && req.method === "POST") {
-      const body = (await req.json()) as {
-        url?: string;
-        event_types?: MockWebhook["event_types"];
-        description?: string;
-        secret?: string;
-      };
-      const webhook: MockWebhook = {
-        id: `wh_${webhooks.length + 1}`,
-        url: body.url ?? "https://hooks.n8n.example/webhook/product-approved",
-        event_types: body.event_types ?? ["product.approved"],
-        description: body.description,
-        secret_configured: Boolean(body.secret),
-        active: true,
-        created_at: "2026-05-08T00:05:00Z",
-        updated_at: "2026-05-08T00:05:00Z",
-        failure_count: 0,
-      };
-      webhooks.unshift(webhook);
-      return json({ ...webhook, webhook }, { status: 201 });
-    }
-    if (url.pathname.startsWith("/api/v1/webhooks/") && url.pathname.endsWith("/test") && req.method === "POST") {
-      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", "").replace("/test", ""));
-      const webhook = webhooks.find((candidate) => candidate.id === webhookId);
-      if (!webhook) return json({ error: "not_found" }, { status: 404 });
-      const body = (await req.json()) as { event_type?: MockWebhook["event_types"][number] };
-      webhook.last_delivery_at = "2026-05-08T00:06:00Z";
-      webhook.updated_at = "2026-05-08T00:06:00Z";
-      return json(
-        {
-          delivery: {
-            id: `del_${webhook.id}`,
-            webhook_id: webhook.id,
-            event_type: body.event_type ?? webhook.event_types[0],
-            status: "delivered",
-            response_status: 200,
-            attempt: 1,
-            occurred_at: "2026-05-08T00:06:00Z",
-          },
-        },
-        { status: 202 },
-      );
-    }
-    if (url.pathname.startsWith("/api/v1/webhooks/") && req.method === "DELETE") {
-      const webhookId = decodeURIComponent(url.pathname.replace("/api/v1/webhooks/", ""));
-      const index = webhooks.findIndex((candidate) => candidate.id === webhookId);
-      if (index === -1) return json({ error: "not_found" }, { status: 404 });
-      webhooks.splice(index, 1);
-      return new Response(null, { status: 204, headers: corsHeaders });
-    }
-    if (url.pathname === "/__mock/n8n/deliveries" && req.method === "GET") {
-      return json({ deliveries: n8nDeliveries });
-    }
-    if (url.pathname === "/api/v1/workflows" && req.method === "GET") {
-      const status = url.searchParams.get("status");
-      const limit = Number(url.searchParams.get("limit") ?? "50");
-      const list = status ? workflows.filter((workflow) => workflow.status === status) : workflows;
-      return json({ workflows: list.slice(0, limit).map(workflowSummary) });
-    }
-    if (url.pathname === "/api/v1/workflows/content-generation" && req.method === "POST") {
-      return json(
-        {
-          workflow_id: "wf_content_generation_release",
-          status: "completed",
-          activities: [
-            "content_generation.generate",
-            "content_generation.fact_check",
-            "content_generation.evaluate",
-          ],
-        },
-        { status: 202 },
-      );
-    }
-    if (url.pathname === "/api/v1/workflows/media-processing" && req.method === "POST") {
-      return json(
-        {
-          workflow_id: "wf_media_processing_release",
-          status: "completed",
-          activities: [
-            "media_processing.source",
-            "media_processing.validate",
-            "media_processing.link_product",
-          ],
-        },
-        { status: 202 },
-      );
-    }
-    if (url.pathname === "/api/v1/workflows/product-publish" && req.method === "POST") {
-      const body = (await req.json()) as { product_id?: string; description?: string };
-      const workflow: MockWorkflow = {
-        ...workflowDetail,
-        id: `wf_product_publish_${workflows.length + 1}`,
-        status: "waiting_review",
-        product_id: body.product_id ?? product.id,
-        product_title: product.title,
-        current_activity: "Human review",
-        started_at: "2026-05-07T04:50:00Z",
-        updated_at: "2026-05-07T04:52:00Z",
-        activities: [
-          {
-            id: "act_compliance_new",
-            name: "Check compliance",
-            status: "completed",
-            started_at: "2026-05-07T04:50:00Z",
-            completed_at: "2026-05-07T04:50:30Z",
-            message: body.description
-              ? "Operator-approved copy passed CCE checks."
-              : "Product copy passed CCE checks.",
-            attempt: 1,
-          },
-          {
-            id: "act_media_new",
-            name: "Validate media",
-            status: "completed",
-            started_at: "2026-05-07T04:50:30Z",
-            completed_at: "2026-05-07T04:51:00Z",
-            message: "MIS media validation passed.",
-            attempt: 1,
-          },
-          {
-            id: "act_review_new",
-            name: "Human review",
-            status: "waiting_review",
-            started_at: "2026-05-07T04:51:00Z",
-            message: "Waiting for operator approval.",
-          },
-        ],
-      };
-      workflows.unshift(workflow);
-      return json({ workflow: workflowSummary(workflow) }, { status: 202 });
-    }
-    if (url.pathname.startsWith("/api/v1/workflows/") && req.method === "GET") {
-      const workflowId = decodeURIComponent(url.pathname.replace("/api/v1/workflows/", ""));
-      const workflow = workflows.find((candidate) => candidate.id === workflowId);
-      return workflow ? json(workflow) : json({ error: "not_found" }, { status: 404 });
-    }
-    if (url.pathname.endsWith("/signals/review") && req.method === "POST") {
-      const workflowId = decodeURIComponent(
-        url.pathname.replace("/api/v1/workflows/", "").replace("/signals/review", ""),
-      );
-      const workflow = workflows.find((candidate) => candidate.id === workflowId);
-      if (!workflow) return json({ error: "not_found" }, { status: 404 });
-      workflow.status = "completed";
-      workflow.current_activity = "Published to WooCommerce";
-      workflow.updated_at = "2026-05-07T04:55:00Z";
-      workflow.completed_at = "2026-05-07T04:55:00Z";
-      workflow.activities = [
-        ...workflow.activities.map((activity) =>
-          activity.status === "waiting_review"
-            ? { ...activity, status: "completed" as const, completed_at: "2026-05-07T04:55:00Z" }
-            : activity,
-        ),
-        {
-          id: "act_publish",
-          name: "Publish to WooCommerce",
-          status: "completed",
-          started_at: "2026-05-07T04:55:00Z",
-          completed_at: "2026-05-07T04:55:10Z",
-          message: "Published to mocked WooCommerce.",
-          attempt: 1,
-        },
-      ];
-      for (const webhook of webhooks.filter(
-        (candidate) => candidate.active && candidate.event_types.includes("product.approved"),
-      )) {
-        n8nDeliveries.unshift({
-          event_type: "product.approved",
-          status: "delivered",
-          target_url: webhook.url,
-          occurred_at: "2026-05-07T04:55:10Z",
-        });
-        webhook.last_delivery_at = "2026-05-07T04:55:10Z";
-        webhook.updated_at = "2026-05-07T04:55:10Z";
-      }
-      return json({ workflow: workflowSummary(workflow) }, { status: 202 });
-    }
-    if (url.pathname === "/api/v1/media" && req.method === "GET") {
-      const productId = url.searchParams.get("product_id");
-      const status = url.searchParams.get("status");
-      const list = mediaAssets.filter((asset) => {
-        if (productId && asset.product_id !== productId) return false;
-        if (status && asset.processing_status !== status) return false;
-        return true;
-      });
-      return json({ assets: list });
-    }
-    if (url.pathname === "/api/v1/media/source" && req.method === "POST") {
-      const body = (await req.json()) as {
-        url?: string;
-        alt_text?: string;
-        source_url?: string;
-        product_id?: string;
-        file?: { name?: string; type?: string; size?: number };
-        metadata?: { alt_text?: string; title?: string; tags?: string[] };
-      };
-      const sourceURL = body.url ?? body.source_url;
-      const filename = body.file?.name ?? sourceURL?.split("/").pop() ?? "sourced-media.png";
-      const asset: MockMediaAsset = {
-        id: `media_${mediaAssets.length + 1}`,
-        product_id: body.product_id,
-        source_url: sourceURL,
-        original_filename: filename,
-        mime_type: body.file?.type ?? "image/png",
-        size_bytes: body.file?.size ?? 180000,
-        width: 1600,
-        height: 1200,
-        processing_status: "sourced",
-        object_store_location: {
-          provider: "local",
-          bucket: "media",
-          key: `products/${body.product_id ?? "library"}/${filename}`,
-          url: sourceURL,
-        },
-        metadata: {
-          alt_text: body.alt_text ?? body.metadata?.alt_text ?? "",
-          title: body.metadata?.title ?? filename,
-          tags: body.metadata?.tags ?? [],
-        },
-        qa_result: {
-          status: "pending",
-          score: 0,
-          checked_at: "2026-05-08T01:05:00Z",
-          checks: [{ code: "queued", status: "pending", message: "Media QA has not run yet." }],
-        },
-        created_at: "2026-05-08T01:05:00Z",
-        updated_at: "2026-05-08T01:05:00Z",
-      };
-      mediaAssets.unshift(asset);
-      return json({ asset }, { status: 202 });
-    }
-    if (url.pathname === "/api/v1/media/process" && req.method === "POST") {
-      const body = (await req.json()) as { media_id?: string };
-      const asset = mediaAssets.find((candidate) => candidate.id === body.media_id);
-      if (!asset) return json({ error: "not_found" }, { status: 404 });
-      asset.processing_status = "processed";
-      asset.updated_at = "2026-05-08T01:07:00Z";
-      return json({ asset }, { status: 202 });
-    }
-    if (
-      url.pathname.startsWith("/api/v1/media/") &&
-      url.pathname.endsWith("/validate") &&
-      req.method === "POST"
-    ) {
-      const mediaId = decodeURIComponent(
-        url.pathname.replace("/api/v1/media/", "").replace("/validate", ""),
-      );
-      const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
-      if (!asset) return json({ error: "not_found" }, { status: 404 });
-      asset.processing_status = "validated";
-      asset.qa_result = {
-        status: "passed",
-        score: 94,
-        checked_at: "2026-05-08T01:08:00Z",
-        checks: [{ code: "resolution", status: "passed", message: "Media passed validation." }],
-      };
-      asset.updated_at = "2026-05-08T01:08:00Z";
-      return json({ asset });
-    }
-    if (
-      url.pathname.startsWith("/api/v1/media/") &&
-      url.pathname.endsWith("/metadata") &&
-      req.method === "PATCH"
-    ) {
-      const mediaId = decodeURIComponent(
-        url.pathname.replace("/api/v1/media/", "").replace("/metadata", ""),
-      );
-      const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
-      if (!asset) return json({ error: "not_found" }, { status: 404 });
-      const body = (await req.json()) as {
-        metadata?: { alt_text?: string; title?: string; tags?: string[] };
-      };
-      asset.metadata = {
-        alt_text: body.metadata?.alt_text ?? asset.metadata.alt_text,
-        title: body.metadata?.title ?? asset.metadata.title,
-        tags: body.metadata?.tags ?? asset.metadata.tags,
-      };
-      asset.updated_at = "2026-05-08T01:09:00Z";
-      return json({ asset });
-    }
-    if (url.pathname.startsWith("/api/v1/media/") && req.method === "GET") {
-      const mediaId = decodeURIComponent(url.pathname.replace("/api/v1/media/", ""));
-      const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
-      return asset ? json(asset) : json({ error: "not_found" }, { status: 404 });
-    }
-    if (url.pathname === "/api/v1/compliance/rules" && req.method === "GET") {
-      return json({ rules: [complianceRule] });
-    }
-    if (url.pathname === "/api/v1/compliance/reports/summary" && req.method === "GET") {
-      return json({ report: complianceReportSummary });
-    }
-    if (url.pathname === "/api/v1/compliance/reports/export" && req.method === "GET") {
-      if (url.searchParams.get("format") === "json") {
-        return json({ report: complianceReportSummary });
-      }
-      return new Response("rule,passed,failed\nalt_text,8,2\n", {
-        headers: {
-          "content-type": "text/csv",
-          "content-disposition": 'attachment; filename="compliance-report.csv"',
-          ...corsHeaders,
-        },
-      });
-    }
-    if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "GET") {
-      return json({ rules: customComplianceRules });
-    }
-    if (url.pathname === "/api/v1/compliance/custom-rules" && req.method === "POST") {
-      const body = (await req.json()) as Partial<MockCustomComplianceRule> & {
-        id?: string;
-        definition?: { field?: string; values?: string[] };
-      };
-      const rule: MockCustomComplianceRule = {
-        id: `custom_${customComplianceRules.length + 1}`,
-        tenant_id: req.headers.get("x-tenant-id") ?? body.tenant_id ?? "tenant_default",
-        code: body.code ?? body.id ?? `custom_${customComplianceRules.length + 1}`,
-        name: body.name ?? "Custom rule",
-        description: body.description ?? body.name ?? "Custom compliance rule.",
-        category: body.category ?? "content",
-        severity: body.severity ?? "warning",
-        enabled: body.enabled ?? true,
-        condition: body.condition ?? {
-          field: body.definition?.field ?? "description",
-          operator: "does_not_contain",
-          value: body.definition?.values?.[0] ?? "",
-        },
-        version: 1,
-        updated_at: "2026-05-08T00:20:00Z",
-      };
-      customComplianceRules.unshift(rule);
-      return json({ rule }, { status: 201 });
-    }
-    if (
-      url.pathname.startsWith("/api/v1/compliance/custom-rules/") &&
-      (req.method === "PATCH" || req.method === "PUT")
-    ) {
-      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
-      const rule = customComplianceRules.find((candidate) => candidate.id === ruleId || candidate.code === ruleId);
-      if (!rule) return json({ error: "not_found" }, { status: 404 });
-      const body = (await req.json()) as Partial<MockCustomComplianceRule> & {
-        id?: string;
-        definition?: { field?: string; values?: string[] };
-      };
-      Object.assign(rule, {
-        code: body.code ?? body.id ?? rule.code,
-        name: body.name ?? rule.name,
-        description: body.description ?? rule.description,
-        category: body.category ?? rule.category,
-        severity: body.severity ?? rule.severity,
-        enabled: body.enabled ?? rule.enabled,
-        condition: body.condition ?? (body.definition
-          ? {
-              field: body.definition.field ?? rule.condition.field,
-              operator: "does_not_contain",
-              value: body.definition.values?.[0] ?? rule.condition.value,
-            }
-          : rule.condition),
-        updated_at: "2026-05-08T00:21:00Z",
-        version: rule.version + 1,
-      });
-      return json({ rule });
-    }
-    if (url.pathname.startsWith("/api/v1/compliance/custom-rules/") && req.method === "DELETE") {
-      const ruleId = decodeURIComponent(url.pathname.replace("/api/v1/compliance/custom-rules/", ""));
-      const index = customComplianceRules.findIndex((candidate) => candidate.id === ruleId);
-      if (index === -1) return json({ error: "not_found" }, { status: 404 });
-      customComplianceRules.splice(index, 1);
-      return new Response(null, { status: 204, headers: corsHeaders });
-    }
-    if (
-      url.pathname === `/api/v1/products/${product.id}/compliance-check` &&
-      req.method === "POST"
-    ) {
-      return json(releaseFlowMode ? passingComplianceResult : complianceResult);
-    }
-    if (
-      url.pathname === `/api/v1/products/${product.id}/seo-suggestions` &&
-      req.method === "POST"
-    ) {
-      return json({
-        product_id: product.id,
-        title: "Resistance Band Set for Home Workouts",
-        meta_description:
-          "Resistance band set for home workouts and progressive strength training.",
-        slug: "resistance-band-set",
-        score: 71,
-        keyword_density: { "resistance band set": 10.71 },
-        pass: false,
-        reasons: ["seo score below minimum"],
-      });
-    }
-    if (url.pathname === "/api/v1/agents" && req.method === "GET") {
-      return json({ agents: [agentSummary] });
-    }
-    if (url.pathname === "/api/v1/agents/sourcing/recommendations" && req.method === "GET") {
-      return json({ recommendations: [sourcingRecommendation] });
-    }
-    if (
-      url.pathname === `/api/v1/agents/sourcing/recommendations/${sourcingRecommendation.id}/decision` &&
-      req.method === "POST"
-    ) {
-      const body = (await req.json()) as {
-        decision?: "approve" | "reject" | "adjust";
-        adjusted_unit_cost_cents?: number;
-      };
-      sourcingRecommendation.status =
-        body.decision === "approve" ? "approved" : body.decision === "reject" ? "rejected" : "adjusted";
-      if (body.adjusted_unit_cost_cents !== undefined) {
-        sourcingRecommendation.candidates[0].unit_cost_cents = body.adjusted_unit_cost_cents;
-      }
-      sourcingRecommendation.updated_at = "2026-05-08T01:20:00Z";
-      return json({ recommendation: sourcingRecommendation }, { status: 202 });
-    }
-    if (url.pathname === "/api/v1/agents/pricing/strategies" && req.method === "GET") {
-      return json({ strategies: [pricingStrategy] });
-    }
-    if (
-      url.pathname === `/api/v1/agents/pricing/strategies/${pricingStrategy.id}` &&
-      req.method === "PATCH"
-    ) {
-      const body = (await req.json()) as {
-        enabled?: boolean;
-        target_margin_percent?: number;
-        min_margin_percent?: number;
-      };
-      pricingStrategy.enabled = body.enabled ?? pricingStrategy.enabled;
-      pricingStrategy.target_margin_percent = body.target_margin_percent ?? pricingStrategy.target_margin_percent;
-      pricingStrategy.min_margin_percent = body.min_margin_percent ?? pricingStrategy.min_margin_percent;
-      pricingStrategy.updated_at = "2026-05-08T01:21:00Z";
-      return json({ strategy: pricingStrategy });
-    }
-    if (url.pathname === "/api/v1/agents/pricing/recommendations" && req.method === "GET") {
-      return json({ recommendations: [pricingRecommendation] });
-    }
-    if (
-      (url.pathname === "/api/v1/agents/schedules" || url.pathname === "/api/v1/agent-schedules") &&
-      req.method === "GET"
-    ) {
-      return json({ schedules: [agentSchedule] });
-    }
-    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/enable` && req.method === "POST") {
-      agentSchedule.enabled = true;
-      agentSchedule.updated_at = "2026-05-08T01:22:00Z";
-      return json({ schedule: agentSchedule });
-    }
-    if (url.pathname === `/api/v1/agent-schedules/${agentSchedule.id}/disable` && req.method === "POST") {
-      agentSchedule.enabled = false;
-      agentSchedule.updated_at = "2026-05-08T01:22:00Z";
-      return json({ schedule: agentSchedule });
-    }
-    if (url.pathname === `/api/v1/agents/schedules/${agentSchedule.id}` && req.method === "PATCH") {
-      const body = (await req.json()) as {
-        enabled?: boolean;
-        frequency?: "hourly" | "daily" | "weekly" | "custom";
-        cron_expression?: string;
-        timezone?: string;
-        parameters?: Record<string, unknown>;
-      };
-      agentSchedule.enabled = body.enabled ?? agentSchedule.enabled;
-      agentSchedule.frequency = body.frequency ?? agentSchedule.frequency;
-      agentSchedule.cron_expression = body.cron_expression ?? agentSchedule.cron_expression;
-      agentSchedule.timezone = body.timezone ?? agentSchedule.timezone;
-      agentSchedule.parameters = body.parameters ?? agentSchedule.parameters;
-      agentSchedule.updated_at = "2026-05-08T01:22:00Z";
-      return json({ schedule: agentSchedule });
-    }
-    if (url.pathname === "/api/v1/events/recent" && req.method === "GET") {
-      const limit = Number(url.searchParams.get("limit") ?? "20");
-      return json({ events: recentEvents.slice(0, limit) });
-    }
-    if (url.pathname === `/api/v1/agents/${agentSummary.id}/history` && req.method === "GET") {
-      return json({ runs: agentRuns });
-    }
-    if (url.pathname === `/api/v1/agents/${agentSummary.id}/run` && req.method === "POST") {
-      const nextRun = {
-        ...agentRun,
-        id: `run_${agentRuns.length + 1}`,
-        status: "queued",
-        trigger: "manual",
-        started_at: undefined,
-        finished_at: undefined,
-        duration_ms: undefined,
-        summary: "Manual run queued by operator.",
-        output: undefined,
-        created_at: "2026-05-07T04:32:00Z",
-      };
-      agentSummary.queued_runs += 1;
-      agentSummary.status = "queued";
-      agentRuns.unshift(nextRun);
-      return json({ run: nextRun }, { status: 202 });
-    }
-    if (url.pathname === "/api/v1/sync/status" && req.method === "GET") {
-      return json({
-        total_events: 3,
-        pending_conflicts: syncConflict.status === "pending" ? 1 : 0,
-        last_event: {
-          id: "518f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
-          type: "conflict_detected",
-          product_id: product.id,
-          remote_id: syncConflict.remote_id,
-          created_at: "2026-05-07T00:05:00Z",
-        },
-        updated_at: "2026-05-07T00:06:00Z",
-      });
-    }
-    if (url.pathname === "/api/v1/sync/conflicts" && req.method === "GET") {
-      return json({ conflicts: [syncConflict] });
-    }
-    if (
-      url.pathname === `/api/v1/sync/conflicts/${syncConflict.id}/resolve` &&
-      req.method === "POST"
-    ) {
-      const body = (await req.json()) as { resolution?: "local" | "remote" | "manual" };
-      syncConflict.status = "resolved";
-      syncConflict.resolution = body.resolution ?? "manual";
-      syncConflict.resolved_at = "2026-05-07T00:10:00Z";
-      return json(syncConflict);
-    }
-    if (url.pathname === "/api/v1/membership-plans" && req.method === "GET") {
-      return json({
-        plans: membershipPlans,
-        total: membershipPlans.length,
-        page: 1,
-        per_page: 20,
-      });
-    }
-    if (url.pathname === "/api/v1/membership-plans" && req.method === "POST") {
-      const body = (await req.json()) as Partial<MockMembershipPlan> & {
-        billing_cycle?: "monthly" | "annual";
-        stripe_price_id?: string;
-      };
-      const plan: MockMembershipPlan = {
-        id: `plan_${membershipPlans.length + 1}`,
-        tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
-        name: body.name ?? "New plan",
-        description: body.description,
-        billing_cycle: body.billing_cycle ?? "monthly",
-        price: body.price ?? { amount: 1000, currency: "AUD" },
-        benefits: body.benefits ?? [],
-        stripe_price_id: body.stripe_price_id,
-        created_at: "2026-05-08T08:00:00Z",
-        updated_at: "2026-05-08T08:00:00Z",
-      };
-      membershipPlans.push(plan);
-      return json(plan, { status: 201 });
-    }
-    if (url.pathname.startsWith("/api/v1/membership-plans/") && req.method === "GET") {
-      const planId = decodeURIComponent(url.pathname.replace("/api/v1/membership-plans/", ""));
-      const plan = membershipPlans.find((p) => p.id === planId);
-      return plan ? json(plan) : json({ error: "not_found" }, { status: 404 });
-    }
-    if (url.pathname === "/api/v1/memberships" && req.method === "GET") {
-      return json({
-        memberships: memberships,
-        total: memberships.length,
-        page: 1,
-        per_page: 20,
-      });
-    }
-    if (url.pathname === "/api/v1/memberships" && req.method === "POST") {
-      const body = (await req.json()) as { member_email?: string; plan_id?: string };
-      const plan = membershipPlans.find((p) => p.id === body.plan_id) ?? membershipPlans[0];
-      if (!plan) return json({ error: "no plan available" }, { status: 422 });
-      const sub: MockSubscription = {
-        id: `sub_${memberships.length + 1}`,
-        tenant_id: req.headers.get("x-tenant-id") ?? "tenant_default",
-        member_id: `mem_${memberships.length + 1}`,
-        member_email: body.member_email ?? "alice@example.com",
-        plan_id: plan.id,
-        state: "active",
-        current_period_start: "2026-05-08T07:30:00Z",
-        current_period_end: "2026-06-08T07:30:00Z",
-        trial_ends_at: "2026-05-15T07:30:00Z",
-        created_at: "2026-05-08T07:30:00Z",
-        updated_at: "2026-05-08T07:30:00Z",
-        plan,
-      };
-      memberships.push(sub);
-      return json(sub, { status: 201 });
-    }
-    if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/cancel") && req.method === "POST") {
-      const subId = decodeURIComponent(
-        url.pathname.replace("/api/v1/memberships/", "").replace("/cancel", ""),
-      );
-      const sub = memberships.find((s) => s.id === subId);
-      if (!sub) return json({ error: "not_found" }, { status: 404 });
-      sub.state = "cancelled";
-      sub.cancelled_at = "2026-05-08T08:30:00Z";
-      sub.updated_at = "2026-05-08T08:30:00Z";
-      return json(sub);
-    }
-    if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/pause") && req.method === "POST") {
-      const subId = decodeURIComponent(
-        url.pathname.replace("/api/v1/memberships/", "").replace("/pause", ""),
-      );
-      const sub = memberships.find((s) => s.id === subId);
-      if (!sub) return json({ error: "not_found" }, { status: 404 });
-      if (sub.state !== "active") {
-        return json({ error: "invalid_transition" }, { status: 422 });
-      }
-      sub.state = "paused";
-      sub.updated_at = "2026-05-08T08:30:00Z";
-      return json(sub);
-    }
-    if (url.pathname.startsWith("/api/v1/memberships/") && url.pathname.endsWith("/resume") && req.method === "POST") {
-      const subId = decodeURIComponent(
-        url.pathname.replace("/api/v1/memberships/", "").replace("/resume", ""),
-      );
-      const sub = memberships.find((s) => s.id === subId);
-      if (!sub) return json({ error: "not_found" }, { status: 404 });
-      if (sub.state !== "paused") {
-        return json({ error: "invalid_transition" }, { status: 422 });
-      }
-      sub.state = "active";
-      sub.updated_at = "2026-05-08T08:30:00Z";
-      return json(sub);
-    }
-    if (url.pathname.startsWith("/api/v1/memberships/") && req.method === "GET") {
-      const subId = decodeURIComponent(url.pathname.replace("/api/v1/memberships/", ""));
-      const sub = memberships.find((s) => s.id === subId);
-      return sub ? json(sub) : json({ error: "not_found" }, { status: 404 });
-    }
-    if (url.pathname === "/api/v1/orders" && req.method === "POST") {
-      return createOrder(req);
-    }
-    if (url.pathname === "/api/v1/digital-products" && req.method === "GET") {
-      return json({
-        products: digitalProducts,
-        total: digitalProducts.length,
-        page: 1,
-        per_page: 20,
-      });
-    }
-    if (url.pathname.startsWith("/api/v1/digital-products/") && req.method === "GET") {
-      const id = decodeURIComponent(url.pathname.replace("/api/v1/digital-products/", ""));
-      const prod = digitalProducts.find((p) => p.id === id);
-      if (!prod) return json({ error: "not_found" }, { status: 404 });
-      return json(prod);
-    }
-    if (url.pathname === "/api/v1/licenses" && req.method === "POST") {
-      const body = (await req.json()) as {
-        product_id?: string;
-        customer_id?: string;
-        source?: "purchase" | "gift" | "admin";
-      };
-      if (!body.product_id || !body.customer_id) {
-        return json({ error: "invalid" }, { status: 400 });
-      }
-      const lic: MockLicense = {
-        id: `lic_${digitalLicenses.length + 1}`,
-        tenant_id: "tenant_default",
-        product_id: body.product_id,
-        customer_id: body.customer_id,
-        key: "AAAAA-BBBBB-CCCCC-DDDDD-EEEEEEEE",
-        state: "active",
-        issued_at: "2026-05-08T07:00:00Z",
-        max_activations: 1,
-        updated_at: "2026-05-08T07:00:00Z",
-      };
-      digitalLicenses.push(lic);
-      return json(lic, { status: 201 });
-    }
-    if (url.pathname === "/api/v1/licenses" && req.method === "GET") {
-      return json({
-        licenses: digitalLicenses,
-        total: digitalLicenses.length,
-        page: 1,
-        per_page: 20,
-      });
-    }
-    if (url.pathname.endsWith("/revoke") && req.method === "POST") {
-      const id = decodeURIComponent(
-        url.pathname.replace("/api/v1/licenses/", "").replace("/revoke", ""),
-      );
-      const lic = digitalLicenses.find((l) => l.id === id);
-      if (!lic) return json({ error: "not_found" }, { status: 404 });
-      if (lic.state !== "active") {
-        return json({ error: "invalid_transition" }, { status: 422 });
-      }
-      lic.state = "revoked";
-      lic.updated_at = "2026-05-08T07:30:00Z";
-      return json(lic);
-    }
-    if (url.pathname === "/api/v1/me/licenses" && req.method === "GET") {
-      return json({
-        licenses: digitalLicenses,
-        total: digitalLicenses.length,
-        page: 1,
-        per_page: 20,
-      });
-    }
-    if (url.pathname.endsWith("/download") && req.method === "GET" && url.pathname.startsWith("/api/v1/me/licenses/")) {
-      const id = decodeURIComponent(
-        url.pathname.replace("/api/v1/me/licenses/", "").replace("/download", ""),
-      );
-      const lic = digitalLicenses.find((l) => l.id === id);
-      if (!lic) return json({ error: "not_found" }, { status: 404 });
-      if (lic.state !== "active") {
-        return json({ error: "gone" }, { status: 410 });
-      }
-      return json({
-        url: `https://cdn.example.com/api/v1/digital-downloads?lid=${lic.id}&pid=${lic.product_id}&tid=${lic.tenant_id}&exp=${Math.floor(Date.now() / 1000) + 300}&uses=3&sig=mocksigE2E`,
-        expires_at: "2026-05-08T07:35:00Z",
-        uses_allowed: 3,
-      });
-    }
-
-    if (url.pathname === `/api/v1/orders/${orderId}` && req.method === "GET") {
-      return json(
-        orders.get(orderId) ?? {
-          id: orderId,
-          customer_email: "shopper@example.com",
-          items: [],
-          status: "pending",
-          totals: {
-            subtotal: { amount: 0, currency: "AUD" },
-            shipping: { amount: 0, currency: "AUD" },
-            total: { amount: 0, currency: "AUD" },
-          },
-          shipping_address: {
-            name: "Jane Shopper",
-            line1: "1 Market Street",
-            city: "Sydney",
-            region: "NSW",
-            postal_code: "2000",
-            country: "AU",
-          },
-          created_at: "2026-05-07T00:00:00Z",
-          updated_at: "2026-05-07T00:00:00Z",
-        },
-      );
-    }
+    const coreResponse = await handleCoreRequest(req, url);
+    if (coreResponse) return coreResponse;
+    const catalogResponse = await handleCatalogRequest(req, url);
+    if (catalogResponse) return catalogResponse;
+    const webhookResponse = await handleWebhookRequest(req, url);
+    if (webhookResponse) return webhookResponse;
+    const workflowResponse = await handleWorkflowRequest(req, url);
+    if (workflowResponse) return workflowResponse;
+    const mediaResponse = await handleMediaRequest(req, url);
+    if (mediaResponse) return mediaResponse;
+    const complianceResponse = await handleComplianceRequest(req, url);
+    if (complianceResponse) return complianceResponse;
+    const agentAndSyncResponse = await handleAgentAndSyncRequest(req, url);
+    if (agentAndSyncResponse) return agentAndSyncResponse;
+    const membershipResponse = await handleMembershipRequest(req, url);
+    if (membershipResponse) return membershipResponse;
+    const digitalProductResponse = await handleDigitalProductRequest(req, url);
+    if (digitalProductResponse) return digitalProductResponse;
     // v2.4.0 Marketplace + tenants
     const marketplaceResponse = await handleMarketplaceRequest(req, url);
     if (marketplaceResponse) return marketplaceResponse;
@@ -1879,6 +2028,7 @@ async function handleMarketplaceRequest(req: Request, url: URL): Promise<Respons
   if (slugMatch) {
     const slug = slugMatch[1];
     const action = slugMatch[2];
+    if (!slug) return json({ error: "not_found" }, { status: 404 });
     const manifest = marketplacePlugins.find((p) => p.slug === slug);
     const tenantId = req.headers.get("x-tenant-id") ?? "tenant_default";
     if (!manifest) return json({ error: "not_found" }, { status: 404 });
@@ -1924,6 +2074,7 @@ async function handleMarketplaceRequest(req: Request, url: URL): Promise<Respons
   const settingsMatch = url.pathname.match(/^\/api\/v1\/marketplace\/installations\/([a-z][a-z0-9-]*[a-z0-9])\/settings$/);
   if (settingsMatch) {
     const slug = settingsMatch[1];
+    if (!slug) return json({ error: "not_found" }, { status: 404 });
     const tenantId = req.headers.get("x-tenant-id") ?? "tenant_default";
     const ins = marketplaceInstallations.find((i) => i.tenant_id === tenantId && i.slug === slug);
     if (!ins) return json({ error: "not_found" }, { status: 404 });
@@ -2031,7 +2182,8 @@ async function handleTenantRequest(req: Request, url: URL): Promise<Response | n
       suspend: ["active"],
       archive: ["provisioning", "active", "suspended"],
     };
-    if (!allowed[action!].includes(t.status)) {
+    const transitions = action ? allowed[action] : undefined;
+    if (!transitions || !transitions.includes(t.status)) {
       return json({ error: "invalid_transition" }, { status: 422 });
     }
     if (action === "activate") t.status = "active";
@@ -2217,27 +2369,31 @@ async function handleBillingRequest(req: Request, url: URL): Promise<Response | 
 }
 
 const apiBaseUrl = `http://127.0.0.1:${apiPort}`;
-const next = Bun.spawn(["bun", "run", "dev:e2e"], {
-  stdout: "inherit",
-  stderr: "inherit",
-  stdin: "inherit",
-  env: {
-    ...process.env,
-    PORT: String(appPort),
-    MC_API_BASE_URL: apiBaseUrl,
-    NEXT_PUBLIC_MC_API_BASE_URL: apiBaseUrl,
-    NEXT_PUBLIC_N8N_URL: process.env.NEXT_PUBLIC_N8N_URL ?? "https://n8n.example.com",
-  },
-});
+const next = server
+  ? Bun.spawn(["bun", "run", "dev:e2e"], {
+      stdout: "inherit",
+      stderr: "inherit",
+      stdin: "inherit",
+      env: {
+        ...process.env,
+        PORT: String(appPort),
+        MC_API_BASE_URL: apiBaseUrl,
+        NEXT_PUBLIC_MC_API_BASE_URL: apiBaseUrl,
+        NEXT_PUBLIC_N8N_URL: process.env.NEXT_PUBLIC_N8N_URL ?? "https://n8n.example.com",
+      },
+    })
+  : null;
 
 function shutdown() {
-  server.stop(true);
-  next.kill();
+  server?.stop(true);
+  next?.kill();
 }
 
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+if (server && next) {
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 
-const exitCode = await next.exited;
-server.stop(true);
-process.exit(exitCode);
+  const exitCode = await next.exited;
+  server.stop(true);
+  process.exit(exitCode);
+}
