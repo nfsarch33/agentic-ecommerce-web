@@ -6,7 +6,7 @@ Public Next.js 16 (App Router) frontend for the
 [Agentic Ecommerce](https://github.com/nfsarch33/agentic-ecommerce) Go
 backend.
 
-Current release: **v8.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
+Current release: **v9.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
 
 ## Pages
 
@@ -100,6 +100,7 @@ Relevant QA docs:
 - `docs/v651-cross-cycle-kpi-dashboard.md`
 - `docs/uiauto-playwright-comparison.md`
 - `docs/v650-evomap-evoloop.md`
+- `docs/v9-frontend-release-final.md`
 
 ## Hard Network Policy
 

@@ -8,7 +8,7 @@ const mockApiBaseUrl = `http://127.0.0.1:${process.env.E2E_MOCK_API_PORT ?? "180
 test.skip(process.env.E2E_RELEASE_FLOW !== "true", "run with make release-e2e");
 test.setTimeout(120_000);
 
-test("v2.0.0 release flow covers storefront, Temporal, MIS, mocked WooCommerce, and n8n", async ({
+test("release flow covers storefront, Temporal, MIS, mocked WooCommerce, and n8n", async ({
   page,
 }) => {
   await page.goto("/products");
@@ -113,7 +113,7 @@ test("v2.0.0 release flow covers storefront, Temporal, MIS, mocked WooCommerce, 
   await expect(page.getByRole("heading", { name: "Validate media" })).toBeVisible();
   await expect(page.getByText("MIS media validation passed.")).toBeVisible();
   await expect(page.getByText("Waiting for operator approval.")).toBeVisible();
-  await page.getByLabel(/review note/i).fill("Approved in v2 release E2E");
+  await page.getByLabel(/review note/i).fill("Approved in release E2E");
   await page.getByRole("button", { name: "Approve" }).click();
   await expect(page.getByRole("status")).toContainText("Sent approve signal.");
 

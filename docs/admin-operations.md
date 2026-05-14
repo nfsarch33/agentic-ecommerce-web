@@ -1,6 +1,6 @@
-# v2.0.0 Admin Operations
+# Frontend Admin Operations
 
-The v2.0.0 admin UI is the operator console for backend workflows, Media Intelligence, tenant-aware settings, compliance reporting, and n8n-backed automation. The frontend presents and validates UI state; the Go backend remains authoritative for auth, RBAC, tenant scope, workflow execution, webhook signing, media storage, and compliance results.
+The current admin UI is the operator console for backend workflows, Media Intelligence, tenant-aware settings, compliance reporting, and n8n-backed automation. The frontend presents and validates UI state; the Go backend remains authoritative for auth, RBAC, tenant scope, workflow execution, webhook signing, media storage, and compliance results.
 
 ## Navigation Surfaces
 
@@ -34,7 +34,7 @@ Use `NEXT_PUBLIC_MEDIA_CDN_BASE_URL` to constrain Next Image remote patterns for
 
 ## Tenant and Compliance Operations
 
-The v2.0.0 UI is tenant-aware but does not provision tenants. Tenant IDs are selected from backend-provided or locally configured context and used to scope settings, compliance rules, reports, media, RAG evidence, and webhook registrations.
+The admin UI is tenant-aware but does not provision tenants. Tenant IDs are selected from backend-provided or locally configured context and used to scope settings, compliance rules, reports, media, RAG evidence, and webhook registrations.
 
 Frontend role checks are convenience UI only. Backend JWT validation, RBAC, tenant scope, custom rule versioning, and compliance report generation are authoritative.
 

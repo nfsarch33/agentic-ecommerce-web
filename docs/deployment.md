@@ -1,13 +1,13 @@
 # Frontend Deployment Guide
 
-The frontend deploys as a Next.js 15 application using standalone output. It is wired into the stack through Docker Compose for local/full-stack smoke tests, then through managed container services for cloud deployments. Backend infrastructure, Terraform, databases, Temporal server, n8n, S3/GCS buckets, and CDN provisioning are owned by the backend/infra repo; this repo only documents the frontend runtime contract.
+The frontend deploys as a Next.js 16 application using standalone output. It is wired into the stack through Docker Compose for local/full-stack smoke tests, then through managed container services for cloud deployments. Backend infrastructure, Terraform, databases, Temporal server, n8n, S3/GCS buckets, and CDN provisioning are owned by the backend/infra repo; this repo only documents the frontend runtime contract.
 
 ## Docker Image
 
 Build the production image from this repo:
 
 ```bash
-docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v2.0.0} .
+docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v9.0.0} .
 ```
 
 The Dockerfile runs `next build` with `output: "standalone"` and copies `.next/standalone`, `.next/static`, and `public` into a non-root Node 22 Alpine runtime. The image exposes port `3000` and includes a liveness healthcheck against `/healthz`.
@@ -99,7 +99,7 @@ bun run lint
 bun run test
 bun run test:coverage
 bun run build
-docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v2.0.0} .
+docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v9.0.0} .
 ```
 
 Then run:

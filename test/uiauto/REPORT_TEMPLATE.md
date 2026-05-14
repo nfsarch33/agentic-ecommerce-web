@@ -72,5 +72,5 @@ diff.json output. Should answer:
 - Frontend PR: `{{ FRONTEND_PR_URL }}`
 - global-kb PR: `{{ GLOBAL_KB_PR_URL }}`
 - diff.json: `{{ DIFF_JSON_PATH }}`
-- v2.0.0 revalidation: [`reports/research/ec-stack-v2.0.0-revalidation-2026-05-08.md`](../../../../Code/global-kb/reports/research/ec-stack-v2.0.0-revalidation-2026-05-08.md)
-- Plan: [`ec_stack_v3.0.0_plan_240d3632.plan.md`](../../../../.cursor/plans/ec_stack_v3.0.0_plan_240d3632.plan.md)
+- Prior revalidation evidence: add the matching global-kb research report for the current release cycle.
+- Planning artifact: add the controlling release or sprint plan reference for this run.
