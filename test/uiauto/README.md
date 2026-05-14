@@ -9,8 +9,8 @@ files in this directory.
 
 | Path | Purpose |
 |---|---|
-| `scenarios/*.json` | One scenario per Playwright spec. Format documented at [`uiauto-framework/docs/scenario-format.md`](../../../../Code/personal/uiauto-framework/docs/scenario-format.md). |
-| `plugins/auth_provider.go` | AdminCookieAuthProvider implementation that satisfies `pkg/uiauto/plugin.AuthProvider` (see [`uiauto-framework/docs/plugin-guide.md`](../../../../Code/personal/uiauto-framework/docs/plugin-guide.md) and [`uiauto-framework/pkg/uiauto/plugin/auth_provider.go`](../../../../Code/personal/uiauto-framework/pkg/uiauto/plugin/auth_provider.go)). |
+| `scenarios/*.json` | One scenario per Playwright spec. Format documented in the public [`uiauto-framework` scenario format guide](https://github.com/nfsarch33/uiauto-framework/blob/main/docs/scenario-format.md). |
+| `plugins/auth_provider.go` | AdminCookieAuthProvider implementation that satisfies `pkg/uiauto/plugin.AuthProvider` (see the public [`uiauto-framework` plugin guide](https://github.com/nfsarch33/uiauto-framework/blob/main/docs/plugin-guide.md) and [`auth_provider.go` in the upstream repo](https://github.com/nfsarch33/uiauto-framework/blob/main/pkg/uiauto/plugin/auth_provider.go)). |
 | `plugins/auth_provider_test.go` | Table-driven coverage for the provider (login, refresh, cookie staging, error paths). |
 | `fixtures/admin-credentials.example.json` | Sample credential bundle. Copy to `admin-credentials.json` (git-ignored) before running uiauto against a non-mock backend. |
 | `CANDIDATES.md` | Which Playwright specs are highest-value targets for the comparison harness. |

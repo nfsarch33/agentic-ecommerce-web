@@ -2,6 +2,34 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+## [9.0.0] - 2026-05-14 -- Frontend v9 release metadata baseline
+
+### Release Summary
+
+v9.0.0 establishes the frontend release baseline for the first post-v8 platform
+release. This metadata slice does not introduce new runtime surfaces. It
+retargets the current release-facing docs to the Next.js 16 stack, removes
+stale v2-era and local-path leakage from release surfaces, and stages the v9
+release evidence entry before the primary-testing and GKE staging gates run.
+
+### Changed
+
+- `package.json` version bumped from `8.0.0` to `9.0.0`.
+- `README.md`, `docs/release-checklist.md`, `docs/deployment.md`,
+  `docs/bff-routes.md`, and `docs/admin-operations.md` now describe the current
+  v9 release baseline instead of stale v2-era wording.
+- Added `docs/v9-frontend-release-final.md` as the v9 release-evidence target
+  while preserving `docs/v8-frontend-release-final.md` as historical evidence.
+- The Vitest release metadata guard now blocks stale legacy version markers,
+  outdated framework labels, and local path references in release-facing docs
+  and harness text.
+
+### Quality Evidence
+
+- The focused release metadata guard is required for this slice.
+- Final release publication remains blocked on primary-testing lanes, GKE
+  staging smoke/rollback, and completed final-evidence capture.
+
 ## [8.0.0] - 2026-05-13 -- Frontend v8 media UX release
 
 ### Release Summary

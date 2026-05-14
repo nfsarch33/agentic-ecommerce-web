@@ -1,6 +1,6 @@
 # Frontend BFF Routes
 
-The frontend keeps browser-facing session and AI helper routes under `src/app/api`. These routes are intentionally small boundaries around the Go backend and the approved AI bridge. v2.0.0 admin surfaces call the Go backend through typed adapters; they do not introduce BFF routes for Temporal, n8n, media, tenant, compliance, or webhook operations.
+The frontend keeps browser-facing session and AI helper routes under `src/app/api`. These routes are intentionally small boundaries around the Go backend and the approved AI bridge. The current admin surfaces call the Go backend through typed adapters; they do not introduce BFF routes for Temporal, n8n, media, tenant, compliance, or webhook operations.
 
 ## Route Inventory
 
@@ -20,7 +20,7 @@ The frontend keeps browser-facing session and AI helper routes under `src/app/ap
 
 ## Backend API Contract
 
-The backend source of truth is `agentic-ecommerce/api/openapi.yaml`. Regenerate frontend types after backend API changes, including v2.0.0 workflow, media, tenant, compliance, and webhook schema updates:
+The backend source of truth is `agentic-ecommerce/api/openapi.yaml`. Regenerate frontend types after backend API changes, including workflow, media, tenant, compliance, and webhook schema updates:
 
 ```bash
 bun run api:generate
