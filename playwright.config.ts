@@ -5,6 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = Number(process.env.PORT ?? 3100);
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${PORT}`;
 const reuseExistingServer = process.env.PLAYWRIGHT_REUSE_SERVER === "true";
+const disableWebServer = process.env.PLAYWRIGHT_DISABLE_WEBSERVER === "true";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -27,10 +28,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "bun run e2e:web",
-    url: baseURL,
-    reuseExistingServer,
-    timeout: 120_000,
-  },
+  webServer: disableWebServer
+    ? undefined
+    : {
+        command: "bun run e2e:web",
+        url: baseURL,
+        reuseExistingServer,
+        timeout: 120_000,
+      },
 });

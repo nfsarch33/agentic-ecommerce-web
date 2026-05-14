@@ -1,0 +1,100 @@
+stages:
+  - status
+  - preflight
+  - quality
+  - playwright
+  - advisory
+  - cleanup
+  - notify
+
+variables:
+  GIT_STRATEGY: fetch
+  GIT_SUBMODULE_STRATEGY: none
+
+default:
+  tags:
+    - wsl1-shell-primary
+  interruptible: true
+  before_script:
+    - mkdir -p .gitlab-artifacts
+
+status_pending:
+  stage: status
+  script:
+    - bash scripts/ci/github_status.sh pending "GitLab frontend pipeline started on wsl1"
+  allow_failure: true
+
+preflight:
+  stage: preflight
+  resource_group: wsl1-frontend
+  script:
+    - bash scripts/ci/preflight.sh
+  artifacts:
+    when: always
+    paths:
+      - .gitlab-artifacts/preflight/
+
+quality:
+  stage: quality
+  resource_group: wsl1-frontend
+  script:
+    - bun run typecheck
+    - bun run lint
+    - bun run test
+    - bun run build
+  artifacts:
+    when: always
+    paths:
+      - .gitlab-artifacts/preflight/
+
+playwright_stable:
+  stage: playwright
+  resource_group: wsl1-frontend
+  timeout: 30m
+  script:
+    - bash scripts/ci/playwright_stable.sh
+  artifacts:
+    when: always
+    paths:
+      - .gitlab-artifacts/playwright/
+      - playwright-report/
+
+uiauto_compare:
+  stage: advisory
+  tags:
+    - win1-shell-gpu
+  resource_group: win1-gpu
+  script:
+    - bash scripts/ci/uiauto_compare.sh
+  rules:
+    - if: '$CI_RUN_ADVISORY_GPU == "true"'
+  allow_failure: true
+  artifacts:
+    when: always
+    paths:
+      - .gitlab-artifacts/uiauto/
+
+cleanup:
+  stage: cleanup
+  resource_group: wsl1-frontend
+  script:
+    - bash scripts/ci/cleanup.sh
+  when: always
+  artifacts:
+    when: always
+    paths:
+      - .gitlab-artifacts/cleanup/
+
+status_success:
+  stage: notify
+  script:
+    - bash scripts/ci/github_status.sh success "GitLab frontend pipeline passed on wsl1"
+  when: on_success
+  allow_failure: true
+
+status_failure:
+  stage: notify
+  script:
+    - bash scripts/ci/github_status.sh failure "GitLab frontend pipeline failed on wsl1"
+  when: on_failure
+  allow_failure: true
