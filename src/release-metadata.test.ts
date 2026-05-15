@@ -32,8 +32,11 @@ describe("frontend release metadata", () => {
     expect(finalEvidence).toContain("primary-testing");
     expect(finalEvidence).not.toContain("secondary-testing");
     expect(finalEvidence).toContain("UIAuto evidence participates in the primary release gate");
-    expect(finalEvidence).toMatch(
-      /Known-good travel-path probes from this session: `wsl1-travel`,\s+`wsl2-travel`, and `win1-travel`\./,
+    expect(finalEvidence).toContain(
+      "Known-good travel-path probes from this session cover the primary Linux,",
+    );
+    expect(finalEvidence).toContain(
+      "secondary Linux, and primary Windows travel aliases.",
     );
     expect(finalEvidence).toMatch(
       /Direct follow-up probes for additional aliases were inconclusive because the\s+tooling layer timed out/,

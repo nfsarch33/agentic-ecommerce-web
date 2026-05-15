@@ -1,8 +1,8 @@
 # EC v10.0.0 Frontend Release Final Evidence
 
-**Status**: Pending post-v9 hardening results  
-**Date opened**: 2026-05-16  
-**Target release**: `agentic-ecommerce-web` v10.0.0  
+**Status**: Pending post-v9 hardening results
+**Date opened**: 2026-05-16
+**Target release**: `agentic-ecommerce-web` v10.0.0
 **Base**: v9.0.0
 
 ## Scope
@@ -22,8 +22,8 @@ v10.0.0 is the frontend hardening release after `v9.0.0`. This evidence slice:
 ## Current Blocking Status
 
 - `v9.0.0` must publish before `v10.0.0` tagging work can begin.
-- Known-good travel-path probes from this session: `wsl1-travel`,
-  `wsl2-travel`, and `win1-travel`.
+- Known-good travel-path probes from this session cover the primary Linux,
+  secondary Linux, and primary Windows travel aliases.
 - Direct follow-up probes for additional aliases were inconclusive because the
   tooling layer timed out before a clean classification was recorded.
 - `v10.0.0` remains blocked until the frontend can consume stable backend

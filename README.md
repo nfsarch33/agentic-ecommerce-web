@@ -14,10 +14,10 @@ Release candidate note: semver tags still stop at `v8.0.0`. `v9.0.0` cuts only
 after `primary-testing` passes the full primary self-hosted regression,
 including stable Playwright, full-stack E2E, cleanup, and UIAuto evidence.
 
-Active v8.x CI runs on self-hosted GitLab CE on `wsl1`, with GitHub retained as
-the canonical repo and PR host. GitLab publishes commit status back to GitHub
-and drives the blocking `wsl1` Playwright/local-stack smoke plus advisory
-`win1` UI automation.
+Active v8.x CI runs on the primary self-hosted testing pool, with GitHub
+retained as the canonical repo and PR host. GitLab publishes commit status back
+to GitHub and drives the blocking Playwright/local-stack smoke plus advisory
+Windows UI automation on that pool.
 
 Forward contract note: the frontend must consume generated API types and
 adapter layers only. Stable backend HTTP/SSE contracts are the source of truth
@@ -52,7 +52,7 @@ the `v10.0.0` hardening scope closes.
 | Testing | Vitest 3.2, Testing Library, Playwright |
 | Build | Bun >= 1.3.0 |
 | Linting | ESLint 9 + eslint-config-next |
-| CI/CD | GitLab CE (self-hosted on `wsl1`), GitHub status bridge |
+| CI/CD | GitLab CE (self-hosted primary-testing pool), GitHub status bridge |
 
 ## Architecture
 
@@ -110,7 +110,7 @@ bun run build
 | Bundle regression | `bun run qa:bundle` | all routes under budget |
 | Playwright smoke | `bun run test:e2e` | green on Chromium |
 | Stable E2E | `bun run test:e2e:stable` | serial Chromium, 56 pass / 2 expected skips |
-| Local stack smoke | `bun run test:e2e:local-stack` | `wsl1` self-hosted GitLab path |
+| Local stack smoke | `bun run test:e2e:local-stack` | primary self-hosted GitLab path |
 | Lighthouse | `bun run qa:lighthouse` | performance + SEO >= 90 |
 
 Relevant QA docs:

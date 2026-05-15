@@ -8,9 +8,9 @@ All notable changes to the Agentic Ecommerce web frontend are documented here.
 
 - Staged `docs/v10-frontend-release-checklist.md` and
   `docs/v10-frontend-release-final.md` for the post-v9 hardening path.
-- Updated the in-flight release contract to the latest controller truth:
-  `wsl1-travel`, `wsl2-travel`, and `win1-travel` are confirmed on the travel
-  path; direct alias follow-ups remain inconclusive when the tooling layer
+- Updated the in-flight release contract to the latest controller truth: the
+  primary Linux, secondary Linux, and primary Windows travel probes are
+  confirmed; direct alias follow-ups remain inconclusive when the tooling layer
   times out.
 - Recorded generated API types plus SSE-backed happy paths as `v10.0.0`
   blockers while leaving cloud-native work and Flutter code delivery deferred.

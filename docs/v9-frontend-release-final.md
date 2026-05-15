@@ -1,8 +1,8 @@
 # EC v9.0.0 Frontend Release Final Evidence
 
-**Status**: Pending final gate results  
-**Date opened**: 2026-05-16  
-**Target release**: `agentic-ecommerce-web` v9.0.0  
+**Status**: Pending final gate results
+**Date opened**: 2026-05-16
+**Target release**: `agentic-ecommerce-web` v9.0.0
 **Base**: v8.0.0
 
 ## Scope
@@ -22,8 +22,8 @@ slice:
 
 ## Current Blocking Status
 
-- Known-good travel-path probes from this session: `wsl1-travel`,
-  `wsl2-travel`, and `win1-travel`.
+- Known-good travel-path probes from this session cover the primary Linux,
+  secondary Linux, and primary Windows travel aliases.
 - Direct follow-up probes for additional aliases were inconclusive because the
   tooling layer timed out before a clean classification was recorded.
 - `v9.0.0` remains RC-only until `primary-testing` satisfies the frontend and
