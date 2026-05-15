@@ -12,15 +12,19 @@ describe("frontend release metadata", () => {
     };
     const releaseChecklist = rootFile("docs/release-checklist.md");
     const finalEvidence = rootFile("docs/v9-frontend-release-final.md");
+    const v10Checklist = rootFile("docs/v10-frontend-release-checklist.md");
+    const v10FinalEvidence = rootFile("docs/v10-frontend-release-final.md");
 
     expect(pkg.version).toBe("9.0.0");
     expect(pkg.description).toContain("Next.js 16");
     expect(rootFile("README.md")).toContain("Current release: **v9.0.0**");
+    expect(rootFile("README.md")).toContain("docs/v10-frontend-release-final.md");
     expect(rootFile("CHANGELOG.md")).toContain(
       "## [9.0.0] - 2026-05-14 -- Frontend v9 release metadata baseline",
     );
     expect(releaseChecklist).toContain("# v9.0.0 Frontend Release Checklist");
     expect(releaseChecklist).toContain("docs/v9-frontend-release-final.md");
+    expect(releaseChecklist).toContain("docs/v10-frontend-release-final.md");
     expect(finalEvidence).toContain("# EC v9.0.0 Frontend Release Final Evidence");
     expect(releaseChecklist).toContain("primary-testing");
     expect(releaseChecklist).not.toContain("secondary-testing");
@@ -29,11 +33,17 @@ describe("frontend release metadata", () => {
     expect(finalEvidence).not.toContain("secondary-testing");
     expect(finalEvidence).toContain("UIAuto evidence participates in the primary release gate");
     expect(finalEvidence).toMatch(
-      /Known-good probes from this session: `oracle-jump`, `wsl1-travel`, and\s+`wsl2-travel`\./,
+      /Known-good travel-path probes from this session: `wsl1-travel`,\s+`wsl2-travel`, and `win1-travel`\./,
     );
     expect(finalEvidence).toMatch(
-      /missing `win1-travel` and\s+`win2-travel` aliases in local SSH config/,
+      /Direct follow-up probes for additional aliases were inconclusive because the\s+tooling layer timed out/,
     );
+    expect(v10Checklist).toContain("# v10.0.0 Frontend Release Checklist");
+    expect(v10Checklist).toContain("primary-testing");
+    expect(v10Checklist).toContain("SSE");
+    expect(v10FinalEvidence).toContain("# EC v10.0.0 Frontend Release Final Evidence");
+    expect(v10FinalEvidence).toContain("Flutter");
+    expect(v10FinalEvidence).toContain("primary-testing");
     expect(releaseChecklist).not.toContain("GCP Cloud Run");
     expect(finalEvidence).not.toContain("GKE staging must be green before tagging `v9.0.0`.");
   });
@@ -46,6 +56,8 @@ describe("frontend release metadata", () => {
       "docs/deployment.md",
       "docs/release-checklist.md",
       "docs/v9-frontend-release-final.md",
+      "docs/v10-frontend-release-checklist.md",
+      "docs/v10-frontend-release-final.md",
       "Makefile",
       "e2e/v200-release-flow.spec.ts",
       "test/uiauto/README.md",

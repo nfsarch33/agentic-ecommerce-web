@@ -15,6 +15,7 @@ tag remains uncut until the full primary self-hosted regression is green on
 - `docs/v180-frontend-qa.md` documents Lighthouse, bundle budget, stable E2E, contract, and security gates.
 - `docs/v650-frontend-performance-seo.md`, `docs/uiauto-playwright-comparison.md`, `docs/v650-evomap-evoloop.md`, and `docs/v651-cross-cycle-kpi-dashboard.md` capture the v6.5.x performance, SEO, uiauto, KPI, and self-improvement evidence.
 - `docs/v9-frontend-release-final.md` is ready to capture the v9.0.0 release evidence, primary-lane status, skipped gates, and carry-forwards.
+- `docs/v10-frontend-release-checklist.md` and `docs/v10-frontend-release-final.md` are staged for the post-v9 hardening contract and must stay aligned with the same primary-only release model.
 - `docs/bff-routes.md` documents frontend BFF route boundaries and upstream backend API links.
 - `.env.production.example` includes the production frontend origin, backend API URLs, CDN media URL, n8n URL, Temporal UI URL, and auth cookie security settings.
 
@@ -83,6 +84,17 @@ Expected result: stable Playwright, full-stack E2E, cleanup, and UIAuto all
 pass on `primary-testing`. Backend host canaries and backend-integration lanes are
 tracked in the backend checklist and must also be green before the stack tag is
 cut.
+
+## v10 Follow-Through Contract
+
+- `v9.0.0` must publish before `v10.0.0` tagging work begins.
+- `docs/v10-frontend-release-checklist.md` and
+  `docs/v10-frontend-release-final.md` track the post-v9 defect harvest, stable
+  API/SSE happy-path work, and future Flutter-readiness.
+- Polling and `bff_fallback` may remain transitional during `v9.0.0`, but they
+  must stop being the default happy path before `v10.0.0` tags.
+- Generated API types must remain aligned with the backend contract intended for
+  promotion.
 
 ## Security and Public Boundary Gates
 

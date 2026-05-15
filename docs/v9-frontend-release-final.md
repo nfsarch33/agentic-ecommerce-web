@@ -22,10 +22,10 @@ slice:
 
 ## Current Blocking Status
 
-- Known-good probes from this session: `oracle-jump`, `wsl1-travel`, and
-  `wsl2-travel`.
-- Current non-blocking drift: raw `wsl2` timeout plus missing `win1-travel` and
-  `win2-travel` aliases in local SSH config.
+- Known-good travel-path probes from this session: `wsl1-travel`,
+  `wsl2-travel`, and `win1-travel`.
+- Direct follow-up probes for additional aliases were inconclusive because the
+  tooling layer timed out before a clean classification was recorded.
 - `v9.0.0` remains RC-only until `primary-testing` satisfies the frontend and
   stack lanes as well as the controller SSH contract.
 - Live-AI and external-provider remote vision runs remain operator-gated even
@@ -62,5 +62,9 @@ operator-approved skipped gates at release cut time.
   outside the blocking release path.
 - Cloud deployment docs remain maintained as reference-only material for later
   cloud-native work.
-- Deeper product-depth, performance, and post-release defect-harvest work roll
-  forward into the `v10.0.0` program once the primary v9 release gate closes.
+- `docs/v10-frontend-release-checklist.md` and
+  `docs/v10-frontend-release-final.md` now hold the post-v9 hardening and
+  release follow-through contract.
+- Deeper product-depth, performance, API/SSE happy-path hardening, and
+  post-release defect-harvest work roll forward into the `v10.0.0` program
+  once the primary v9 release gate closes.

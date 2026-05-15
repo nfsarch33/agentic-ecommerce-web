@@ -6,7 +6,9 @@ Public Next.js 16 (App Router) frontend for the
 [Agentic Ecommerce](https://github.com/nfsarch33/agentic-ecommerce) Go
 backend.
 
-Current release: **v9.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
+Current release: **v9.0.0**. See `package.json`, `CHANGELOG.md`, and
+`docs/release-checklist.md` for release gates. `docs/v10-frontend-release-checklist.md`
+and `docs/v10-frontend-release-final.md` stage the post-v9 hardening path.
 
 Release candidate note: semver tags still stop at `v8.0.0`. `v9.0.0` cuts only
 after `primary-testing` passes the full primary self-hosted regression,
@@ -16,6 +18,12 @@ Active v8.x CI runs on self-hosted GitLab CE on `wsl1`, with GitHub retained as
 the canonical repo and PR host. GitLab publishes commit status back to GitHub
 and drives the blocking `wsl1` Playwright/local-stack smoke plus advisory
 `win1` UI automation.
+
+Forward contract note: the frontend must consume generated API types and
+adapter layers only. Stable backend HTTP/SSE contracts are the source of truth
+for agent activity, agent status, sync events, marketplace/media/admin flows,
+and AI suggestion paths. Polling and `bff_fallback` remain transitional until
+the `v10.0.0` hardening scope closes.
 
 ## Pages
 
