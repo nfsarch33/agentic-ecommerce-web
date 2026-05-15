@@ -8,6 +8,11 @@ backend.
 
 Current release: **v9.0.0**. See `package.json`, `CHANGELOG.md`, and `docs/release-checklist.md` for release gates.
 
+Release candidate note: semver tags still stop at `v8.0.0`. `v9.0.0` cuts only
+after `primary-testing` and `secondary-testing` both pass the mirrored
+self-hosted regression, including stable Playwright, full-stack E2E, cleanup,
+and UIAuto evidence.
+
 Active v8.x CI runs on self-hosted GitLab CE on `wsl1`, with GitHub retained as
 the canonical repo and PR host. GitLab publishes commit status back to GitHub
 and drives the blocking `wsl1` Playwright/local-stack smoke plus advisory

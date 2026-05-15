@@ -22,6 +22,18 @@ describe("frontend release metadata", () => {
     expect(rootFile("docs/v9-frontend-release-final.md")).toContain(
       "# EC v9.0.0 Frontend Release Final Evidence",
     );
+    expect(rootFile("docs/release-checklist.md")).toContain("primary-testing and secondary-testing");
+    expect(rootFile("docs/release-checklist.md")).toContain("full mirrored self-hosted regression");
+    expect(rootFile("docs/v9-frontend-release-final.md")).toContain(
+      "primary-testing and secondary-testing",
+    );
+    expect(rootFile("docs/v9-frontend-release-final.md")).toContain(
+      "UIAuto evidence participates in the mirrored release gate",
+    );
+    expect(rootFile("docs/release-checklist.md")).not.toContain("GCP Cloud Run");
+    expect(rootFile("docs/v9-frontend-release-final.md")).not.toContain(
+      "GKE staging must be green before tagging `v9.0.0`.",
+    );
   });
 
   it("keeps release-facing surfaces free of stale v2 and local-path drift", () => {
