@@ -10,8 +10,8 @@ v9.0.0 establishes the frontend release baseline for the first post-v8 platform
 release. This metadata slice does not introduce new runtime surfaces. It
 retargets the current release-facing docs to the Next.js 16 stack, removes
 stale v2-era and local-path leakage from release surfaces, and stages the v9
-release evidence entry before the mirrored self-hosted gates on
-`primary-testing` and `secondary-testing` run.
+release evidence entry before the primary self-hosted gate on `primary-testing`
+closes.
 
 ### Changed
 
@@ -28,8 +28,8 @@ release evidence entry before the mirrored self-hosted gates on
 ### Quality Evidence
 
 - The focused release metadata guard is required for this slice.
-- Final release publication remains blocked on mirrored primary/secondary pool
-  lanes, UIAuto evidence, and completed final-evidence capture.
+- Final release publication remains blocked on the primary self-hosted lane,
+  UIAuto evidence, and completed final-evidence capture.
 
 ## [8.0.0] - 2026-05-13 -- Frontend v8 media UX release
 

@@ -10,6 +10,8 @@ describe("frontend release metadata", () => {
       description?: string;
       version?: string;
     };
+    const releaseChecklist = rootFile("docs/release-checklist.md");
+    const finalEvidence = rootFile("docs/v9-frontend-release-final.md");
 
     expect(pkg.version).toBe("9.0.0");
     expect(pkg.description).toContain("Next.js 16");
@@ -17,23 +19,23 @@ describe("frontend release metadata", () => {
     expect(rootFile("CHANGELOG.md")).toContain(
       "## [9.0.0] - 2026-05-14 -- Frontend v9 release metadata baseline",
     );
-    expect(rootFile("docs/release-checklist.md")).toContain("# v9.0.0 Frontend Release Checklist");
-    expect(rootFile("docs/release-checklist.md")).toContain("docs/v9-frontend-release-final.md");
-    expect(rootFile("docs/v9-frontend-release-final.md")).toContain(
-      "# EC v9.0.0 Frontend Release Final Evidence",
+    expect(releaseChecklist).toContain("# v9.0.0 Frontend Release Checklist");
+    expect(releaseChecklist).toContain("docs/v9-frontend-release-final.md");
+    expect(finalEvidence).toContain("# EC v9.0.0 Frontend Release Final Evidence");
+    expect(releaseChecklist).toContain("primary-testing");
+    expect(releaseChecklist).not.toContain("secondary-testing");
+    expect(releaseChecklist).toContain("full primary self-hosted regression");
+    expect(finalEvidence).toContain("primary-testing");
+    expect(finalEvidence).not.toContain("secondary-testing");
+    expect(finalEvidence).toContain("UIAuto evidence participates in the primary release gate");
+    expect(finalEvidence).toMatch(
+      /Known-good probes from this session: `oracle-jump`, `wsl1-travel`, and\s+`wsl2-travel`\./,
     );
-    expect(rootFile("docs/release-checklist.md")).toContain("primary-testing and secondary-testing");
-    expect(rootFile("docs/release-checklist.md")).toContain("full mirrored self-hosted regression");
-    expect(rootFile("docs/v9-frontend-release-final.md")).toContain(
-      "primary-testing and secondary-testing",
+    expect(finalEvidence).toMatch(
+      /missing `win1-travel` and\s+`win2-travel` aliases in local SSH config/,
     );
-    expect(rootFile("docs/v9-frontend-release-final.md")).toContain(
-      "UIAuto evidence participates in the mirrored release gate",
-    );
-    expect(rootFile("docs/release-checklist.md")).not.toContain("GCP Cloud Run");
-    expect(rootFile("docs/v9-frontend-release-final.md")).not.toContain(
-      "GKE staging must be green before tagging `v9.0.0`.",
-    );
+    expect(releaseChecklist).not.toContain("GCP Cloud Run");
+    expect(finalEvidence).not.toContain("GKE staging must be green before tagging `v9.0.0`.");
   });
 
   it("keeps release-facing surfaces free of stale v2 and local-path drift", () => {

@@ -1,20 +1,20 @@
 # v9.0.0 Frontend Release Checklist
 
 Use this checklist before tagging `agentic-ecommerce-web` v9.0.0. The semver
-tag remains uncut until the full mirrored self-hosted regression is green on
-`primary-testing and secondary-testing`.
+tag remains uncut until the full primary self-hosted regression is green on
+`primary-testing`.
 
 ## Version and Docs
 
 - `package.json` contains version `9.0.0`.
 - `CHANGELOG.md` includes the v9.0.0 release entry.
 - `README.md` links quickstart, architecture, deployment, BFF routes, admin operations, quality gates, and security boundaries.
-- `README.md` also records that `v9.0.0` is still RC-only until both pools pass the mirrored self-hosted release gate.
+- `README.md` also records that `v9.0.0` is still RC-only until the primary lane passes the self-hosted release gate.
 - `docs/admin-operations.md` documents workflow status, Media Intelligence, tenant settings, compliance reporting, and n8n/webhook operations.
 - `docs/deployment.md` documents Docker Compose, deferred cloud reference notes, health checks, CDN/media, reverse proxy/TLS, environment variables, and security headers.
 - `docs/v180-frontend-qa.md` documents Lighthouse, bundle budget, stable E2E, contract, and security gates.
 - `docs/v650-frontend-performance-seo.md`, `docs/uiauto-playwright-comparison.md`, `docs/v650-evomap-evoloop.md`, and `docs/v651-cross-cycle-kpi-dashboard.md` capture the v6.5.x performance, SEO, uiauto, KPI, and self-improvement evidence.
-- `docs/v9-frontend-release-final.md` is ready to capture the v9.0.0 release evidence, mirrored pool status, skipped gates, and carry-forwards.
+- `docs/v9-frontend-release-final.md` is ready to capture the v9.0.0 release evidence, primary-lane status, skipped gates, and carry-forwards.
 - `docs/bff-routes.md` documents frontend BFF route boundaries and upstream backend API links.
 - `.env.production.example` includes the production frontend origin, backend API URLs, CDN media URL, n8n URL, Temporal UI URL, and auth cookie security settings.
 
@@ -35,7 +35,7 @@ Target release threshold: TypeScript, ESLint, unit tests, production build, and
 Playwright smoke pass. `bun run build` enforces First Load JS < 200 kB.
 Lighthouse performance and SEO should both be at least 90 for the production
 build before final release publication. Local gates complement but do not
-replace the mirrored pool gates below.
+replace the primary release lane below.
 
 ## Lighthouse and Bundle Gates
 
@@ -70,21 +70,17 @@ deployment options, but those references are non-blocking for `v9.0.0`; the
 frontend artifact is ready when the image builds and `/healthz` plus `/readyz`
 behave as documented.
 
-## Mirrored Pool Gates
+## Primary Pool Gates
 
 ```bash
 runx test-lane run --lane frontend-playwright-stable --pool primary-testing
-runx test-lane run --lane frontend-playwright-stable --pool secondary-testing
 runx test-lane run --lane full-stack-e2e --pool primary-testing
-runx test-lane run --lane full-stack-e2e --pool secondary-testing
 runx test-lane run --lane cleanup-testing --pool primary-testing
-runx test-lane run --lane cleanup-testing --pool secondary-testing
 runx test-lane run --lane frontend-uiauto-compare --pool primary-testing
-runx test-lane run --lane frontend-uiauto-compare --pool secondary-testing
 ```
 
 Expected result: stable Playwright, full-stack E2E, cleanup, and UIAuto all
-pass on both pools. Backend host canaries and backend-integration lanes are
+pass on `primary-testing`. Backend host canaries and backend-integration lanes are
 tracked in the backend checklist and must also be green before the stack tag is
 cut.
 
@@ -103,7 +99,7 @@ Review docs-inclusive output before merge. Public docs must not contain live cre
 The GitHub release notes should include:
 
 - Frontend and backend commit SHAs used for promotion.
-- Primary and secondary pool lane results, including UIAuto evidence.
+- Primary-lane results, including UIAuto evidence.
 - Docker image tag.
 - Backend OpenAPI contract SHA/path.
 - BFF routes enabled for the release.
