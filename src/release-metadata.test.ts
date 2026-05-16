@@ -42,10 +42,9 @@ describe("frontend release metadata", () => {
     expect(finalEvidence).not.toContain("RC-only");
     expect(finalEvidence).toContain("semver-only release tag `v9.0.0`");
     expect(finalEvidence).toContain("UIAuto evidence participates in the primary release gate");
-    expect(finalEvidence).toContain("wsl1-travel");
-    expect(finalEvidence).toContain("wsl2-travel");
-    expect(finalEvidence).toContain("win1-travel");
-    expect(finalEvidence).not.toContain("secondary Linux");
+    expect(finalEvidence).toContain("primary Linux");
+    expect(finalEvidence).toContain("secondary Linux");
+    expect(finalEvidence).toContain("primary Windows");
     expect(finalEvidence).toMatch(
       /Direct follow-up probes for additional aliases were inconclusive because the\s+tooling layer timed out/,
     );
@@ -62,10 +61,9 @@ describe("frontend release metadata", () => {
     expect(v10FinalEvidence).not.toContain("Flutter scaffold");
     expect(v10FinalEvidence).not.toContain("v10.0.0-rc");
     expect(v10FinalEvidence).toContain("primary-testing");
-    expect(v10FinalEvidence).toContain("wsl1-travel");
-    expect(v10FinalEvidence).toContain("wsl2-travel");
-    expect(v10FinalEvidence).toContain("win1-travel");
-    expect(v10FinalEvidence).not.toContain("secondary Linux");
+    expect(v10FinalEvidence).toContain("primary Linux");
+    expect(v10FinalEvidence).toContain("secondary Linux");
+    expect(v10FinalEvidence).toContain("primary Windows");
     expect(releaseChecklist).not.toContain("GCP Cloud Run");
     expect(finalEvidence).not.toContain("GKE staging must be green before tagging `v9.0.0`.");
     expect(qaRunbook).toContain(".gitlab-artifacts/playwright/playwright-report");

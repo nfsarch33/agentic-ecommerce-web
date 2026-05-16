@@ -13,10 +13,10 @@ docker build -t ghcr.io/nfsarch33/agentic-ecommerce-web:${IMAGE_TAG:-v9.0.0} .
 The Dockerfile runs `next build` with `output: "standalone"` and copies `.next/standalone`, `.next/static`, and `public` into a non-root Node 22 Alpine runtime. The image exposes port `3000` and includes a liveness healthcheck against `/healthz`.
 
 The backend `docker-compose.yml` consumes the image through `WEB_IMAGE_TAG`. For
-the active self-hosted GitLab path on `wsl1`, use the backend override file
-`docker-compose.gitlab-local.yml` so the frontend is built from the canonical
-tester checkout instead of GHCR. For image-based validation, keep using matching
-backend and frontend image tags in `.env.compose`.
+the active self-hosted GitLab path on the primary Linux host, use the backend
+override file `docker-compose.gitlab-local.yml` so the frontend is built from
+the canonical tester checkout instead of GHCR. For image-based validation, keep
+using matching backend and frontend image tags in `.env.compose`.
 
 ## Environment Variables
 

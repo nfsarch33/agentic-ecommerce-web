@@ -22,8 +22,8 @@ slice:
 
 ## Current Blocking Status
 
-- Known-good travel-path probes from this session cover `wsl1-travel`,
-  `wsl2-travel`, and `win1-travel`.
+- Known-good travel-path probes from this session cover the primary Linux,
+  secondary Linux, and primary Windows lanes.
 - Direct follow-up probes for additional aliases were inconclusive because the
   tooling layer timed out before a clean classification was recorded.
 - The semver-only release tag `v9.0.0` remains blocked until
