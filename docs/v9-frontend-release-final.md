@@ -23,11 +23,12 @@ slice:
 ## Current Blocking Status
 
 - Known-good travel-path probes from this session cover the primary Linux,
-  secondary Linux, and primary Windows travel aliases.
+  secondary Linux, and primary Windows lanes.
 - Direct follow-up probes for additional aliases were inconclusive because the
   tooling layer timed out before a clean classification was recorded.
-- `v9.0.0` remains RC-only until `primary-testing` satisfies the frontend and
-  stack lanes as well as the controller SSH contract.
+- The semver-only release tag `v9.0.0` remains blocked until
+  `primary-testing` satisfies the frontend and stack lanes as well as the
+  controller SSH contract.
 - Live-AI and external-provider remote vision runs remain operator-gated even
   after the primary self-hosted release gate closes.
 
@@ -49,6 +50,13 @@ Record final outcomes here before tagging:
 
 UIAuto evidence participates in the primary release gate and is no longer
 advisory for `v9.0.0`.
+
+Canonical evidence paths for this release slice:
+
+- `.gitlab-artifacts/playwright/playwright-stable.log`
+- `.gitlab-artifacts/playwright/playwright-report/`
+- `.gitlab-artifacts/uiauto/uiauto-compare.log`
+- `reports/uiauto-comparison/<date>/summary.md` from the backend-owned generator
 
 ## Final Results
 

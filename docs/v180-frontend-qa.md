@@ -64,8 +64,10 @@ frontend schema and fails when the generated contract diff is not committed.
 Use `bun run test:e2e:stable` for the v1.8.0 browser gate. It keeps Chromium
 serial with two retries, starts a fresh CI-style Next server on port 3100 plus
 mock API on port 18180 to avoid stale local state, and writes the HTML report
-under `playwright-report/v180`. The script clears the generated `.next`
-directory first so `next dev` never reads a stale production build tree.
+under `.gitlab-artifacts/playwright/playwright-report/` with the lane log in
+`.gitlab-artifacts/playwright/playwright-stable.log`. The script clears the
+generated `.next` directory first so `next dev` never reads a stale production
+build tree.
 
 ## Security Refresh
 

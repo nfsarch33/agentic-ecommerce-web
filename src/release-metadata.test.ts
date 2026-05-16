@@ -10,15 +10,20 @@ describe("frontend release metadata", () => {
       description?: string;
       version?: string;
     };
+    const readme = rootFile("README.md");
     const releaseChecklist = rootFile("docs/release-checklist.md");
     const finalEvidence = rootFile("docs/v9-frontend-release-final.md");
+    const qaRunbook = rootFile("docs/v180-frontend-qa.md");
+    const uiautoComparison = rootFile("docs/uiauto-playwright-comparison.md");
+    const uiautoReadme = rootFile("test/uiauto/README.md");
     const v10Checklist = rootFile("docs/v10-frontend-release-checklist.md");
     const v10FinalEvidence = rootFile("docs/v10-frontend-release-final.md");
 
     expect(pkg.version).toBe("9.0.0");
     expect(pkg.description).toContain("Next.js 16");
-    expect(rootFile("README.md")).toContain("Current release: **v9.0.0**");
-    expect(rootFile("README.md")).toContain("docs/v10-frontend-release-final.md");
+    expect(readme).toContain("Current release: **v9.0.0**");
+    expect(readme).toContain("docs/v10-frontend-release-final.md");
+    expect(readme).not.toContain("Active v8.x CI");
     expect(rootFile("CHANGELOG.md")).toContain(
       "## [9.0.0] - 2026-05-14 -- Frontend v9 release metadata baseline",
     );
@@ -34,13 +39,12 @@ describe("frontend release metadata", () => {
     expect(finalEvidence).toContain("primary-testing");
     expect(finalEvidence).not.toContain("secondary-testing");
     expect(finalEvidence).not.toContain("v9.0.0-rc");
+    expect(finalEvidence).not.toContain("RC-only");
+    expect(finalEvidence).toContain("semver-only release tag `v9.0.0`");
     expect(finalEvidence).toContain("UIAuto evidence participates in the primary release gate");
-    expect(finalEvidence).toContain(
-      "Known-good travel-path probes from this session cover the primary Linux,",
-    );
-    expect(finalEvidence).toContain(
-      "secondary Linux, and primary Windows travel aliases.",
-    );
+    expect(finalEvidence).toContain("primary Linux");
+    expect(finalEvidence).toContain("secondary Linux");
+    expect(finalEvidence).toContain("primary Windows");
     expect(finalEvidence).toMatch(
       /Direct follow-up probes for additional aliases were inconclusive because the\s+tooling layer timed out/,
     );
@@ -57,8 +61,18 @@ describe("frontend release metadata", () => {
     expect(v10FinalEvidence).not.toContain("Flutter scaffold");
     expect(v10FinalEvidence).not.toContain("v10.0.0-rc");
     expect(v10FinalEvidence).toContain("primary-testing");
+    expect(v10FinalEvidence).toContain("primary Linux");
+    expect(v10FinalEvidence).toContain("secondary Linux");
+    expect(v10FinalEvidence).toContain("primary Windows");
     expect(releaseChecklist).not.toContain("GCP Cloud Run");
     expect(finalEvidence).not.toContain("GKE staging must be green before tagging `v9.0.0`.");
+    expect(qaRunbook).toContain(".gitlab-artifacts/playwright/playwright-report");
+    expect(uiautoReadme).toContain("blocking primary-testing evidence");
+    expect(uiautoReadme).toContain(".gitlab-artifacts/uiauto/uiauto-compare.log");
+    expect(uiautoReadme).not.toContain("research-mode only");
+    expect(uiautoComparison).toContain("blocking primary-lane evidence");
+    expect(uiautoComparison).toContain(".gitlab-artifacts/uiauto/uiauto-compare.log");
+    expect(uiautoComparison).not.toContain("additional review signal");
   });
 
   it("keeps release-facing surfaces free of stale v2 and local-path drift", () => {
@@ -68,6 +82,7 @@ describe("frontend release metadata", () => {
       "docs/bff-routes.md",
       "docs/deployment.md",
       "docs/release-checklist.md",
+      "docs/uiauto-playwright-comparison.md",
       "docs/v9-frontend-release-final.md",
       "docs/v10-frontend-release-checklist.md",
       "docs/v10-frontend-release-final.md",

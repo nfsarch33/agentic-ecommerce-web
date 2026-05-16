@@ -1,3 +1,5 @@
+# runx-public-repo-gate: allow-file fleet_host_alias
+# The runner tags and resource groups below must match the private self-hosted fleet.
 stages:
   - status
   - preflight

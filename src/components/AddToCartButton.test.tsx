@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { AddToCartButton } from "./AddToCartButton";
 import { CartProvider } from "./CartProvider";
-import type { CartAddItem } from "@/lib/domain/cart";
+import type { CartAddItem, CartState } from "@/lib/domain/cart";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -18,9 +18,9 @@ const item: CartAddItem = {
   unitPrice: { amount: 3500, currency: "AUD" },
 };
 
-function renderButton(props: Partial<Parameters<typeof AddToCartButton>[0]> = {}) {
+function renderButton(props: Partial<Parameters<typeof AddToCartButton>[0]> = {}, initialState?: CartState) {
   return render(
-    <CartProvider>
+    <CartProvider initialState={initialState}>
       <AddToCartButton item={item} {...props} />
     </CartProvider>,
   );
@@ -47,6 +47,18 @@ describe("AddToCartButton", () => {
     expect(screen.getByRole("button", { name: /added to cart/i })).toBeInTheDocument();
     const viewCart = screen.getByRole("link", { name: /view cart/i });
     expect(viewCart).toHaveAttribute("href", "/cart");
+  });
+
+  it("shows the cart shortcut when the item is already in the cart state", () => {
+    renderButton(
+      {},
+      {
+        items: [{ ...item, quantity: 1 }],
+      },
+    );
+
+    expect(screen.getByRole("button", { name: /added to cart/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /view cart/i })).toHaveAttribute("href", "/cart");
   });
 
   it("client-side navigates via router.push when View cart is clicked", async () => {

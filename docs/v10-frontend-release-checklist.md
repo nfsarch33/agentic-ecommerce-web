@@ -57,6 +57,13 @@ runx test-lane run --lane frontend-uiauto-compare --pool primary-testing
 Expected result: stable Playwright, full-stack E2E, cleanup, and UIAuto all
 pass on the blocking primary lane.
 
+Canonical evidence paths for this lane:
+
+- `.gitlab-artifacts/playwright/playwright-stable.log`
+- `.gitlab-artifacts/playwright/playwright-report/`
+- `.gitlab-artifacts/uiauto/uiauto-compare.log`
+- `reports/uiauto-comparison/<date>/summary.md` from the backend-owned generator
+
 ## Security And Public Boundary Gates
 
 ```bash

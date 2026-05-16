@@ -10,14 +10,15 @@ Current release: **v9.0.0**. See `package.json`, `CHANGELOG.md`, and
 `docs/release-checklist.md` for release gates. `docs/v10-frontend-release-checklist.md`
 and `docs/v10-frontend-release-final.md` stage the post-v9 hardening path.
 
-Release candidate note: semver tags still stop at `v8.0.0`. `v9.0.0` cuts only
+Release gate note: semver-only tags continue with `v9.0.0` and `v10.0.0`; no
+`-rc` variant is releasable evidence for this programme. `v9.0.0` cuts only
 after `primary-testing` passes the full primary self-hosted regression,
 including stable Playwright, full-stack E2E, cleanup, and UIAuto evidence.
 
-Active v8.x CI runs on the primary self-hosted testing pool, with GitHub
-retained as the canonical repo and PR host. GitLab publishes commit status back
-to GitHub and drives the blocking Playwright/local-stack smoke plus advisory
-Windows UI automation on that pool.
+Active v9.x release-gate CI runs on the primary self-hosted testing pool, with
+GitHub retained as the canonical repo and PR host. GitLab publishes commit
+status back to GitHub and drives the blocking Playwright/local-stack smoke plus
+blocking UIAuto evidence on that pool.
 
 Forward contract note: the frontend must consume generated API types and
 adapter layers only. Stable backend HTTP/SSE contracts are the source of truth

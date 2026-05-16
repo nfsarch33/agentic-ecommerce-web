@@ -1,9 +1,9 @@
 # test/uiauto
 
 uiauto-framework comparison harness for the storefront and admin specs.
-Introduced in v2.1.0; research-mode only (no CI gate). The backend's
-`cmd/uiauto-compare` generator (in `agentic-ecommerce`) consumes the
-files in this directory.
+Introduced in v2.1.0, it now participates as blocking primary-testing evidence
+for the active release gate. The backend's `cmd/uiauto-compare` generator (in
+`agentic-ecommerce`) consumes the files in this directory.
 
 ## Layout
 
@@ -30,6 +30,11 @@ The backend's `make uiauto-compare` defaults to fixtures mode for
 hermetic runs. Switch to `UIAUTO_COMPARE_MODE=runtime` after dumping
 Playwright JSON reports and `demo-metrics.json` to disk to drive a real
 comparison.
+
+Canonical evidence paths for the release lane:
+
+- `.gitlab-artifacts/uiauto/uiauto-compare.log`
+- `reports/uiauto-comparison/<date>/summary.md`
 
 ## AuthProvider seam
 
