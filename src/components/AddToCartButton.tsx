@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useCart } from "./CartProvider";
 import type { CartAddItem } from "@/lib/domain/cart";
 
@@ -13,8 +12,8 @@ export interface AddToCartButtonProps {
 
 export function AddToCartButton({ item, disabled = false }: AddToCartButtonProps) {
   const router = useRouter();
-  const { dispatch } = useCart();
-  const [added, setAdded] = useState(false);
+  const { dispatch, state } = useCart();
+  const added = state.items.some((cartItem) => cartItem.productId === item.productId);
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -23,7 +22,6 @@ export function AddToCartButton({ item, disabled = false }: AddToCartButtonProps
         disabled={disabled}
         onClick={() => {
           dispatch({ type: "addItem", item });
-          setAdded(true);
         }}
         className="rounded-md bg-[var(--color-brand-500)] px-3 py-1.5 text-sm text-white hover:bg-[var(--color-brand-700)] disabled:cursor-not-allowed disabled:bg-gray-300"
       >

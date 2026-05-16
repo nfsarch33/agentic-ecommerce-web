@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signInAs } from "./helpers/auth";
+import { signInAs, signInViaUI } from "./helpers/auth";
 
 test("unauthenticated admin visits redirect to login", async ({ page }) => {
   await page.goto("/admin");
@@ -9,7 +9,7 @@ test("unauthenticated admin visits redirect to login", async ({ page }) => {
 });
 
 test("login opens the admin dashboard and applies role-limited navigation", async ({ page }) => {
-  await signInAs(page, "viewer");
+  await signInViaUI(page, "viewer");
 
   await expect(page).toHaveURL(/\/admin/);
   await expect(page.getByRole("heading", { name: /admin dashboard/i })).toBeVisible();

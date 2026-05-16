@@ -6,7 +6,7 @@ artifact_dir="${repo_root}/.gitlab-artifacts/uiauto"
 mkdir -p "${artifact_dir}"
 
 if ! command -v runx >/dev/null 2>&1; then
-  echo "runx not installed on this runner; skipping advisory uiauto compare" \
+  echo "runx not installed on this runner; skipping hosted UIAuto compare while primary-testing remains the blocking lane" \
     | tee "${artifact_dir}/uiauto-skip.log"
   exit 0
 fi

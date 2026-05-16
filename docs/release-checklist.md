@@ -87,6 +87,13 @@ pass on `primary-testing`. Backend host canaries and backend-integration lanes a
 tracked in the backend checklist and must also be green before the stack tag is
 cut.
 
+Canonical evidence paths for this lane:
+
+- `.gitlab-artifacts/playwright/playwright-stable.log`
+- `.gitlab-artifacts/playwright/playwright-report/`
+- `.gitlab-artifacts/uiauto/uiauto-compare.log`
+- `reports/uiauto-comparison/<date>/summary.md` from the backend-owned generator
+
 ## v10 Follow-Through Contract
 
 - `v9.0.0` must publish before `v10.0.0` tagging work begins.

@@ -27,8 +27,8 @@ v10.0.0 is the frontend hardening release after `v9.0.0`. This evidence slice:
 - `v9.0.0` must publish before `v10.0.0` tagging work can begin.
 - The release cut stays on the semver-only release tag `v10.0.0`; no `-rc` tag is
   considered releasable evidence for this programme.
-- Known-good travel-path probes from this session cover the primary Linux,
-  secondary Linux, and primary Windows travel aliases.
+- Known-good travel-path probes from this session cover `wsl1-travel`,
+  `wsl2-travel`, and `win1-travel`.
 - Direct follow-up probes for additional aliases were inconclusive because the
   tooling layer timed out before a clean classification was recorded.
 - `v10.0.0` remains blocked until the frontend can consume stable backend
@@ -50,6 +50,13 @@ Record final outcomes here before tagging:
 - `runx test-lane run --lane full-stack-e2e --pool primary-testing`
 - `runx test-lane run --lane cleanup-testing --pool primary-testing`
 - `runx test-lane run --lane frontend-uiauto-compare --pool primary-testing`
+
+Canonical evidence paths for this release slice:
+
+- `.gitlab-artifacts/playwright/playwright-stable.log`
+- `.gitlab-artifacts/playwright/playwright-report/`
+- `.gitlab-artifacts/uiauto/uiauto-compare.log`
+- `reports/uiauto-comparison/<date>/summary.md` from the backend-owned generator
 
 ## Interface Readiness Requirements
 
