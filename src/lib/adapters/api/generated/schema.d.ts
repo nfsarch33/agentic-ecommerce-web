@@ -594,6 +594,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sync/dlq": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List marketplace sync DLQ records */
+        get: operations["listMarketplaceDLQ"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/dlq/{id}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replay a marketplace sync DLQ record */
+        post: operations["replayMarketplaceDLQ"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sync/conflicts": {
         parameters: {
             query?: never;
@@ -870,6 +904,117 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List payments
+         * @description v4.3.0 — paginated list of payments for a tenant, filterable by
+         *     status and provider. Sorted by created_at descending.
+         */
+        get: operations["listPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/gmv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GMV analytics — daily rollup
+         * @description v3.6.0 EC-9-1 — daily GMV rollup over the supplied date window.
+         *     Reads the gmv_daily_rollup materialized view (migration 0016)
+         *     for the tenant resolved from the JWT (X-Tenant-Id header takes
+         *     precedence; tenant_id query parameter is accepted as a fallback).
+         *     Acceptance: p95 < 200ms over 30-day window with 10K orders/tenant.
+         */
+        get: operations["getGMVDailyRollup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/gmv/by-channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GMV analytics — per-channel breakdown
+         * @description v3.6.0 EC-9-1 — channel-level GMV breakdown.
+         */
+        get: operations["getGMVByChannel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/gmv/by-product": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GMV analytics — top products
+         * @description v3.6.0 EC-9-1 — top-N products by GMV (default limit 20, max 100).
+         */
+        get: operations["getGMVByProduct"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-activity/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agent activity SSE stream
+         * @description v3.6.0 EC-9-2 — Server-Sent Events stream of normalised agent
+         *     activity (pricing decisions, dropship orders, customer messages,
+         *     supplier cost changes). 30s heartbeat. Per-client buffer of 100
+         *     events; on overflow the oldest event is dropped and a `dropped`
+         *     event is emitted so the client can re-sync. Tenant scoping is
+         *     derived from the JWT-bearing X-Tenant-Id header; the tenant_id
+         *     query parameter is accepted only when the header is absent.
+         */
+        get: operations["streamAgentActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workflows/product-publish": {
         parameters: {
             query?: never;
@@ -884,6 +1029,46 @@ export interface paths {
          * @description Starts the canonical Temporal workflow that checks compliance, validates media, waits for human review, and publishes to WooCommerce.
          */
         post: operations["startProductPublishWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/marketplace-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the MarketplaceSyncWorkflow
+         * @description Starts the Temporal workflow that dispatches a product sync event to the configured marketplace provider router.
+         */
+        post: operations["startMarketplaceSyncWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/marketplace-replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the MarketplaceReplayWorkflow
+         * @description Starts the Temporal workflow that replays one marketplace DLQ record through the provider router.
+         */
+        post: operations["startMarketplaceReplayWorkflow"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1437,6 +1622,100 @@ export interface paths {
         head?: never;
         /** Update per-tenant per-plugin settings */
         patch: operations["updateMarketplaceInstallationSettings"];
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/submit": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a marketplace plugin manifest for review */
+        post: operations["submitMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending plugin submissions (super-admin) */
+        get: operations["listMarketplaceSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Read a submission */
+        get: operations["getMarketplaceSubmission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a pending submission and publish it to the catalogue */
+        post: operations["approveMarketplaceSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a pending submission with review notes */
+        post: operations["rejectMarketplaceSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/tenants": {
@@ -2520,6 +2799,32 @@ export interface components {
             /** @enum {string} */
             task_queue: "ec-workflows";
         };
+        MarketplaceSyncEvent: {
+            tenant_id: string;
+            provider: string;
+            /** @enum {string} */
+            entity_type: "product";
+            entity_id: string;
+            external_id?: string;
+            /** @enum {string} */
+            operation: "upsert" | "delete";
+            version: string;
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        MarketplaceDLQRecord: {
+            id: string;
+            event: components["schemas"]["MarketplaceSyncEvent"];
+            attempts: number;
+            reason: string;
+        };
+        StartMarketplaceSyncWorkflowRequest: {
+            event: components["schemas"]["MarketplaceSyncEvent"];
+        };
+        StartMarketplaceReplayWorkflowRequest: {
+            record: components["schemas"]["MarketplaceDLQRecord"];
+        };
         WorkflowStatusResponse: {
             workflow_id: string;
             run_id?: string;
@@ -2576,6 +2881,25 @@ export interface components {
             last_error?: string;
             /** Format: date-time */
             updated_at: string;
+            dlq_depth: number;
+            marketplace_replay: components["schemas"]["MarketplaceReplayState"];
+            marketplace_reconciliation: components["schemas"]["MarketplaceReconciliationState"];
+        };
+        MarketplaceReplayState: {
+            /** @enum {string} */
+            state: "idle" | "queued" | "applied" | "dlq" | "failed";
+            record_id?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        MarketplaceReconciliationState: {
+            total_local: number;
+            total_remote: number;
+            mismatch_count: number;
+        };
+        MarketplaceDLQListResponse: {
+            records: components["schemas"]["MarketplaceDLQRecord"][];
+            total: number;
         };
         SyncConflictField: {
             /** @enum {string} */
@@ -2828,6 +3152,44 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        MarketplaceSubmissionRequest: {
+            /** Format: email */
+            submitter_email: string;
+            slug: string;
+            name: string;
+            version: string;
+            vendor: string;
+            description?: string;
+            category?: string;
+            homepage_url?: string;
+            event_subscriptions?: string[];
+            permissions?: string[];
+            dependencies?: {
+                slug?: string;
+                constraint?: string;
+            }[];
+        };
+        MarketplaceSubmissionReviewAction: {
+            review_notes?: string;
+        };
+        MarketplaceSubmission: {
+            id: string;
+            tenant_id: string;
+            submitter_email: string;
+            manifest: components["schemas"]["MarketplacePluginManifest"];
+            /** @enum {string} */
+            state: "pending_review" | "approved" | "rejected";
+            review_notes?: string;
+            submitted_at: string;
+            reviewed_at?: string;
+            reviewer?: string;
+        };
+        MarketplaceSubmissionsListResponse: {
+            submissions: components["schemas"]["MarketplaceSubmission"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
         TenantResponse: {
             id: string;
             slug: string;
@@ -2942,6 +3304,116 @@ export interface components {
             /** Format: date-time */
             period_end: string;
             rollups: components["schemas"]["BillingUsageRollup"][];
+        };
+        PaymentRow: {
+            payment_id: string;
+            tenant_id: string;
+            order_id: string;
+            /** @enum {string} */
+            provider: "stripe" | "alipay" | "wechat" | "paypal";
+            /** @enum {string} */
+            status: "pending" | "succeeded" | "failed" | "refunded";
+            /** Format: int64 */
+            amount_cents: number;
+            currency: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        PaymentsListResponse: {
+            tenant_id: string;
+            payments: components["schemas"]["PaymentRow"][];
+            total: number;
+            limit: number;
+            offset: number;
+        };
+        AdminSummary: {
+            /** Format: int64 */
+            active_orders: number;
+            /** Format: int64 */
+            gmv_today_aud_cents: number;
+            pending_alerts: number;
+            channel_health: components["schemas"]["AdminChannelStatus"][];
+        };
+        AdminChannelStatus: {
+            channel: string;
+            /** @enum {string} */
+            status: "healthy" | "degraded" | "down";
+        };
+        AdminOrderRow: {
+            order_id: string;
+            status: string;
+            /** Format: int64 */
+            total_cents: number;
+            channel: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        PaginationMeta: {
+            page: number;
+            limit: number;
+            total: number;
+        };
+        PaginationLinks: {
+            next?: string | null;
+            prev?: string | null;
+        };
+        AdminSummaryResponse: {
+            data: components["schemas"]["AdminSummary"];
+        };
+        AdminOrdersResponse: {
+            data: components["schemas"]["AdminOrderRow"][];
+            meta: components["schemas"]["PaginationMeta"];
+            links: components["schemas"]["PaginationLinks"];
+        };
+        AdminAlertActionResponse: {
+            data: {
+                alert_id?: string;
+                /** @enum {string} */
+                action?: "approve" | "deny" | "snooze";
+                status?: string;
+            };
+        };
+        AdminChannelsResponse: {
+            data: components["schemas"]["AdminChannelStatus"][];
+        };
+        CoachingTipRequest: {
+            /** @enum {string} */
+            context: "onboarding" | "pricing_strategy" | "channel_optimization" | "inventory_management";
+            current_metrics?: {
+                [key: string]: number;
+            };
+        };
+        CoachingTipResponse: {
+            tip: string;
+            confidence: number;
+            /** @enum {string} */
+            source: "llm" | "rule";
+            context: string;
+        };
+        VendorResponse: {
+            vendor_id: string;
+            tenant_id: string;
+            name: string;
+            contact_email: string;
+            /** @enum {string} */
+            status: "active" | "suspended" | "deactivated";
+            commission_rate_bps: number;
+            /** Format: date-time */
+            joined_at: string;
+        };
+        CommissionReportResponse: {
+            vendor_id: string;
+            tenant_id: string;
+            /** Format: int64 */
+            total_orders_cents?: number;
+            /** Format: int64 */
+            total_commission_cents: number;
+            /** Format: int64 */
+            total_payout_cents: number;
+            /** Format: date-time */
+            period_start: string;
+            /** Format: date-time */
+            period_end: string;
         };
     };
     responses: never;
@@ -4599,6 +5071,84 @@ export interface operations {
             };
         };
     };
+    listMarketplaceDLQ: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marketplace sync DLQ records currently visible to the API process. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceDLQListResponse"];
+                };
+            };
+        };
+    };
+    replayMarketplaceDLQ: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marketplace replay workflow accepted by Temporal. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid DLQ record ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description DLQ record was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the replay workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     listSyncConflicts: {
         parameters: {
             query?: never;
@@ -5311,6 +5861,225 @@ export interface operations {
             };
         };
     };
+    listPayments: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                status?: "pending" | "succeeded" | "failed" | "refunded";
+                provider?: "stripe" | "alipay" | "wechat" | "paypal";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated payment list. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentsListResponse"];
+                };
+            };
+            /** @description Invalid filter parameters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGMVDailyRollup: {
+        parameters: {
+            query: {
+                /** @description Inclusive lower bound (RFC3339 or YYYY-MM-DD). */
+                from: string;
+                /** @description Inclusive upper bound (RFC3339 or YYYY-MM-DD). */
+                to: string;
+                /** @description Optional channel filter (tiktok|facebook|wc|rednote|instagram). */
+                channel?: string;
+                /** @description Tenant ID fallback when the JWT-derived header is absent. */
+                tenant_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daily GMV rollup with cumulative summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tenant_id?: string;
+                        /** Format: date-time */
+                        from?: string;
+                        /** Format: date-time */
+                        to?: string;
+                        channel?: string;
+                        daily?: {
+                            /** Format: date-time */
+                            day?: string;
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        }[];
+                        summary?: {
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        };
+                    };
+                };
+            };
+            /** @description Invalid date range or missing tenant. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Handler closed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGMVByChannel: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                tenant_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description GMV totals per channel sorted by GMV descending. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tenant_id?: string;
+                        channels?: {
+                            channel?: string;
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Invalid date range. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGMVByProduct: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                limit?: number;
+                tenant_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top-N products by GMV sorted descending. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tenant_id?: string;
+                        limit?: number;
+                        products?: {
+                            product_id?: string;
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Invalid date range. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    streamAgentActivity: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                /** @description Optional channel filter. */
+                channel?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description text/event-stream — never closes; client may disconnect at any time. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Tenant not derivable from request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Handler closed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     startProductPublishWorkflow: {
         parameters: {
             query?: never;
@@ -5344,6 +6113,126 @@ export interface operations {
             };
             /** @description Product not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startMarketplaceSyncWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartMarketplaceSyncWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Required marketplace sync fields are missing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startMarketplaceReplayWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartMarketplaceReplayWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Required marketplace replay fields are missing. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6732,6 +7621,176 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MarketplaceSettingsResponse"];
+                };
+            };
+        };
+    };
+    submitMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketplaceSubmissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Submission accepted into pending_review state. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Invalid submission body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Submission with this id already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMarketplaceSubmissions: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of submissions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmissionsListResponse"];
+                };
+            };
+        };
+    };
+    getMarketplaceSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submission row. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Submission not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    approveMarketplaceSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarketplaceSubmissionReviewAction"];
+            };
+        };
+        responses: {
+            /** @description Submission transitioned to approved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Submission is in a terminal state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rejectMarketplaceSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarketplaceSubmissionReviewAction"];
+            };
+        };
+        responses: {
+            /** @description Submission transitioned to rejected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Submission is in a terminal state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

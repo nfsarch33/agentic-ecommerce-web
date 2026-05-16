@@ -12,6 +12,8 @@ import type { components } from "./generated/schema";
 type WorkflowStartResponse = components["schemas"]["WorkflowStartResponse"];
 type WorkflowStatusResponse = components["schemas"]["WorkflowStatusResponse"];
 type ProductPublishReviewSignal = components["schemas"]["ProductPublishReviewSignal"];
+type MarketplaceSyncEvent = components["schemas"]["MarketplaceSyncEvent"];
+type MarketplaceDLQRecord = components["schemas"]["MarketplaceDLQRecord"];
 
 export interface FetchWorkflowListOptions {
   readonly baseUrl: string;
@@ -32,6 +34,20 @@ export interface StartProductPublishWorkflowOptions {
   readonly baseUrl: string;
   readonly productId: string;
   readonly description?: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface StartMarketplaceSyncWorkflowOptions {
+  readonly baseUrl: string;
+  readonly event: MarketplaceSyncEvent;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface StartMarketplaceReplayWorkflowOptions {
+  readonly baseUrl: string;
+  readonly record: MarketplaceDLQRecord;
   readonly fetchImpl?: typeof fetch;
   readonly signal?: AbortSignal;
 }
@@ -196,6 +212,50 @@ async function readJson(res: Response, label: string): Promise<unknown> {
   }
 }
 
+async function startWorkflow<RequestBody extends object>(opts: {
+  readonly label: string;
+  readonly baseUrl: string;
+  readonly path: string;
+  readonly requestBody: RequestBody;
+  readonly workflowType: string;
+  readonly productId: string;
+  readonly currentActivity: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}): Promise<WorkflowSummary> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  let res: Response;
+  try {
+    res = await fetchImpl(apiUrl(opts.baseUrl, opts.path), {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify(opts.requestBody),
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw new WorkflowsApiError(`${opts.label}: network error`, err);
+  }
+  if (!res.ok) throw new WorkflowsApiError(`${opts.label}: HTTP ${res.status}`);
+
+  const body = (await readJson(res, opts.label)) as { workflow?: unknown } | WorkflowStartResponse;
+  if ("workflow" in body && body.workflow) {
+    return mapWorkflowSummary(body.workflow as RawWorkflowSummary);
+  }
+  if ("workflow_id" in body) {
+    const timestamp = nowIso();
+    return createWorkflowSummary({
+      id: body.workflow_id,
+      type: opts.workflowType,
+      status: mapBackendWorkflowStatus(body.status),
+      productId: opts.productId,
+      currentActivity: opts.currentActivity,
+      startedAt: timestamp,
+      updatedAt: timestamp,
+    });
+  }
+  throw new WorkflowsApiError(`${opts.label}: response body must include workflow_id`);
+}
+
 export async function fetchWorkflowList(opts: FetchWorkflowListOptions): Promise<WorkflowSummary[]> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const params = new URLSearchParams();
@@ -243,42 +303,52 @@ export async function fetchWorkflowDetail(opts: FetchWorkflowDetailOptions): Pro
 export async function startProductPublishWorkflow(
   opts: StartProductPublishWorkflowOptions,
 ): Promise<WorkflowSummary> {
-  const fetchImpl = opts.fetchImpl ?? fetch;
-  let res: Response;
-  try {
-    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/workflows/product-publish"), {
-      method: "POST",
-      headers: { accept: "application/json", "content-type": "application/json" },
-      body: JSON.stringify({
-        product_id: opts.productId,
-        ...(opts.description ? { description: opts.description } : {}),
-      }),
-      signal: opts.signal,
-    });
-  } catch (err) {
-    throw new WorkflowsApiError("startProductPublishWorkflow: network error", err);
-  }
-  if (!res.ok) throw new WorkflowsApiError(`startProductPublishWorkflow: HTTP ${res.status}`);
+  return startWorkflow({
+    label: "startProductPublishWorkflow",
+    baseUrl: opts.baseUrl,
+    path: "/api/v1/workflows/product-publish",
+    requestBody: {
+      product_id: opts.productId,
+      ...(opts.description ? { description: opts.description } : {}),
+    },
+    workflowType: "product_publish",
+    productId: opts.productId,
+    currentActivity: "Workflow started",
+    fetchImpl: opts.fetchImpl,
+    signal: opts.signal,
+  });
+}
 
-  const body = (await readJson(res, "startProductPublishWorkflow")) as
-    | { workflow?: unknown }
-    | WorkflowStartResponse;
-  if ("workflow" in body && body.workflow) {
-    return mapWorkflowSummary(body.workflow as RawWorkflowSummary);
-  }
-  if ("workflow_id" in body) {
-    const timestamp = nowIso();
-    return createWorkflowSummary({
-      id: body.workflow_id,
-      type: "product_publish",
-      status: mapBackendWorkflowStatus(body.status),
-      productId: opts.productId,
-      currentActivity: "Workflow started",
-      startedAt: timestamp,
-      updatedAt: timestamp,
-    });
-  }
-  throw new WorkflowsApiError("startProductPublishWorkflow: response body must include workflow_id");
+export async function startMarketplaceSyncWorkflow(
+  opts: StartMarketplaceSyncWorkflowOptions,
+): Promise<WorkflowSummary> {
+  return startWorkflow({
+    label: "startMarketplaceSyncWorkflow",
+    baseUrl: opts.baseUrl,
+    path: "/api/v1/workflows/marketplace-sync",
+    requestBody: { event: opts.event },
+    workflowType: "marketplace_sync",
+    productId: opts.event.entity_id,
+    currentActivity: "Marketplace sync queued",
+    fetchImpl: opts.fetchImpl,
+    signal: opts.signal,
+  });
+}
+
+export async function startMarketplaceReplayWorkflow(
+  opts: StartMarketplaceReplayWorkflowOptions,
+): Promise<WorkflowSummary> {
+  return startWorkflow({
+    label: "startMarketplaceReplayWorkflow",
+    baseUrl: opts.baseUrl,
+    path: "/api/v1/workflows/marketplace-replay",
+    requestBody: { record: opts.record },
+    workflowType: "marketplace_replay",
+    productId: opts.record.event.entity_id,
+    currentActivity: "Marketplace replay queued",
+    fetchImpl: opts.fetchImpl,
+    signal: opts.signal,
+  });
 }
 
 export async function sendWorkflowReviewSignal(

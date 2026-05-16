@@ -34,6 +34,13 @@ describe("Admin sync page", () => {
     mockFetchSyncStatus.mockResolvedValue({
       totalEvents: 3,
       pendingConflicts: 1,
+      dlqDepth: 0,
+      marketplaceReplay: { state: "idle" },
+      marketplaceReconciliation: {
+        totalLocal: 3,
+        totalRemote: 3,
+        mismatchCount: 0,
+      },
       updatedAt: "2026-05-07T04:31:00Z",
     });
     mockFetchSyncConflicts.mockResolvedValue([

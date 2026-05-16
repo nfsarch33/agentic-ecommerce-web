@@ -15,8 +15,21 @@ export interface FetchSyncStatusOptions {
   readonly signal?: AbortSignal;
 }
 
+export interface FetchMarketplaceSyncDLQOptions {
+  readonly baseUrl: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
 export interface FetchSyncConflictsOptions {
   readonly baseUrl: string;
+  readonly fetchImpl?: typeof fetch;
+  readonly signal?: AbortSignal;
+}
+
+export interface ReplayMarketplaceSyncDLQOptions {
+  readonly baseUrl: string;
+  readonly recordId: string;
   readonly fetchImpl?: typeof fetch;
   readonly signal?: AbortSignal;
 }
@@ -28,6 +41,55 @@ export interface ResolveSyncConflictOptions {
   readonly note?: string;
   readonly fetchImpl?: typeof fetch;
   readonly signal?: AbortSignal;
+}
+
+export interface MarketplaceReplayState {
+  readonly state: "idle" | "queued" | "applied" | "dlq" | "failed";
+  readonly recordId?: string;
+  readonly updatedAt?: string;
+}
+
+export interface MarketplaceReconciliationState {
+  readonly totalLocal: number;
+  readonly totalRemote: number;
+  readonly mismatchCount: number;
+}
+
+export interface MarketplaceSyncStatus extends SyncStatus {
+  readonly dlqDepth: number;
+  readonly marketplaceReplay: MarketplaceReplayState;
+  readonly marketplaceReconciliation: MarketplaceReconciliationState;
+}
+
+export interface MarketplaceSyncDLQEvent {
+  readonly tenantId: string;
+  readonly provider: string;
+  readonly entityType: "product";
+  readonly entityId: string;
+  readonly externalId?: string;
+  readonly operation: "upsert" | "delete";
+  readonly version: string;
+  readonly payload?: Record<string, unknown>;
+}
+
+export interface MarketplaceSyncDLQRecord {
+  readonly id: string;
+  readonly event: MarketplaceSyncDLQEvent;
+  readonly attempts: number;
+  readonly reason: string;
+}
+
+export interface MarketplaceSyncDLQList {
+  readonly records: readonly MarketplaceSyncDLQRecord[];
+  readonly total: number;
+}
+
+export interface MarketplaceDLQReplayResult {
+  readonly workflowId: string;
+  readonly runId: string;
+  readonly status: "started";
+  readonly taskQueue: "ec-workflows";
+  readonly recordId: string;
 }
 
 export class SyncApiError extends Error {
@@ -45,6 +107,12 @@ type RawSyncEvent = components["schemas"]["SyncEvent"];
 type RawSyncConflict = components["schemas"]["SyncConflict"];
 type RawSyncConflictField = components["schemas"]["SyncConflictField"];
 type RawConflictsResponse = components["schemas"]["ConflictListResponse"];
+type RawMarketplaceReplayState = components["schemas"]["MarketplaceReplayState"];
+type RawMarketplaceReconciliationState = components["schemas"]["MarketplaceReconciliationState"];
+type RawMarketplaceSyncEvent = components["schemas"]["MarketplaceSyncEvent"];
+type RawMarketplaceDLQRecord = components["schemas"]["MarketplaceDLQRecord"];
+type RawMarketplaceDLQListResponse = components["schemas"]["MarketplaceDLQListResponse"];
+type RawWorkflowStartResponse = components["schemas"]["WorkflowStartResponse"];
 
 const syncEventTypes = new Set<SyncEventType>([
   "product_imported",
@@ -110,7 +178,93 @@ function parseResolution(value: unknown): SyncConflictResolution | undefined {
   return value as SyncConflictResolution;
 }
 
-function parseStatus(raw: unknown): SyncStatus {
+function parseMarketplaceReplayState(raw: RawMarketplaceReplayState): MarketplaceReplayState {
+  if (
+    typeof raw?.state !== "string" ||
+    !new Set<MarketplaceReplayState["state"]>(["idle", "queued", "applied", "dlq", "failed"]).has(
+      raw.state as MarketplaceReplayState["state"],
+    )
+  ) {
+    throw new SyncApiError("sync.status.marketplace_replay.state is invalid");
+  }
+  return {
+    state: raw.state as MarketplaceReplayState["state"],
+    recordId: parseOptionalString(raw?.record_id, "sync.status.marketplace_replay.record_id"),
+    updatedAt: parseOptionalString(raw?.updated_at, "sync.status.marketplace_replay.updated_at"),
+  };
+}
+
+function parseMarketplaceReconciliationState(
+  raw: RawMarketplaceReconciliationState,
+): MarketplaceReconciliationState {
+  return {
+    totalLocal: parseNumber(raw?.total_local, "sync.status.marketplace_reconciliation.total_local"),
+    totalRemote: parseNumber(raw?.total_remote, "sync.status.marketplace_reconciliation.total_remote"),
+    mismatchCount: parseNumber(
+      raw?.mismatch_count,
+      "sync.status.marketplace_reconciliation.mismatch_count",
+    ),
+  };
+}
+
+function parseMarketplaceSyncEvent(raw: RawMarketplaceSyncEvent): MarketplaceSyncDLQEvent {
+  if (raw?.entity_type !== "product") {
+    throw new SyncApiError("marketplace.sync.event.entity_type is invalid");
+  }
+  if (raw?.operation !== "upsert" && raw?.operation !== "delete") {
+    throw new SyncApiError("marketplace.sync.event.operation is invalid");
+  }
+  return {
+    tenantId: parseString(raw?.tenant_id, "marketplace.sync.event.tenant_id"),
+    provider: parseString(raw?.provider, "marketplace.sync.event.provider"),
+    entityType: raw.entity_type,
+    entityId: parseString(raw?.entity_id, "marketplace.sync.event.entity_id"),
+    externalId: parseOptionalString(raw?.external_id, "marketplace.sync.event.external_id"),
+    operation: raw.operation,
+    version: parseString(raw?.version, "marketplace.sync.event.version"),
+    payload:
+      raw?.payload && typeof raw.payload === "object" && !Array.isArray(raw.payload)
+        ? (raw.payload as Record<string, unknown>)
+        : undefined,
+  };
+}
+
+function parseMarketplaceDLQRecord(raw: RawMarketplaceDLQRecord): MarketplaceSyncDLQRecord {
+  return {
+    id: parseString(raw?.id, "marketplace.dlq.id"),
+    event: parseMarketplaceSyncEvent(raw?.event),
+    attempts: parseNumber(raw?.attempts, "marketplace.dlq.attempts"),
+    reason: parseString(raw?.reason, "marketplace.dlq.reason"),
+  };
+}
+
+function parseMarketplaceDLQList(raw: RawMarketplaceDLQListResponse): MarketplaceSyncDLQList {
+  if (!Array.isArray(raw?.records)) {
+    throw new SyncApiError("fetchMarketplaceSyncDLQ: response body must include records array");
+  }
+  return {
+    records: raw.records.map(parseMarketplaceDLQRecord),
+    total: parseNumber(raw?.total, "marketplace.dlq.total"),
+  };
+}
+
+function parseWorkflowStart(raw: RawWorkflowStartResponse, recordId: string): MarketplaceDLQReplayResult {
+  if (raw?.status !== "started") {
+    throw new SyncApiError("marketplace.dlq.replay.status is invalid");
+  }
+  if (raw?.task_queue !== "ec-workflows") {
+    throw new SyncApiError("marketplace.dlq.replay.task_queue is invalid");
+  }
+  return {
+    workflowId: parseString(raw?.workflow_id, "marketplace.dlq.replay.workflow_id"),
+    runId: parseString(raw?.run_id, "marketplace.dlq.replay.run_id"),
+    status: raw.status,
+    taskQueue: raw.task_queue,
+    recordId,
+  };
+}
+
+function parseStatus(raw: unknown): MarketplaceSyncStatus {
   const value = raw as RawSyncStatus;
   return {
     totalEvents: parseNumber(value?.total_events, "sync.status.total_events"),
@@ -118,6 +272,11 @@ function parseStatus(raw: unknown): SyncStatus {
     lastEvent: value?.last_event ? parseEvent(value.last_event) : undefined,
     lastError: parseOptionalString(value?.last_error, "sync.status.last_error"),
     updatedAt: parseString(value?.updated_at, "sync.status.updated_at"),
+    dlqDepth: parseNumber(value?.dlq_depth, "sync.status.dlq_depth"),
+    marketplaceReplay: parseMarketplaceReplayState(value?.marketplace_replay),
+    marketplaceReconciliation: parseMarketplaceReconciliationState(
+      value?.marketplace_reconciliation,
+    ),
   };
 }
 
@@ -171,7 +330,7 @@ async function readJson(res: Response, label: string): Promise<unknown> {
   }
 }
 
-export async function fetchSyncStatus(opts: FetchSyncStatusOptions): Promise<SyncStatus> {
+export async function fetchSyncStatus(opts: FetchSyncStatusOptions): Promise<MarketplaceSyncStatus> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   let res: Response;
   try {
@@ -184,6 +343,25 @@ export async function fetchSyncStatus(opts: FetchSyncStatusOptions): Promise<Syn
     throw new SyncApiError("fetchSyncStatus: network error", err);
   }
   return parseStatus(await readJson(res, "fetchSyncStatus"));
+}
+
+export async function fetchMarketplaceSyncDLQ(
+  opts: FetchMarketplaceSyncDLQOptions,
+): Promise<MarketplaceSyncDLQList> {
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  let res: Response;
+  try {
+    res = await fetchImpl(apiUrl(opts.baseUrl, "/api/v1/sync/dlq"), {
+      method: "GET",
+      headers: { accept: "application/json" },
+      signal: opts.signal,
+    });
+  } catch (err) {
+    throw new SyncApiError("fetchMarketplaceSyncDLQ: network error", err);
+  }
+  return parseMarketplaceDLQList(
+    (await readJson(res, "fetchMarketplaceSyncDLQ")) as RawMarketplaceDLQListResponse,
+  );
 }
 
 export async function fetchSyncConflicts(opts: FetchSyncConflictsOptions): Promise<SyncConflict[]> {
@@ -203,6 +381,30 @@ export async function fetchSyncConflicts(opts: FetchSyncConflictsOptions): Promi
     throw new SyncApiError("fetchSyncConflicts: response body must include conflicts array");
   }
   return raw.conflicts.map(parseConflict);
+}
+
+export async function replayMarketplaceSyncDLQ(
+  opts: ReplayMarketplaceSyncDLQOptions,
+): Promise<MarketplaceDLQReplayResult> {
+  if (!opts.recordId) throw new SyncApiError("replayMarketplaceSyncDLQ: recordId is required");
+  const fetchImpl = opts.fetchImpl ?? fetch;
+  let res: Response;
+  try {
+    res = await fetchImpl(
+      apiUrl(opts.baseUrl, `/api/v1/sync/dlq/${encodeURIComponent(opts.recordId)}/replay`),
+      {
+        method: "POST",
+        headers: { accept: "application/json" },
+        signal: opts.signal,
+      },
+    );
+  } catch (err) {
+    throw new SyncApiError("replayMarketplaceSyncDLQ: network error", err);
+  }
+  return parseWorkflowStart(
+    (await readJson(res, "replayMarketplaceSyncDLQ")) as RawWorkflowStartResponse,
+    opts.recordId,
+  );
 }
 
 export async function resolveSyncConflict(opts: ResolveSyncConflictOptions): Promise<SyncConflict> {
