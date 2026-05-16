@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { MarketplaceSubmission } from "@/lib/adapters/api/marketplace-submissions";
 import { SubmissionReviewClient } from "./SubmissionReviewClient";
 
 const refresh = vi.fn();
@@ -9,7 +10,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh }),
 }));
 
-const pendingSubmission = {
+const pendingSubmission: MarketplaceSubmission = {
   id: "sub-1",
   tenantId: "tenant_default",
   submitterEmail: "vendor@example.com",
@@ -18,6 +19,9 @@ const pendingSubmission = {
     name: "Datadog Metrics",
     version: "1.0.0",
     vendor: "Datadog",
+    eventSubscriptions: [],
+    permissions: [],
+    dependencies: [],
   },
   state: "pending_review" as const,
   submittedAt: "2026-05-16T00:00:00Z",
