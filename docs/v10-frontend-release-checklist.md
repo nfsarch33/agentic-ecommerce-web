@@ -4,6 +4,9 @@ Use this checklist before tagging `agentic-ecommerce-web` `v10.0.0`. The
 semver tag remains uncut until the post-v9 hardening scope is green on
 `primary-testing`.
 
+Semver-only release tags apply here as well: cut `v10.0.0` when the lane is
+green, not any `-rc` or pre-release variant.
+
 ## Preconditions
 
 - `v9.0.0` is published and its final evidence is merged.
@@ -17,7 +20,8 @@ semver tag remains uncut until the post-v9 hardening scope is green on
 ## Contract Gates
 
 - Stable backend HTTP/SSE contracts exist for agent activity, agent status,
-  sync events, marketplace/media/admin flows, and AI suggestion paths.
+  sync events, marketplace/media/admin flows, AI suggestion paths, and
+  planner/status flows for the EINO-backed autonomous agent.
 - Frontend polling and `bff_fallback` are no longer the happy path for the
   release-critical flows.
 - The web client consumes generated API types and adapter layers only.
@@ -74,4 +78,6 @@ Release notes should include:
 - Docker image tag.
 - Backend OpenAPI contract SHA/path.
 - Evidence that generated API types and SSE-backed flows are the happy path.
+- Evidence that semver-only release tags and planner/status flows remained in
+  contract for the cut.
 - Any skipped gates with operator-approved rationale.
