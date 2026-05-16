@@ -10,10 +10,13 @@
 v10.0.0 is the frontend hardening release after `v9.0.0`. This evidence slice:
 
 - carries forward the `primary-testing`-only release model
+- keeps the release cut on the semver-only release tag `v10.0.0` with no `-rc`
+  pre-release tag
 - makes generated API types and adapter-only consumption a release contract
 - treats stable backend HTTP/SSE flows as the source of truth for agent
   activity, agent status, sync events, marketplace/media/admin flows, and AI
-  suggestion paths
+  suggestion paths, plus planner/status flows for the EINO-backed autonomous
+  agent
 - requires polling and `bff_fallback` to stop being the release-critical happy
   path
 - preserves Flutter code delivery and cloud-native execution as deferred work
@@ -22,6 +25,8 @@ v10.0.0 is the frontend hardening release after `v9.0.0`. This evidence slice:
 ## Current Blocking Status
 
 - `v9.0.0` must publish before `v10.0.0` tagging work can begin.
+- The release cut stays on the semver-only release tag `v10.0.0`; no `-rc` tag is
+  considered releasable evidence for this programme.
 - Known-good travel-path probes from this session cover the primary Linux,
   secondary Linux, and primary Windows travel aliases.
 - Direct follow-up probes for additional aliases were inconclusive because the
@@ -49,10 +54,11 @@ Record final outcomes here before tagging:
 ## Interface Readiness Requirements
 
 - Generated API types match the backend contract intended for `v10.0.0`.
-- SSE-backed flows are stable for agent activity and sync/event paths.
+- SSE-backed flows are stable for agent activity, sync/event paths, and
+  planner/status surfaces.
 - Polling and `bff_fallback` are no longer required for the happy path.
 - Future Flutter work can consume the same backend contract without a parallel
-  frontend-specific backend.
+  frontend-specific backend or a mobile-client-specific API fork.
 
 ## Final Results
 

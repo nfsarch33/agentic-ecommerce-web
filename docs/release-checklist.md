@@ -1,15 +1,17 @@
 # v9.0.0 Frontend Release Checklist
 
-Use this checklist before tagging `agentic-ecommerce-web` v9.0.0. The semver
-tag remains uncut until the full primary self-hosted regression is green on
-`primary-testing`.
+Use this checklist before tagging `agentic-ecommerce-web` v9.0.0. The
+semver-only release tags are `v9.0.0`, `v10.0.0`, and later; no `-rc` or other
+pre-release suffixes are cut. The v9 tag remains uncut until the full primary
+self-hosted regression is green on `primary-testing`.
 
 ## Version and Docs
 
 - `package.json` contains version `9.0.0`.
 - `CHANGELOG.md` includes the v9.0.0 release entry.
 - `README.md` links quickstart, architecture, deployment, BFF routes, admin operations, quality gates, and security boundaries.
-- `README.md` also records that `v9.0.0` is still RC-only until the primary lane passes the self-hosted release gate.
+- `README.md` also records that `v9.0.0` remains uncut until the primary lane
+  passes the self-hosted release gate.
 - `docs/admin-operations.md` documents workflow status, Media Intelligence, tenant settings, compliance reporting, and n8n/webhook operations.
 - `docs/deployment.md` documents Docker Compose, deferred cloud reference notes, health checks, CDN/media, reverse proxy/TLS, environment variables, and security headers.
 - `docs/v180-frontend-qa.md` documents Lighthouse, bundle budget, stable E2E, contract, and security gates.
