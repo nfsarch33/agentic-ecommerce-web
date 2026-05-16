@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import type { components } from "./generated/schema";
 import {
   WorkflowsApiError,
   fetchWorkflowDetail,
   fetchWorkflowList,
   sendWorkflowReviewSignal,
+  startMarketplaceReplayWorkflow,
+  startMarketplaceSyncWorkflow,
   startProductPublishWorkflow,
 } from "./workflows";
 
@@ -39,6 +42,24 @@ const rawDetail = {
       attempt: 1,
     },
   ],
+};
+
+const rawMarketplaceEvent: components["schemas"]["MarketplaceSyncEvent"] = {
+  tenant_id: "tenant_1",
+  provider: "shopify",
+  entity_type: "product",
+  entity_id: "p_1",
+  external_id: "ext_1",
+  operation: "upsert",
+  version: "v1",
+  payload: { sku: "SKU-1" },
+};
+
+const rawMarketplaceDLQRecord: components["schemas"]["MarketplaceDLQRecord"] = {
+  id: "dlq_1",
+  event: rawMarketplaceEvent,
+  attempts: 3,
+  reason: "retry budget exhausted",
 };
 
 describe("workflows API adapter", () => {
@@ -156,6 +177,62 @@ describe("workflows API adapter", () => {
 
     expect(result.id).toBe("product-publish-018f1c8e");
     expect(result.status).toBe("running");
+  });
+
+  it("starts a marketplace sync workflow", async () => {
+    const fetchImpl = mockFetch(
+      {
+        workflow_id: "marketplace-sync-1",
+        run_id: "run-sync-1",
+        status: "started",
+        task_queue: "ec-workflows",
+      },
+      202,
+    );
+
+    const result = await startMarketplaceSyncWorkflow({
+      baseUrl: "http://api.test",
+      event: rawMarketplaceEvent,
+      fetchImpl,
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "http://api.test/api/v1/workflows/marketplace-sync",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ event: rawMarketplaceEvent }),
+      }),
+    );
+    expect(result.id).toBe("marketplace-sync-1");
+    expect(result.type).toBe("marketplace_sync");
+  });
+
+  it("starts a marketplace replay workflow", async () => {
+    const fetchImpl = mockFetch(
+      {
+        workflow_id: "marketplace-replay-1",
+        run_id: "run-replay-1",
+        status: "started",
+        task_queue: "ec-workflows",
+      },
+      202,
+    );
+
+    const result = await startMarketplaceReplayWorkflow({
+      baseUrl: "http://api.test",
+      record: rawMarketplaceDLQRecord,
+      fetchImpl,
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "http://api.test/api/v1/workflows/marketplace-replay",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ record: rawMarketplaceDLQRecord }),
+      }),
+    );
+    expect(result.id).toBe("marketplace-replay-1");
+    expect(result.type).toBe("marketplace_replay");
   });
 
   it("sends human review signals to the workflow", async () => {

@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  fetchMarketplaceSyncDLQ,
   fetchSyncConflicts,
   fetchSyncStatus,
+  replayMarketplaceSyncDLQ,
   resolveSyncConflict,
   SyncApiError,
 } from "./sync";
@@ -16,6 +18,17 @@ function jsonResponse(body: unknown, init: ResponseInit = { status: 200 }): Resp
 const rawStatus = {
   total_events: 3,
   pending_conflicts: 1,
+  dlq_depth: 2,
+  marketplace_replay: {
+    state: "queued",
+    record_id: "dlq_1",
+    updated_at: "2026-05-07T04:31:00Z",
+  },
+  marketplace_reconciliation: {
+    total_local: 10,
+    total_remote: 9,
+    mismatch_count: 1,
+  },
   last_event: {
     id: "event_1",
     type: "conflict_detected",
@@ -45,7 +58,10 @@ describe("fetchSyncStatus", () => {
 
     expect(status.totalEvents).toBe(3);
     expect(status.pendingConflicts).toBe(1);
+    expect(status.dlqDepth).toBe(2);
     expect(status.lastEvent?.type).toBe("conflict_detected");
+    expect(status.marketplaceReplay.state).toBe("queued");
+    expect(status.marketplaceReconciliation.mismatchCount).toBe(1);
     expect(mockFetch).toHaveBeenCalledWith(
       "http://api.test/api/v1/sync/status",
       expect.objectContaining({ method: "GET" }),
@@ -64,6 +80,99 @@ describe("fetchSyncStatus", () => {
       fetchSyncStatus({
         baseUrl: "http://api.test",
         fetchImpl: vi.fn().mockResolvedValue(jsonResponse({ total_events: -1, pending_conflicts: 0 })),
+      }),
+    ).rejects.toBeInstanceOf(SyncApiError);
+  });
+});
+
+describe("fetchMarketplaceSyncDLQ", () => {
+  it("fetches and parses marketplace sync DLQ records", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      jsonResponse({
+        records: [
+          {
+            id: "dlq_1",
+            event: {
+              tenant_id: "tenant_1",
+              provider: "shopify",
+              entity_type: "product",
+              entity_id: "p_1",
+              external_id: "ext_1",
+              operation: "upsert",
+              version: "v1",
+              payload: { sku: "SKU-1" },
+            },
+            attempts: 3,
+            reason: "retry budget exhausted",
+          },
+        ],
+        total: 1,
+      }),
+    );
+
+    const result = await fetchMarketplaceSyncDLQ({
+      baseUrl: "http://api.test",
+      fetchImpl: mockFetch,
+    });
+
+    expect(result.total).toBe(1);
+    expect(result.records[0]).toEqual(
+      expect.objectContaining({
+        id: "dlq_1",
+        attempts: 3,
+        reason: "retry budget exhausted",
+        event: expect.objectContaining({
+          provider: "shopify",
+          entityId: "p_1",
+          operation: "upsert",
+        }),
+      }),
+    );
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://api.test/api/v1/sync/dlq",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+});
+
+describe("replayMarketplaceSyncDLQ", () => {
+  it("replays a marketplace sync DLQ record", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          workflow_id: "marketplace-replay-1",
+          run_id: "run-1",
+          status: "started",
+          task_queue: "ec-workflows",
+        },
+        { status: 202 },
+      ),
+    );
+
+    const result = await replayMarketplaceSyncDLQ({
+      baseUrl: "http://api.test",
+      recordId: "dlq_1",
+      fetchImpl: mockFetch,
+    });
+
+    expect(result).toEqual({
+      workflowId: "marketplace-replay-1",
+      runId: "run-1",
+      status: "started",
+      taskQueue: "ec-workflows",
+      recordId: "dlq_1",
+    });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "http://api.test/api/v1/sync/dlq/dlq_1/replay",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("requires a non-empty DLQ record id", async () => {
+    await expect(
+      replayMarketplaceSyncDLQ({
+        baseUrl: "http://api.test",
+        recordId: "",
       }),
     ).rejects.toBeInstanceOf(SyncApiError);
   });
