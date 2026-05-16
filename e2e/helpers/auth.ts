@@ -1,4 +1,5 @@
 import { expect, type Page } from "@playwright/test";
+import { resolveAdminURL, resolveLoginURL } from "./auth-url";
 
 type AdminRole = "admin" | "operator" | "viewer";
 
@@ -11,7 +12,7 @@ export async function signInViaUI(page: Page, role: AdminRole = "operator"): Pro
 }
 
 export async function signInAs(page: Page, role: AdminRole = "operator"): Promise<void> {
-  const response = await page.request.post("/api/auth/login", {
+  const response = await page.request.post(resolveLoginURL(page.url()), {
     headers: { accept: "application/json", "content-type": "application/json" },
     data: {
       email: `${role}@example.com`,
@@ -21,6 +22,6 @@ export async function signInAs(page: Page, role: AdminRole = "operator"): Promis
 
   expect(response.ok()).toBe(true);
 
-  await page.goto("/admin");
+  await page.goto(resolveAdminURL(page.url()));
   await expect(page).toHaveURL(/\/admin/, { timeout: 60_000 });
 }
