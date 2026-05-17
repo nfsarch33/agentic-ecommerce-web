@@ -43,10 +43,10 @@ describe("frontend release metadata", () => {
     expect(finalEvidence).toContain("semver-only release tag `v9.0.0`");
     expect(finalEvidence).toContain("UIAuto evidence participates in the primary release gate");
     expect(finalEvidence).toContain(
-      "Backend SHA: `17eab44dfdfc807e34fbf4ee05b6bd9f2322e41c`",
+      "Backend SHA: `9715a7e8ea94544bbf8dccb344b1aa44b75aa682`",
     );
     expect(finalEvidence).toContain(
-      "Frontend SHA: `7682367be3b5af728649a9730a625aa54c46d87b`",
+      "Frontend SHA: `53a4598415f488756950b040ae7ad2b022c6790c`",
     );
     expect(finalEvidence).toContain("OpenAPI contract path: `api/openapi.yaml`");
     expect(finalEvidence).toContain("Current blockers:");

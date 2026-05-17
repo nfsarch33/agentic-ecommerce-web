@@ -4,8 +4,8 @@
 **Date opened**: 2026-05-16
 **Target release**: `agentic-ecommerce-web` v9.0.0
 **Base**: v8.0.0
-Backend SHA: `17eab44dfdfc807e34fbf4ee05b6bd9f2322e41c`
-Frontend SHA: `7682367be3b5af728649a9730a625aa54c46d87b`
+Backend SHA: `9715a7e8ea94544bbf8dccb344b1aa44b75aa682`
+Frontend SHA: `53a4598415f488756950b040ae7ad2b022c6790c`
 OpenAPI contract path: `api/openapi.yaml`
 
 ## Scope
