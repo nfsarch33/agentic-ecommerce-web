@@ -51,4 +51,11 @@ describe("OrderManagement", () => {
     expect(screen.getByText(/view-only access/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /fulfill order/i })).not.toBeInTheDocument();
   });
+
+  it("tells operators not to fulfil a failed order until payment is resolved", () => {
+    render(<OrderManagement order={{ ...order, status: "failed" }} userRole="operator" lookupId="ord_123" />);
+
+    expect(screen.getByText(/payment failed/i)).toBeInTheDocument();
+    expect(screen.getByText(/do not fulfil this order until payment is retried or the customer is contacted/i)).toBeInTheDocument();
+  });
 });

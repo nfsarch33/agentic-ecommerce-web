@@ -160,4 +160,42 @@ describe("CheckoutForm", () => {
     resolveOrder?.(createdOrder);
     await waitFor(() => expect(push).toHaveBeenCalledWith("/orders/218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c"));
   });
+
+  it("reuses the same idempotency key after an interrupted submit and surfaces safe retry guidance", async () => {
+    const idempotencyKeys: string[] = [];
+    const createOrderImpl = vi
+      .fn()
+      .mockImplementationOnce(async (opts: { order: { idempotencyKey: string } }) => {
+        idempotencyKeys.push(opts.order.idempotencyKey);
+        throw new Error("network dropped before confirmation");
+      })
+      .mockImplementationOnce(async (opts: { order: { idempotencyKey: string } }) => {
+        idempotencyKeys.push(opts.order.idempotencyKey);
+        return createdOrder;
+      });
+
+    render(
+      <CartProvider initialState={cartWithItem}>
+        <CheckoutForm apiBaseUrl="http://api.test" createOrderImpl={createOrderImpl} />
+      </CartProvider>,
+    );
+
+    await userEvent.type(screen.getByLabelText(/email/i), "buyer@example.com");
+    await userEvent.type(screen.getByLabelText(/full name/i), "Buyer Example");
+    await userEvent.type(screen.getByLabelText(/address line 1/i), "1 Market Street");
+    await userEvent.type(screen.getByLabelText(/city/i), "Sydney");
+    await userEvent.type(screen.getByLabelText(/state or region/i), "NSW");
+    await userEvent.type(screen.getByLabelText(/postal code/i), "2000");
+
+    const button = screen.getByRole("button", { name: /place order/i });
+    await userEvent.click(button);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/retrying will reuse your existing checkout attempt/i);
+
+    await userEvent.click(screen.getByRole("button", { name: /place order/i }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/orders/218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c"));
+    expect(idempotencyKeys).toHaveLength(2);
+    expect(idempotencyKeys[1]).toBe(idempotencyKeys[0]);
+  });
 });

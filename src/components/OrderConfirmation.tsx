@@ -14,6 +14,7 @@ export function OrderConfirmation({ order }: OrderConfirmationProps) {
       <header>
         <p className={`text-sm font-medium uppercase tracking-wide ${presentation.toneClassName}`}>{presentation.eyebrow}</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">{presentation.title}</h1>
+        <p className="mt-3 max-w-2xl text-sm text-gray-600">{presentation.description}</p>
         <dl className="mt-4 grid gap-2 text-sm text-gray-700">
           <div>
             <dt className="font-medium">Order ID</dt>
