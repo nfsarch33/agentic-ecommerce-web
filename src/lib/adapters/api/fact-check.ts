@@ -219,6 +219,15 @@ async function readJson(res: Response, label: string): Promise<unknown> {
   }
 }
 
+async function readErrorCode(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.clone().json()) as { error?: unknown };
+    return typeof body?.error === "string" ? body.error : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getLatestFactCheckResult(
   opts: GetLatestFactCheckResultOptions,
 ): Promise<FactCheckResult | undefined> {
@@ -261,6 +270,12 @@ export async function searchEvidenceSources(opts: SearchEvidenceSourcesOptions):
     });
   } catch (err) {
     throw new FactCheckApiError("searchEvidenceSources: network error", { cause: err });
+  }
+
+  if (res.status === 504 && (await readErrorCode(res)) === "dependency_timeout") {
+    throw new FactCheckApiError("RAG evidence search hit its runtime limit. Retry with a narrower query.", {
+      status: res.status,
+    });
   }
 
   const raw = (await readJson(res, "searchEvidenceSources")) as BackendRAGSearchResponse | { sources?: unknown } | unknown[];

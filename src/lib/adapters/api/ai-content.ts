@@ -230,6 +230,15 @@ async function readJson(res: Response, label: string): Promise<unknown> {
   }
 }
 
+async function readErrorCode(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.clone().json()) as { error?: unknown };
+    return typeof body?.error === "string" ? body.error : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function fallbackAllowed(opts: GenerateDescriptionOptions): boolean {
   return opts.allowBffFallback ?? process.env.NODE_ENV !== "production";
 }
@@ -292,6 +301,11 @@ export async function generateDescription(
         signal: opts.signal,
       },
     );
+    if (res.status === 504 && (await readErrorCode(res)) === "dependency_timeout") {
+      throw new AIContentApiError("The content agent hit its runtime limit. Retry after checking backend health.", {
+        status: res.status,
+      });
+    }
     const raw = (await readJson(res, "generateDescription")) as RawGenerateResponse | RawSuggestion;
     return parseSuggestion("suggestion" in raw ? raw.suggestion : raw);
   } catch (err) {

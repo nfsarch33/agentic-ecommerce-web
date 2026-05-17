@@ -215,6 +215,20 @@ describe("generateDescription", () => {
     ).rejects.toBeInstanceOf(AIContentApiError);
   });
 
+  it("maps bounded-runtime failures into operator-facing timeout guidance", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ error: "dependency_timeout" }, { status: 504 }));
+
+    await expect(
+      generateDescription({
+        baseUrl: "http://api.test",
+        productId: "p_1",
+        prompt: "Describe it",
+        allowBffFallback: false,
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow("The content agent hit its runtime limit. Retry after checking backend health.");
+  });
+
   it("rejects invalid BFF fallback response shapes", async () => {
     const mockFetch = vi
       .fn()

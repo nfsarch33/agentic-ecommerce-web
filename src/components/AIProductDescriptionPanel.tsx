@@ -235,6 +235,11 @@ export function AIProductDescriptionPanel({
               <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-gray-700">
                 {activeSuggestion.description}
               </p>
+              {activeSuggestion.source === "bff_fallback" && (
+                <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                  Fallback bridge response. Backend grounding and fact-check coverage may be incomplete.
+                </p>
+              )}
               <div className="mt-5">
                 <QualityScoreSummary score={activeSuggestion.qualityScore} />
               </div>

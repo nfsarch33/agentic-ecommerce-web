@@ -94,6 +94,7 @@ export function ClaimEvidenceList({ result, isLoading = false, error = null }: C
           <p className="mt-1 text-sm text-gray-600">
             {summary.total} extracted claim{summary.total === 1 ? "" : "s"} checked against RAG sources.
           </p>
+          {result.checkedAt && <p className="mt-1 text-sm text-gray-600">Last checked {result.checkedAt}.</p>}
         </div>
         <ConfidenceBadge confidence={result.overallConfidence} />
       </div>
