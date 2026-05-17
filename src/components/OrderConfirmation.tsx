@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { formatMoney } from "@/lib/domain/product";
-import type { Order } from "@/lib/domain/order";
+import { orderStatusPresentation, type Order } from "@/lib/domain/order";
 
 export interface OrderConfirmationProps {
   readonly order: Order;
 }
 
 export function OrderConfirmation({ order }: OrderConfirmationProps) {
+  const presentation = orderStatusPresentation(order.status);
+
   return (
     <section className="grid gap-8">
       <header>
-        <p className="text-sm font-medium uppercase tracking-wide text-green-700">Order confirmed</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Order confirmed</h1>
+        <p className={`text-sm font-medium uppercase tracking-wide ${presentation.toneClassName}`}>{presentation.eyebrow}</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">{presentation.title}</h1>
         <dl className="mt-4 grid gap-2 text-sm text-gray-700">
           <div>
             <dt className="font-medium">Order ID</dt>

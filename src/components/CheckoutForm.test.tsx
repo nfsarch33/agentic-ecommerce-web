@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CheckoutForm } from "./CheckoutForm";
 import { CartProvider } from "./CartProvider";
@@ -57,6 +57,10 @@ const createdOrder: Order = {
 };
 
 describe("CheckoutForm", () => {
+  beforeEach(() => {
+    push.mockReset();
+  });
+
   it("shows an empty-cart guard instead of the checkout form", () => {
     render(
       <CartProvider>
@@ -108,6 +112,8 @@ describe("CheckoutForm", () => {
         baseUrl: "http://api.test",
         order: expect.objectContaining({
           customerEmail: "buyer@example.com",
+          deliveryOption: "standard",
+          idempotencyKey: expect.any(String),
           items: [
             expect.objectContaining({
               sku: "ROLLER-001",
@@ -116,5 +122,42 @@ describe("CheckoutForm", () => {
         }),
       }),
     );
+  });
+
+  it("ignores a second submit while the first checkout request is still in flight", async () => {
+    let resolveOrder: ((order: Order) => void) | undefined;
+    const createOrderImpl = vi.fn().mockImplementation(
+      () =>
+        new Promise<Order>((resolve) => {
+          resolveOrder = resolve;
+        }),
+    );
+    render(
+      <CartProvider initialState={cartWithItem}>
+        <CheckoutForm apiBaseUrl="http://api.test" createOrderImpl={createOrderImpl} />
+      </CartProvider>,
+    );
+
+    await userEvent.type(screen.getByLabelText(/email/i), "buyer@example.com");
+    await userEvent.type(screen.getByLabelText(/full name/i), "Buyer Example");
+    await userEvent.type(screen.getByLabelText(/address line 1/i), "1 Market Street");
+    await userEvent.type(screen.getByLabelText(/city/i), "Sydney");
+    await userEvent.type(screen.getByLabelText(/state or region/i), "NSW");
+    await userEvent.type(screen.getByLabelText(/postal code/i), "2000");
+
+    const button = screen.getByRole("button", { name: /place order/i });
+    const form = button.closest("form");
+    if (!(form instanceof HTMLFormElement)) {
+      throw new Error("checkout form not found");
+    }
+
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    await waitFor(() => expect(createOrderImpl).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: /placing order/i })).toBeDisabled();
+
+    resolveOrder?.(createdOrder);
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/orders/218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c"));
   });
 });

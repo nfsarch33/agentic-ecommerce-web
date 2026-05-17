@@ -2,8 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { createOrder, type CreateOrderOptions } from "@/lib/adapters/api/orders";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  createOrder,
+  type CreateOrderOptions,
+  type DeliveryOption,
+} from "@/lib/adapters/api/orders";
 import { buildCheckoutOrder } from "@/lib/usecases/checkout";
 import type { ShippingAddress } from "@/lib/domain/order";
 import { useCart } from "./CartProvider";
@@ -27,6 +31,14 @@ const defaultAddress: ShippingAddress = {
 
 const emailRE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function newCheckoutIdempotencyKey(): string {
+  const randomUUID = globalThis.crypto?.randomUUID?.bind(globalThis.crypto);
+  if (randomUUID) {
+    return randomUUID();
+  }
+  return `checkout-${Date.now().toString(36)}`;
+}
+
 function validate(email: string, address: ShippingAddress): CheckoutErrors {
   const errors: CheckoutErrors = {};
   if (!emailRE.test(email.trim())) errors.email = "Enter a valid email.";
@@ -43,10 +55,12 @@ export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: Chec
   const router = useRouter();
   const { state, dispatch } = useCart();
   const [email, setEmail] = useState("");
+  const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>("standard");
   const [address, setAddress] = useState<ShippingAddress>(defaultAddress);
   const [errors, setErrors] = useState<CheckoutErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   if (state.items.length === 0) {
     return (
@@ -67,11 +81,14 @@ export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: Chec
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitLockRef.current) return;
+
     const nextErrors = validate(email, address);
     setErrors(nextErrors);
     setSubmitError(null);
     if (Object.keys(nextErrors).length > 0) return;
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
     try {
       const order = await createOrderImpl({
@@ -79,6 +96,8 @@ export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: Chec
         order: buildCheckoutOrder({
           cart: state,
           customerEmail: email.trim(),
+          deliveryOption,
+          idempotencyKey: newCheckoutIdempotencyKey(),
           shippingAddress: {
             ...address,
             name: address.name.trim(),
@@ -96,6 +115,7 @@ export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: Chec
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Unable to place order.");
     } finally {
+      submitLockRef.current = false;
       setIsSubmitting(false);
     }
   }
@@ -154,6 +174,29 @@ export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: Chec
           Country
           <input className="rounded-md border border-gray-300 px-3 py-2 font-normal" value={address.country} onChange={updateAddress("country")} />
           {errors.country && <span className="text-red-700">{errors.country}</span>}
+        </label>
+      </fieldset>
+      <fieldset className="grid gap-3 rounded-lg border border-gray-200 p-4">
+        <legend className="px-1 text-sm font-semibold">Delivery option</legend>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            checked={deliveryOption === "standard"}
+            name="delivery-option"
+            onChange={() => setDeliveryOption("standard")}
+            type="radio"
+            value="standard"
+          />
+          Standard delivery
+        </label>
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            checked={deliveryOption === "express"}
+            name="delivery-option"
+            onChange={() => setDeliveryOption("express")}
+            type="radio"
+            value="express"
+          />
+          Express delivery
         </label>
       </fieldset>
       <p className="rounded-md bg-gray-50 p-3 text-sm text-gray-600">

@@ -1,6 +1,8 @@
 import type { Money } from "@/lib/domain/product";
 import type { Order, OrderStatus, ShippingAddress } from "@/lib/domain/order";
 
+export type DeliveryOption = "standard" | "express";
+
 export interface CreateOrderItem {
   readonly productId: string;
   readonly sku: string;
@@ -12,6 +14,8 @@ export interface CreateOrderItem {
 
 export interface CreateOrderRequest {
   readonly customerEmail: string;
+  readonly deliveryOption: DeliveryOption;
+  readonly idempotencyKey: string;
   readonly shippingAddress: ShippingAddress;
   readonly items: readonly CreateOrderItem[];
 }
@@ -152,6 +156,8 @@ function parseOrder(raw: unknown): Order {
 function toRawCreateOrder(input: CreateOrderRequest): unknown {
   return {
     customer_email: input.customerEmail,
+    delivery_option: input.deliveryOption,
+    idempotency_key: input.idempotencyKey,
     shipping_address: {
       name: input.shippingAddress.name,
       line1: input.shippingAddress.line1,
