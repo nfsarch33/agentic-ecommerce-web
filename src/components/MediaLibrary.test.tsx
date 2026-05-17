@@ -212,6 +212,12 @@ describe("MediaLibrary", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/metadata failed/i);
   });
 
+  it("renders an initial load failure without pretending the queue is healthy", () => {
+    render(<MediaLibrary assets={[]} initialError="media backend unavailable" />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent("media backend unavailable");
+  });
+
   it("edits metadata for the selected asset", async () => {
     const user = userEvent.setup();
     const updateMediaMetadataImpl = vi.fn().mockResolvedValue({

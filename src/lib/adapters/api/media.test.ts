@@ -272,26 +272,26 @@ describe("media API adapter", () => {
     ).rejects.toThrow(/invalid JSON/);
   });
 
-  it("returns an empty list when fetchMediaAssets gets a 404 (backend not yet enabled)", async () => {
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValue(new Response("not found", { status: 404 }));
-    const assets = await fetchMediaAssets({
-      baseUrl: "https://api.example",
-      fetchImpl,
-    });
-    expect(assets).toEqual([]);
+  it("surfaces a 404 from fetchMediaAssets instead of masking the missing media collection route", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response("not found", { status: 404 }));
+
+    await expect(
+      fetchMediaAssets({
+        baseUrl: "https://api.example",
+        fetchImpl,
+      }),
+    ).rejects.toThrow(/HTTP 404/);
   });
 
-  it("returns an empty list when fetchMediaAssets gets a 405 (route not yet implemented)", async () => {
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValue(new Response("method not allowed", { status: 405 }));
-    const assets = await fetchMediaAssets({
-      baseUrl: "https://api.example",
-      fetchImpl,
-    });
-    expect(assets).toEqual([]);
+  it("surfaces a 405 from fetchMediaAssets instead of masking the missing media collection route", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response("method not allowed", { status: 405 }));
+
+    await expect(
+      fetchMediaAssets({
+        baseUrl: "https://api.example",
+        fetchImpl,
+      }),
+    ).rejects.toThrow(/HTTP 405/);
   });
 
   it("propagates non-soft-fail HTTP errors from fetchMediaAssets", async () => {

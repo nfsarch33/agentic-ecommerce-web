@@ -37,7 +37,7 @@ test("admin media library covers empty, error, and loading states", async ({ pag
   await expect(page.getByText(/No media assets found/i)).toBeVisible();
 
   await page.getByRole("button", { name: /source media/i }).click();
-  await expect(page.getByText(/Add a source URL or choose a file/i)).toBeVisible();
+  await expect(page.getByText(/Add a source URL before sourcing media/i)).toBeVisible();
 
   await page.getByLabel("Processing status").selectOption("all");
   await page.route("**/api/v1/media/source", async (route) => {
@@ -79,6 +79,7 @@ test("product content page manages product media panel", async ({ page }) => {
   await expect(imageEditReview).toBeVisible();
   await expect(imageEditReview.getByText("Lifestyle edit variant")).toBeVisible();
   await expect(imageEditReview.getByText("Pending approval")).toBeVisible();
+  await expect(page.getByRole("button", { name: /process lifestyle edit variant/i })).toBeDisabled();
   await imageEditReview.getByRole("button", { name: /approve lifestyle edit variant/i }).click();
   await expect(imageEditReview.getByText("Approved for publish")).toBeVisible();
 

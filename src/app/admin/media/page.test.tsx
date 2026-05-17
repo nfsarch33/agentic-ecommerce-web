@@ -10,13 +10,16 @@ vi.mock("@/components/MediaLibrary", () => ({
   MediaLibrary: ({
     assets,
     apiBaseUrl,
+    initialError,
   }: {
     assets: Array<{ id: string; metadata: { title: string } }>;
     apiBaseUrl: string;
+    initialError?: string;
   }) => (
     <div>
       <h1>Media Library</h1>
       <p>API: {apiBaseUrl}</p>
+      {initialError && <p role="alert">{initialError}</p>}
       {assets.map((asset) => (
         <p key={asset.id}>{asset.metadata.title}</p>
       ))}
@@ -61,5 +64,14 @@ describe("admin media page", () => {
       expect.objectContaining({ baseUrl: "http://localhost:8080" }),
     );
     expect(screen.getByText("API: http://localhost:8080")).toBeInTheDocument();
+  });
+
+  it("surfaces backend load failures instead of rendering a false empty state", async () => {
+    mockLoadMediaLibrary.mockRejectedValue(new Error("media backend unavailable"));
+
+    render(await MediaAdminPage());
+
+    expect(screen.getByRole("heading", { name: /media library/i })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("media backend unavailable");
   });
 });

@@ -306,6 +306,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List media assets */
+        get: operations["listMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/process": {
         parameters: {
             query?: never;
@@ -2693,6 +2710,9 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
         };
+        MediaAssetListResponse: {
+            assets: components["schemas"]["MediaAsset"][];
+        };
         MediaMetadata: {
             mime_type: string;
             content_length: number;
@@ -4325,6 +4345,38 @@ export interface operations {
                 };
             };
             /** @description Media sourcing is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMedia: {
+        parameters: {
+            query?: {
+                product_id?: string;
+                status?: "all" | "sourced" | "processing" | "processed" | "validated" | "failed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media asset collection for operator review. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAssetListResponse"];
+                };
+            };
+            /** @description Media service is not configured. */
             503: {
                 headers: {
                     [name: string]: unknown;

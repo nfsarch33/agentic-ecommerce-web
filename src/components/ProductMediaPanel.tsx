@@ -82,6 +82,10 @@ function imageVariantStatusTone(reviewState?: MediaReviewState): StatusTone {
   return "amber";
 }
 
+function canProcessAsset(asset: MediaAsset): boolean {
+  return asset.reviewState === "approved" && asset.processState !== "processed";
+}
+
 export function ProductMediaPanel({
   apiBaseUrl,
   productId,
@@ -412,9 +416,12 @@ export function ProductMediaPanel({
                 {check.message}
               </p>
             ))}
+            {asset.reviewState !== "approved" && (
+              <p className="mt-3 text-xs text-gray-600">Approve the asset before processing.</p>
+            )}
             <button
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !canProcessAsset(asset)}
               onClick={() => void handleProcess(asset)}
               aria-label={`Process ${assetTitle(asset)}`}
               className="mt-4 mr-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-800 disabled:text-gray-400"

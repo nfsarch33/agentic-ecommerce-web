@@ -605,6 +605,11 @@ type MockMediaAsset = {
   width?: number;
   height?: number;
   processing_status: "sourced" | "processing" | "processed" | "validated" | "failed";
+  review_state?: "pending" | "approved" | "rejected";
+  process_state?: "pending" | "processed";
+  review_note?: string;
+  reviewed_at?: string;
+  reviewer?: string;
   object_store_location?: {
     provider: "local" | "s3" | "gcs";
     bucket: string;
@@ -641,6 +646,11 @@ const mediaAssets: MockMediaAsset[] = [
     width: 2200,
     height: 1400,
     processing_status: "validated",
+    review_state: "approved",
+    process_state: "processed",
+    review_note: "Approved for hero placement",
+    reviewed_at: "2026-05-08T00:30:00Z",
+    reviewer: "operator@example.com",
     object_store_location: {
       provider: "local",
       bucket: "media",
@@ -673,6 +683,11 @@ const mediaAssets: MockMediaAsset[] = [
     width: 320,
     height: 240,
     processing_status: "failed",
+    review_state: "rejected",
+    process_state: "pending",
+    review_note: "Supplier thumbnail is too small",
+    reviewed_at: "2026-05-08T00:45:00Z",
+    reviewer: "qa@example.com",
     metadata: {
       alt_text: "",
       title: "Tiny supplier thumbnail",
@@ -697,6 +712,8 @@ const mediaAssets: MockMediaAsset[] = [
     width: 1600,
     height: 1200,
     processing_status: "processed",
+    review_state: "pending",
+    process_state: "pending",
     object_store_location: {
       provider: "local",
       bucket: "media",
@@ -1263,6 +1280,8 @@ async function handleMediaCollectionRequest(req: Request, url: URL): Promise<Res
       width: 1600,
       height: 1200,
       processing_status: "sourced",
+      review_state: "pending",
+      process_state: "pending",
       object_store_location: {
         provider: "local",
         bucket: "media",
@@ -1290,7 +1309,11 @@ async function handleMediaCollectionRequest(req: Request, url: URL): Promise<Res
     const body = (await req.json()) as { media_id?: string };
     const asset = mediaAssets.find((candidate) => candidate.id === body.media_id);
     if (!asset) return json({ error: "not_found" }, { status: 404 });
+    if (asset.review_state !== "approved") {
+      return json({ error: "review_required" }, { status: 409 });
+    }
     asset.processing_status = "processed";
+    asset.process_state = "processed";
     asset.updated_at = "2026-05-08T01:07:00Z";
     return json({ asset }, { status: 202 });
   }
@@ -1325,6 +1348,30 @@ async function handleMediaAssetRequest(req: Request, url: URL): Promise<Response
       tags: body.metadata?.tags ?? asset.metadata.tags,
     };
     asset.updated_at = "2026-05-08T01:09:00Z";
+    return json({ asset });
+  }
+  if (url.pathname.startsWith("/api/v1/media/") && url.pathname.endsWith("/approve") && req.method === "POST") {
+    const mediaId = decodeURIComponent(url.pathname.replace("/api/v1/media/", "").replace("/approve", ""));
+    const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+    if (!asset) return json({ error: "not_found" }, { status: 404 });
+    const body = (await req.json()) as { reviewer?: string; note?: string };
+    asset.review_state = "approved";
+    asset.review_note = body.note ?? "";
+    asset.reviewed_at = "2026-05-12T11:12:00Z";
+    asset.reviewer = body.reviewer ?? "operator";
+    asset.updated_at = "2026-05-12T11:12:00Z";
+    return json({ asset });
+  }
+  if (url.pathname.startsWith("/api/v1/media/") && url.pathname.endsWith("/reject") && req.method === "POST") {
+    const mediaId = decodeURIComponent(url.pathname.replace("/api/v1/media/", "").replace("/reject", ""));
+    const asset = mediaAssets.find((candidate) => candidate.id === mediaId);
+    if (!asset) return json({ error: "not_found" }, { status: 404 });
+    const body = (await req.json()) as { reviewer?: string; note?: string };
+    asset.review_state = "rejected";
+    asset.review_note = body.note ?? "";
+    asset.reviewed_at = "2026-05-12T11:13:00Z";
+    asset.reviewer = body.reviewer ?? "operator";
+    asset.updated_at = "2026-05-12T11:13:00Z";
     return json({ asset });
   }
   if (url.pathname.startsWith("/api/v1/media/") && req.method === "GET") {

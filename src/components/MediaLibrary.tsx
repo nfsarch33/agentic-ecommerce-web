@@ -24,6 +24,7 @@ import {
 export interface MediaLibraryProps {
   readonly assets: readonly MediaAsset[];
   readonly apiBaseUrl?: string;
+  readonly initialError?: string;
   readonly sourceMediaImpl?: (opts: SourceMediaOptions) => Promise<MediaAsset>;
   readonly updateMediaMetadataImpl?: (opts: UpdateMediaMetadataOptions) => Promise<MediaAsset>;
 }
@@ -69,6 +70,7 @@ function formatBytes(bytes: number): string {
 export function MediaLibrary({
   assets,
   apiBaseUrl = "",
+  initialError,
   sourceMediaImpl = sourceMedia,
   updateMediaMetadataImpl = updateMediaMetadata,
 }: MediaLibraryProps) {
@@ -84,7 +86,7 @@ export function MediaLibrary({
   const [editorAltText, setEditorAltText] = useState("");
   const [editorTags, setEditorTags] = useState("");
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const filteredAssets = useMemo(
