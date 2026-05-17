@@ -64,6 +64,7 @@ describe("fact-check evidence components", () => {
     render(<ClaimEvidenceList result={result} />);
 
     expect(screen.getByRole("heading", { name: /fact-check evidence/i })).toBeInTheDocument();
+    expect(screen.getByText("Last checked 2026-05-08T01:00:00Z.")).toBeInTheDocument();
     expect(screen.getByText("1 supported")).toBeInTheDocument();
     expect(screen.getByText("1 contradicted")).toBeInTheDocument();
     expect(screen.getByText("0 need evidence")).toBeInTheDocument();

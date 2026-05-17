@@ -136,6 +136,18 @@ describe("searchEvidenceSources", () => {
       }),
     ).rejects.toThrow(/results array/);
   });
+
+  it("maps bounded-runtime RAG failures into operator-facing guidance", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ error: "dependency_timeout" }, { status: 504 }));
+
+    await expect(
+      searchEvidenceSources({
+        baseUrl: "http://api.test",
+        query: "five tension levels",
+        fetchImpl: mockFetch,
+      }),
+    ).rejects.toThrow("RAG evidence search hit its runtime limit. Retry with a narrower query.");
+  });
 });
 
 describe("getLatestFactCheckResult edge cases", () => {

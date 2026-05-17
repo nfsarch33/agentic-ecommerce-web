@@ -4229,6 +4229,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Content generation exceeded the bounded dependency timeout. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getProductAISuggestions: {
@@ -4287,6 +4296,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Content generation exceeded the bounded dependency timeout. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     ingestRAGDocument: {
@@ -4338,6 +4356,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Document ingest exceeded the bounded dependency timeout. */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     searchRAGEvidence: {
@@ -4372,6 +4399,15 @@ export interface operations {
             };
             /** @description RAG service is not configured. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description RAG search exceeded the bounded dependency timeout. */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4432,6 +4468,15 @@ export interface operations {
             };
             /** @description Content generator or fact checker is not configured. */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content generation or fact-checking exceeded the bounded dependency timeout. */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -200,6 +200,9 @@ describe("AIProductDescriptionPanel", () => {
 
     expect(screen.getByText(/no current description is set/i)).toBeInTheDocument();
     expect(screen.getByText("BFF fallback")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Fallback bridge response. Backend grounding and fact-check coverage may be incomplete/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/quality score unavailable/i)).toBeInTheDocument();
   });
 
