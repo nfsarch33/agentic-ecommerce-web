@@ -25,6 +25,11 @@ const asset: MediaAsset = {
     title: "Resistance band hero image",
     tags: ["fitness", "hero"],
   },
+  reviewState: "approved",
+  processState: "processed",
+  reviewNote: "Approved for product content",
+  reviewedAt: "2026-05-08T00:30:00Z",
+  reviewer: "operator@example.com",
   qaResult: {
     status: "needs_review",
     score: 72,
@@ -52,6 +57,8 @@ const imageEditVariant: MediaAsset = {
     title: "Lifestyle edit variant",
     tags: ["image_edit_variant", "lifestyle"],
   },
+  reviewState: "pending",
+  processState: "pending",
   qaResult: {
     status: "needs_review",
     score: 81,
@@ -101,36 +108,74 @@ describe("ProductMediaPanel", () => {
     expect(await screen.findByText("QA passed")).toBeInTheDocument();
   });
 
-  it("reviews generated image edit variants before publishing", async () => {
+  it("dispatches approve and reject actions to the backend media review endpoints", async () => {
     const user = userEvent.setup();
-    const reviewImageVariantImpl = vi.fn().mockResolvedValue({
-      mediaId: "media_variant_lifestyle",
-      decision: "approved",
+    const rejectCandidate: MediaAsset = {
+      ...imageEditVariant,
+      id: "media_variant_detail",
+      sourceUrl: "https://cdn.example/products/p_1/detail-edit.webp",
+      originalFilename: "detail-edit.webp",
+      metadata: {
+        altText: "Generated detail image showing the resistance band handles too close to the crop",
+        title: "Detail edit variant",
+        tags: ["image_edit_variant", "detail"],
+      },
+    };
+    const approveMediaAssetImpl = vi.fn().mockResolvedValue({
+      ...imageEditVariant,
+      reviewState: "approved",
+      reviewer: "operator@example.com",
+      reviewNote: "Ready for publishing",
+      reviewedAt: "2026-05-12T11:12:00Z",
+    });
+    const rejectMediaAssetImpl = vi.fn().mockResolvedValue({
+      ...rejectCandidate,
+      reviewState: "rejected",
+      reviewer: "operator@example.com",
+      reviewNote: "Rejected during operator review",
+      reviewedAt: "2026-05-12T11:13:00Z",
     });
 
     render(
       <ProductMediaPanel
         apiBaseUrl="https://api.example"
         productId="p_1"
-        initialAssets={[asset, imageEditVariant]}
-        reviewImageVariantImpl={reviewImageVariantImpl}
+        initialAssets={[asset, imageEditVariant, rejectCandidate]}
+        reviewer="operator@example.com"
+        approveMediaAssetImpl={approveMediaAssetImpl}
+        rejectMediaAssetImpl={rejectMediaAssetImpl}
       />,
     );
 
     const reviewRegion = screen.getByRole("region", { name: /image edit variants/i });
     expect(within(reviewRegion).getByText("Lifestyle edit variant")).toBeInTheDocument();
-    expect(within(reviewRegion).getByText("Pending approval")).toBeInTheDocument();
+    expect(within(reviewRegion).getAllByText("Pending approval")).toHaveLength(2);
 
     await user.click(
       within(reviewRegion).getByRole("button", { name: /approve lifestyle edit variant/i }),
     );
 
-    expect(reviewImageVariantImpl).toHaveBeenCalledWith({
-      mediaId: "media_variant_lifestyle",
-      productId: "p_1",
-      decision: "approved",
-    });
+    expect(approveMediaAssetImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseUrl: "https://api.example",
+        mediaId: "media_variant_lifestyle",
+        reviewer: "operator@example.com",
+        note: "Ready for publishing",
+      }),
+    );
     expect(await within(reviewRegion).findByText("Approved for publish")).toBeInTheDocument();
+
+    await user.click(within(reviewRegion).getByRole("button", { name: /reject detail edit variant/i }));
+
+    expect(rejectMediaAssetImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        baseUrl: "https://api.example",
+        mediaId: "media_variant_detail",
+        reviewer: "operator@example.com",
+        note: "Rejected during operator review",
+      }),
+    );
+    expect(await within(reviewRegion).findByText("Rejected")).toBeInTheDocument();
   });
 
   it("sources media already linked to the product", async () => {
@@ -208,5 +253,26 @@ describe("ProductMediaPanel", () => {
     await user.click(screen.getByRole("button", { name: /validate resistance band hero image/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/validation failed/i);
+  });
+
+  it("shows operator review failures and leaves the retry affordance available", async () => {
+    const user = userEvent.setup();
+    const approveMediaAssetImpl = vi.fn().mockRejectedValue(new Error("approval failed"));
+
+    render(
+      <ProductMediaPanel
+        apiBaseUrl="https://api.example"
+        productId="p_1"
+        initialAssets={[imageEditVariant]}
+        reviewer="operator@example.com"
+        approveMediaAssetImpl={approveMediaAssetImpl}
+      />,
+    );
+
+    const approveButton = screen.getByRole("button", { name: /approve lifestyle edit variant/i });
+    await user.click(approveButton);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/approval failed/i);
+    expect(approveButton).toBeEnabled();
   });
 });

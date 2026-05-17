@@ -2,6 +2,8 @@ export type ProcessingStatus = "sourced" | "processing" | "processed" | "validat
 export type MediaQAStatus = "pending" | "passed" | "needs_review" | "failed";
 export type ObjectStoreProvider = "local" | "s3" | "gcs";
 export type StatusTone = "blue" | "amber" | "green" | "red" | "gray";
+export type MediaReviewState = "pending" | "approved" | "rejected";
+export type MediaProcessState = "pending" | "processed";
 
 export interface ObjectStoreLocation {
   readonly provider: ObjectStoreProvider;
@@ -41,6 +43,11 @@ export interface MediaAssetInput {
   readonly processingStatus: ProcessingStatus;
   readonly objectStoreLocation?: ObjectStoreLocation;
   readonly metadata: MediaMetadata;
+  readonly reviewState?: MediaReviewState;
+  readonly processState?: MediaProcessState;
+  readonly reviewNote?: string;
+  readonly reviewedAt?: string;
+  readonly reviewer?: string;
   readonly qaResult?: MediaQAResult;
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -64,6 +71,8 @@ const processingStatuses = new Set<ProcessingStatus>([
 ]);
 const qaStatuses = new Set<MediaQAStatus>(["pending", "passed", "needs_review", "failed"]);
 const storeProviders = new Set<ObjectStoreProvider>(["local", "s3", "gcs"]);
+const reviewStates = new Set<MediaReviewState>(["pending", "approved", "rejected"]);
+const processStates = new Set<MediaProcessState>(["pending", "processed"]);
 
 function parseString(value: unknown, label: string): string {
   if (typeof value !== "string" || value.trim() === "") {
@@ -101,6 +110,20 @@ function parseQAStatus(value: unknown, label: string): MediaQAStatus {
     throw new MediaDomainError(`${label} is invalid: ${String(value)}`);
   }
   return value as MediaQAStatus;
+}
+
+function parseReviewState(value: unknown): MediaReviewState {
+  if (typeof value !== "string" || !reviewStates.has(value as MediaReviewState)) {
+    throw new MediaDomainError(`reviewState is invalid: ${String(value)}`);
+  }
+  return value as MediaReviewState;
+}
+
+function parseProcessState(value: unknown): MediaProcessState {
+  if (typeof value !== "string" || !processStates.has(value as MediaProcessState)) {
+    throw new MediaDomainError(`processState is invalid: ${String(value)}`);
+  }
+  return value as MediaProcessState;
 }
 
 function parseScore(value: unknown, label: string): number {
@@ -162,6 +185,11 @@ export function createMediaAsset(input: MediaAssetInput): MediaAsset {
     processingStatus: parseProcessingStatus(input.processingStatus),
     objectStoreLocation: parseObjectStoreLocation(input.objectStoreLocation),
     metadata: createMediaMetadata(input.metadata),
+    reviewState: parseReviewState(input.reviewState ?? "pending"),
+    processState: parseProcessState(input.processState ?? "pending"),
+    reviewNote: parseOptionalString(input.reviewNote, "media.reviewNote"),
+    reviewedAt: parseOptionalString(input.reviewedAt, "media.reviewedAt"),
+    reviewer: parseOptionalString(input.reviewer, "media.reviewer"),
     qaResult: createQAResult(input.qaResult),
     createdAt: parseString(input.createdAt, "media.createdAt"),
     updatedAt: parseString(input.updatedAt, "media.updatedAt"),
@@ -220,5 +248,45 @@ export function mediaQAStatusTone(status: MediaQAStatus): StatusTone {
       return "amber";
     case "failed":
       return "red";
+  }
+}
+
+export function mediaReviewStateLabel(state: MediaReviewState): string {
+  switch (state) {
+    case "pending":
+      return "Pending review";
+    case "approved":
+      return "Approved";
+    case "rejected":
+      return "Rejected";
+  }
+}
+
+export function mediaReviewStateTone(state: MediaReviewState): StatusTone {
+  switch (state) {
+    case "pending":
+      return "amber";
+    case "approved":
+      return "green";
+    case "rejected":
+      return "red";
+  }
+}
+
+export function mediaProcessStateLabel(state: MediaProcessState): string {
+  switch (state) {
+    case "pending":
+      return "Pending";
+    case "processed":
+      return "Complete";
+  }
+}
+
+export function mediaProcessStateTone(state: MediaProcessState): StatusTone {
+  switch (state) {
+    case "pending":
+      return "blue";
+    case "processed":
+      return "green";
   }
 }

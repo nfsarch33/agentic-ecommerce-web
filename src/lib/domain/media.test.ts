@@ -3,6 +3,10 @@ import {
   createMediaAsset,
   mediaQAStatusLabel,
   mediaQAStatusTone,
+  mediaProcessStateLabel,
+  mediaProcessStateTone,
+  mediaReviewStateLabel,
+  mediaReviewStateTone,
   mediaStatusLabel,
   type MediaAssetInput,
 } from "./media";
@@ -40,6 +44,11 @@ const baseAsset: MediaAssetInput = {
       },
     ],
   },
+  reviewState: "approved",
+  processState: "processed",
+  reviewNote: "Approved for processing",
+  reviewedAt: "2026-05-08T00:30:00Z",
+  reviewer: "operator@example.com",
   createdAt: "2026-05-08T00:00:00Z",
   updatedAt: "2026-05-08T01:00:00Z",
 };
@@ -61,13 +70,27 @@ describe("MediaAsset", () => {
     expect(asset.objectStoreLocation?.key).toBe("products/p_1/hero.webp");
   });
 
-  it("rejects invalid processing and QA statuses", () => {
+  it("rejects invalid processing, review, process, and QA statuses", () => {
     expect(() =>
       createMediaAsset({
         ...baseAsset,
         processingStatus: "unknown",
       } as unknown as MediaAssetInput),
     ).toThrow(/processingStatus/);
+
+    expect(() =>
+      createMediaAsset({
+        ...baseAsset,
+        reviewState: "unknown",
+      } as unknown as MediaAssetInput),
+    ).toThrow(/reviewState/);
+
+    expect(() =>
+      createMediaAsset({
+        ...baseAsset,
+        processState: "unknown",
+      } as unknown as MediaAssetInput),
+    ).toThrow(/processState/);
 
     expect(() =>
       createMediaAsset({
@@ -86,10 +109,20 @@ describe("MediaAsset", () => {
     expect(mediaStatusLabel("processed")).toBe("Processed");
     expect(mediaStatusLabel("validated")).toBe("Validated");
     expect(mediaStatusLabel("failed")).toBe("Failed");
+    expect(mediaReviewStateLabel("pending")).toBe("Pending review");
+    expect(mediaReviewStateLabel("approved")).toBe("Approved");
+    expect(mediaReviewStateLabel("rejected")).toBe("Rejected");
+    expect(mediaProcessStateLabel("pending")).toBe("Pending");
+    expect(mediaProcessStateLabel("processed")).toBe("Complete");
     expect(mediaQAStatusLabel("pending")).toBe("QA pending");
     expect(mediaQAStatusLabel("passed")).toBe("QA passed");
     expect(mediaQAStatusLabel("needs_review")).toBe("Needs review");
     expect(mediaQAStatusLabel("failed")).toBe("QA failed");
+    expect(mediaReviewStateTone("pending")).toBe("amber");
+    expect(mediaReviewStateTone("approved")).toBe("green");
+    expect(mediaReviewStateTone("rejected")).toBe("red");
+    expect(mediaProcessStateTone("pending")).toBe("blue");
+    expect(mediaProcessStateTone("processed")).toBe("green");
     expect(mediaQAStatusTone("failed")).toBe("red");
     expect(mediaQAStatusTone("needs_review")).toBe("amber");
     expect(mediaQAStatusTone("pending")).toBe("gray");

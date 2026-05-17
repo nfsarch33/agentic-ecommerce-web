@@ -8,8 +8,12 @@ import {
   type UpdateMediaMetadataOptions,
 } from "@/lib/adapters/api/media";
 import {
+  mediaProcessStateLabel,
+  mediaProcessStateTone,
   mediaQAStatusLabel,
   mediaQAStatusTone,
+  mediaReviewStateLabel,
+  mediaReviewStateTone,
   mediaStatusLabel,
   mediaStatusTone,
   type MediaAsset,
@@ -55,6 +59,11 @@ function parseTags(value: string): string[] {
 
 function assetTitle(asset: MediaAsset): string {
   return asset.metadata.title || asset.originalFilename;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 1) return "1 byte";
+  return `${bytes} bytes`;
 }
 
 export function MediaLibrary({
@@ -108,8 +117,8 @@ export function MediaLibrary({
   async function handleSourceMedia(): Promise<void> {
     setMessage(null);
     setError(null);
-    if (!sourceUrl.trim() && !fileMetadata) {
-      setError("Add a source URL or choose a file before sourcing media.");
+    if (!sourceUrl.trim()) {
+      setError("Add a source URL before sourcing media.");
       return;
     }
     setIsSubmitting(true);
@@ -216,9 +225,20 @@ export function MediaLibrary({
               className="mt-2 block"
             />
             {fileMetadata && (
-              <p className="mt-2 text-xs text-gray-600">
-                {fileMetadata.name} ready as metadata stub.
-              </p>
+              <dl className="mt-3 grid gap-1 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="font-medium text-gray-700">Filename</dt>
+                  <dd>{fileMetadata.name}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="font-medium text-gray-700">Type</dt>
+                  <dd>{fileMetadata.type}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="font-medium text-gray-700">Size</dt>
+                  <dd>{formatBytes(fileMetadata.size)}</dd>
+                </div>
+              </dl>
             )}
           </div>
           <div>
@@ -315,6 +335,14 @@ export function MediaLibrary({
               </div>
             )}
             <div className="mt-4 flex flex-wrap gap-2">
+              <StatusBadge
+                label={mediaReviewStateLabel(asset.reviewState ?? "pending")}
+                tone={mediaReviewStateTone(asset.reviewState ?? "pending")}
+              />
+              <StatusBadge
+                label={mediaProcessStateLabel(asset.processState ?? "pending")}
+                tone={mediaProcessStateTone(asset.processState ?? "pending")}
+              />
               <StatusBadge
                 label={mediaStatusLabel(asset.processingStatus)}
                 tone={mediaStatusTone(asset.processingStatus)}
