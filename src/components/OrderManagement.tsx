@@ -1,5 +1,5 @@
 import { canAccessRole, type Role } from "@/lib/domain/auth";
-import type { Order } from "@/lib/domain/order";
+import { orderOperatorGuidance, type Order } from "@/lib/domain/order";
 import { formatMoney } from "@/lib/domain/product";
 
 export interface OrderManagementProps {
@@ -10,6 +10,8 @@ export interface OrderManagementProps {
 
 export function OrderManagement({ order, lookupId, userRole }: OrderManagementProps) {
   const canMutate = canAccessRole(userRole, "operator");
+  const operatorGuidance = order ? orderOperatorGuidance(order.status) : null;
+  const statusBadgeClassName = order ? orderStatusBadgeClassName(order.status) : "bg-blue-50 text-blue-700";
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
@@ -55,7 +57,7 @@ export function OrderManagement({ order, lookupId, userRole }: OrderManagementPr
               <h2 className="mt-1 text-xl font-semibold">{order.id}</h2>
               <p className="mt-1 text-sm text-gray-600">{order.customerEmail}</p>
             </div>
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClassName}`}>
               {order.status}
             </span>
           </div>
@@ -74,6 +76,13 @@ export function OrderManagement({ order, lookupId, userRole }: OrderManagementPr
               <dd className="mt-1 text-sm font-semibold">{new Date(order.createdAt).toLocaleString("en-AU")}</dd>
             </div>
           </dl>
+
+          {operatorGuidance && (
+            <section className={`mt-6 rounded-md border p-4 ${operatorGuidance.toneClassName}`} role="note">
+              <h3 className="text-sm font-semibold">{operatorGuidance.title}</h3>
+              <p className="mt-1 text-sm">{operatorGuidance.description}</p>
+            </section>
+          )}
 
           <section className="mt-6">
             <h3 className="text-lg font-semibold">Items</h3>
@@ -106,4 +115,16 @@ export function OrderManagement({ order, lookupId, userRole }: OrderManagementPr
       )}
     </main>
   );
+}
+
+function orderStatusBadgeClassName(status: Order["status"]): string {
+  switch (status) {
+    case "pending":
+      return "bg-amber-50 text-amber-700";
+    case "failed":
+    case "cancelled":
+      return "bg-red-50 text-red-700";
+    default:
+      return "bg-blue-50 text-blue-700";
+  }
 }

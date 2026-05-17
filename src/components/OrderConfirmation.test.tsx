@@ -40,6 +40,8 @@ describe("OrderConfirmation", () => {
 
     expect(screen.getByRole("heading", { name: /order received/i })).toBeInTheDocument();
     expect(screen.queryByText(/^order confirmed$/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/payment is still processing for this order/i)).toBeInTheDocument();
+    expect(screen.getByText(/do not place another order unless support confirms this one failed/i)).toBeInTheDocument();
     expect(screen.getByText("218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c")).toBeInTheDocument();
     expect(screen.getByText(/pending/i)).toBeInTheDocument();
     expect(screen.getByText("buyer@example.com")).toBeInTheDocument();

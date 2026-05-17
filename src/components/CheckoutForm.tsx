@@ -51,6 +51,52 @@ function validate(email: string, address: ShippingAddress): CheckoutErrors {
   return errors;
 }
 
+function trimmedShippingAddress(address: ShippingAddress): ShippingAddress {
+  return {
+    ...address,
+    name: address.name.trim(),
+    line1: address.line1.trim(),
+    line2: address.line2?.trim() || undefined,
+    city: address.city.trim(),
+    region: address.region.trim(),
+    postalCode: address.postalCode.trim(),
+    country: address.country.trim(),
+  };
+}
+
+function checkoutAttemptFingerprint(args: {
+  readonly cart: ReturnType<typeof useCart>["state"];
+  readonly customerEmail: string;
+  readonly deliveryOption: DeliveryOption;
+  readonly shippingAddress: ShippingAddress;
+}): string {
+  return JSON.stringify({
+    customerEmail: args.customerEmail.trim().toLowerCase(),
+    deliveryOption: args.deliveryOption,
+    shippingAddress: args.shippingAddress,
+    items: args.cart.items.map((item) => ({
+      productId: item.productId,
+      sku: item.sku,
+      title: item.title,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+    })),
+  });
+}
+
+function describeCheckoutFailure(err: unknown): string {
+  if (!(err instanceof Error) || err.message.trim() === "") {
+    return "We couldn't confirm your checkout. Retrying will reuse your existing checkout attempt.";
+  }
+  if (/(HTTP 409|idempotency_payload_mismatch)/i.test(err.message)) {
+    return "We already received different checkout details for this attempt. Refresh the page before retrying.";
+  }
+  if (/(network|ECONN|timed out|timeout|HTTP 5\d{2})/i.test(err.message)) {
+    return "We couldn't confirm your checkout. Retrying will reuse your existing checkout attempt.";
+  }
+  return err.message;
+}
+
 export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: CheckoutFormProps) {
   const router = useRouter();
   const { state, dispatch } = useCart();
@@ -61,6 +107,7 @@ export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: Chec
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitLockRef = useRef(false);
+  const checkoutAttemptRef = useRef<{ fingerprint: string; idempotencyKey: string } | null>(null);
 
   if (state.items.length === 0) {
     return (
@@ -91,29 +138,34 @@ export function CheckoutForm({ apiBaseUrl, createOrderImpl = createOrder }: Chec
     submitLockRef.current = true;
     setIsSubmitting(true);
     try {
+      const shippingAddress = trimmedShippingAddress(address);
+      const fingerprint = checkoutAttemptFingerprint({
+        cart: state,
+        customerEmail: email,
+        deliveryOption,
+        shippingAddress,
+      });
+      if (checkoutAttemptRef.current?.fingerprint !== fingerprint) {
+        checkoutAttemptRef.current = {
+          fingerprint,
+          idempotencyKey: newCheckoutIdempotencyKey(),
+        };
+      }
       const order = await createOrderImpl({
         baseUrl: apiBaseUrl,
         order: buildCheckoutOrder({
           cart: state,
           customerEmail: email.trim(),
           deliveryOption,
-          idempotencyKey: newCheckoutIdempotencyKey(),
-          shippingAddress: {
-            ...address,
-            name: address.name.trim(),
-            line1: address.line1.trim(),
-            line2: address.line2?.trim() || undefined,
-            city: address.city.trim(),
-            region: address.region.trim(),
-            postalCode: address.postalCode.trim(),
-            country: address.country.trim(),
-          },
+          idempotencyKey: checkoutAttemptRef.current.idempotencyKey,
+          shippingAddress,
         }),
       });
+      checkoutAttemptRef.current = null;
       dispatch({ type: "clear" });
       router.push(`/orders/${order.id}`);
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Unable to place order.");
+      setSubmitError(describeCheckoutFailure(err));
     } finally {
       submitLockRef.current = false;
       setIsSubmitting(false);
