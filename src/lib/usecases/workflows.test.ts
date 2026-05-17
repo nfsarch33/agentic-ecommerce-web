@@ -80,9 +80,9 @@ describe("workflow usecases", () => {
   it("sends review signals through the API adapter", async () => {
     const sendWorkflowReviewSignalImpl = vi
       .fn()
-      .mockResolvedValue({ ...workflow, status: "completed" });
+      .mockResolvedValue({ ...detail, status: "completed" });
 
-    await sendReviewSignalForWorkflow(
+    const result = await sendReviewSignalForWorkflow(
       {
         baseUrl: "http://api.test",
         workflowId: "wf_product_publish_1",
@@ -92,6 +92,7 @@ describe("workflow usecases", () => {
       { sendWorkflowReviewSignalImpl },
     );
 
+    expect(result).toEqual({ ...detail, status: "completed" });
     expect(sendWorkflowReviewSignalImpl).toHaveBeenCalledWith({
       baseUrl: "http://api.test",
       workflowId: "wf_product_publish_1",

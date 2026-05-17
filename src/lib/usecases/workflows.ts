@@ -36,7 +36,7 @@ export interface WorkflowUsecaseDeps {
   ) => Promise<WorkflowSummary>;
   readonly sendWorkflowReviewSignalImpl?: (
     opts: SendWorkflowReviewSignalOptions,
-  ) => Promise<WorkflowSummary>;
+  ) => Promise<WorkflowDetail>;
 }
 
 export interface LoadWorkflowDetailInput {
@@ -110,7 +110,7 @@ export async function startProductPublish(
 export async function sendReviewSignalForWorkflow(
   input: SendReviewSignalForWorkflowInput,
   deps: WorkflowUsecaseDeps = {},
-): Promise<WorkflowSummary> {
+): Promise<WorkflowDetail> {
   const impl = deps.sendWorkflowReviewSignalImpl ?? sendWorkflowReviewSignal;
   return impl({
     baseUrl: input.baseUrl,

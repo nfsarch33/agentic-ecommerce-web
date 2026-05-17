@@ -6,7 +6,7 @@ The current admin UI is the operator console for backend workflows, Media Intell
 
 | Admin path | Purpose | Backend contract |
 | --- | --- | --- |
-| `/admin/workflows` | List workflow runs and current status. | `GET /api/v1/workflows/{id}` plus workflow start routes documented in backend `docs/temporal-workflow-specs.md`. |
+| `/admin/workflows` | List workflow runs and current status. | `GET /api/v1/workflows` plus workflow start routes documented in backend `docs/temporal-workflow-specs.md`. |
 | `/admin/workflows/[id]` | Inspect an activity timeline and terminal state. | Workflow status response from `api/openapi.yaml`. |
 | `/admin/media` | Browse sourced media assets, review lifecycle state, process status, and metadata. | `/api/v1/media/source`, `/api/v1/media/process`, `/api/v1/media/{id}`, `/api/v1/media/{id}/approve`, `/api/v1/media/{id}/reject`, `/api/v1/media/{id}/validate`. |
 | `/admin/products/[id]/content` | Review generated content, RAG/fact-check evidence, media state, and compliance readiness. | RAG, compliance, media, and workflow routes from backend OpenAPI. |
@@ -19,9 +19,15 @@ The current admin UI is the operator console for backend workflows, Media Intell
 Temporal workflow execution is backend-owned. The frontend should:
 
 - Start workflows only through authenticated backend routes.
-- Display workflow IDs, run IDs, status, activity timeline entries, and error messages without inventing local terminal states.
+- Display workflow IDs, run IDs, status, activity timeline entries, and error
+  messages without inventing local terminal states.
 - Poll the status endpoint until `completed`, `failed`, `cancelled`, `rejected`, or `needs_review`.
 - Send human-review decisions through the backend signal route rather than calling Temporal directly.
+- When a review signal response includes a refreshed workflow snapshot, replace
+  the active UI state with that backend payload instead of appending synthetic
+  activities or status text locally.
+- Only render review controls when the backend reports a review-bearing status
+  such as `waiting_review`.
 - Link to `NEXT_PUBLIC_TEMPORAL_UI_URL` only when the operator has intentionally exposed a protected Temporal UI.
 
 The browser and Next.js server must not connect to Temporal gRPC.

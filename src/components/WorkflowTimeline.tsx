@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   reviewSignalLabel,
@@ -18,7 +18,9 @@ import {
 export interface WorkflowTimelineProps {
   readonly workflow: WorkflowDetail;
   readonly apiBaseUrl: string;
-  readonly sendReviewSignalImpl?: (input: SendReviewSignalForWorkflowInput) => Promise<unknown>;
+  readonly sendReviewSignalImpl?: (
+    input: SendReviewSignalForWorkflowInput,
+  ) => Promise<WorkflowDetail>;
 }
 
 const reviewSignals: readonly ReviewSignal[] = ["approve", "reject", "request_changes"];
@@ -72,23 +74,30 @@ export function WorkflowTimeline({
   apiBaseUrl,
   sendReviewSignalImpl = sendReviewSignalForWorkflow,
 }: WorkflowTimelineProps) {
+  const [activeWorkflow, setActiveWorkflow] = useState(workflow);
   const [note, setNote] = useState("");
   const [isSending, setIsSending] = useState<ReviewSignal | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const canSignal = workflow.status === "waiting_review";
+  const canSignal = activeWorkflow.status === "waiting_review";
+
+  useEffect(() => {
+    setActiveWorkflow(workflow);
+  }, [workflow]);
 
   async function sendSignal(signal: ReviewSignal): Promise<void> {
     setMessage(null);
     setError(null);
     setIsSending(signal);
     try {
-      await sendReviewSignalImpl({
+      const updatedWorkflow = await sendReviewSignalImpl({
         baseUrl: apiBaseUrl,
-        workflowId: workflow.id,
+        workflowId: activeWorkflow.id,
         signal,
         note: note.trim() || undefined,
       });
+      setActiveWorkflow(updatedWorkflow);
+      setNote("");
       setMessage(`Sent ${reviewSignalLabel(signal).toLowerCase()} signal.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send review signal.");
@@ -112,34 +121,40 @@ export function WorkflowTimeline({
               Product publish
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-              {titleForWorkflow(workflow)}
+              {titleForWorkflow(activeWorkflow)}
             </h1>
             <p className="mt-2 text-sm text-gray-600">
-              Product ID <span className="font-mono">{workflow.productId}</span>
+              Product ID <span className="font-mono">{activeWorkflow.productId}</span>
             </p>
           </div>
           <span
             className={`rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset ${statusBadgeClasses(
-              workflow.status,
+              activeWorkflow.status,
             )}`}
           >
-            {workflowStatusLabel(workflow.status)}
+            {workflowStatusLabel(activeWorkflow.status)}
           </span>
         </div>
         <dl className="mt-5 grid gap-4 sm:grid-cols-3">
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Started</dt>
-            <dd className="mt-1 text-sm text-gray-900">{formatTimestamp(workflow.startedAt)}</dd>
+            <dd className="mt-1 text-sm text-gray-900">
+              {formatTimestamp(activeWorkflow.startedAt)}
+            </dd>
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">Updated</dt>
-            <dd className="mt-1 text-sm text-gray-900">{formatTimestamp(workflow.updatedAt)}</dd>
+            <dd className="mt-1 text-sm text-gray-900">
+              {formatTimestamp(activeWorkflow.updatedAt)}
+            </dd>
           </div>
           <div>
             <dt className="text-xs font-medium uppercase tracking-wide text-gray-500">
               Current activity
             </dt>
-            <dd className="mt-1 text-sm text-gray-900">{workflow.currentActivity ?? "None"}</dd>
+            <dd className="mt-1 text-sm text-gray-900">
+              {activeWorkflow.currentActivity ?? "None"}
+            </dd>
           </div>
         </dl>
       </header>
@@ -163,7 +178,7 @@ export function WorkflowTimeline({
       >
         <h2 className="text-xl font-semibold">Activity timeline</h2>
         <ol className="mt-5 space-y-5">
-          {workflow.activities.map((activity) => (
+          {activeWorkflow.activities.map((activity) => (
             <li key={activity.id} className="relative pl-8">
               <span
                 className={`absolute left-0 top-1.5 h-3 w-3 rounded-full ${activityMarkerClasses(activity.status)}`}
