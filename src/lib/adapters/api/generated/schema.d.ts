@@ -471,7 +471,7 @@ export interface paths {
         put?: never;
         /**
          * Resolve an operator alert
-         * @description Resolves a pending or acknowledged operator alert with an explicit approve or deny action.
+         * @description Resolves an acknowledged operator alert with an explicit approve or deny action.
          */
         post: operations["resolveOperatorAlert"];
         delete?: never;

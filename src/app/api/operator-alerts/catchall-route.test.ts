@@ -3,9 +3,16 @@ import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const REAL_FETCH = global.fetch;
+const requireServerSession = vi.fn();
+
+vi.mock("@/lib/server/auth-session", () => ({
+  requireServerSession: (...args: unknown[]) => requireServerSession(...args),
+}));
 
 afterEach(() => {
   global.fetch = REAL_FETCH;
+  vi.resetModules();
+  vi.restoreAllMocks();
 });
 
 function mkResp(body: unknown, status = 200): Response {
@@ -16,6 +23,28 @@ function mkResp(body: unknown, status = 200): Response {
 }
 
 describe("operator alert mutation BFF routes", () => {
+  it("requires an operator session before proxying mutations", async () => {
+    requireServerSession.mockResolvedValueOnce({
+      user: { id: "u_operator", email: "operator@example.com", role: "operator" },
+      expiresAt: "2026-05-18T00:00:00Z",
+    });
+    global.fetch = vi.fn(async () => mkResp({ status: "acknowledged" })) as unknown as typeof fetch;
+
+    const { POST } = await import("./[...path]/route");
+    const res = await POST(
+      new Request("http://localhost/api/operator-alerts/alert-1/acknowledge?tenant_id=tenant-1", {
+        method: "POST",
+        headers: {
+          "x-tenant-id": "tenant-1",
+          cookie: "session=jwt",
+        },
+      }),
+    );
+
+    expect(requireServerSession).toHaveBeenCalledWith("operator");
+    expect(res.status).toBe(200);
+  });
+
   it("ships a catch-all mutation route module", async () => {
     await expect(import("./[...path]/route")).resolves.toMatchObject({
       POST: expect.any(Function),

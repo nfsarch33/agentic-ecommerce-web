@@ -38,6 +38,7 @@ function operatorAlert(
 
 describe("OperatorAlertCentre", () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -162,5 +163,103 @@ describe("OperatorAlertCentre", () => {
     expect(screen.getByTestId("operator-alert-queue-active")).toHaveTextContent("acknowledged");
     expect(screen.getByTestId("operator-alert-pending-1")).toBeInTheDocument();
     expect(screen.getByText("2026-05-17T12:34:56Z")).toBeInTheDocument();
+  });
+
+  it("hides resolve actions for pending alerts until they are acknowledged", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes("status=pending")) {
+        return mkResp({
+          tenant_id: "tenant-1",
+          status: "pending",
+          alerts: [operatorAlert({ alert_id: "pending-1" })],
+          count: 1,
+        });
+      }
+      if (url.includes("status=acknowledged")) {
+        return mkResp({
+          tenant_id: "tenant-1",
+          status: "acknowledged",
+          alerts: [],
+          count: 0,
+        });
+      }
+      if (url.includes("status=resolved")) {
+        return mkResp({
+          tenant_id: "tenant-1",
+          status: "resolved",
+          alerts: [],
+          count: 0,
+        });
+      }
+      throw new Error(`unexpected request: ${url}`);
+    });
+
+    render(<OperatorAlertCentre fetchImpl={fetchImpl as typeof fetch} intervalMs={60_000} />);
+
+    expect(await screen.findByTestId("operator-alert-pending-1")).toBeInTheDocument();
+    expect(screen.queryByTestId("operator-alert-approve-pending-1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("operator-alert-deny-pending-1")).not.toBeInTheDocument();
+  });
+
+  it("preserves the last known queue state when a later poll fails", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+      const url =
+        typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+      if (url.includes("status=pending")) {
+        const pendingCalls =
+          fetchImpl.mock.calls.filter(([callInput]) => {
+            const callUrl =
+              typeof callInput === "string"
+                ? callInput
+                : callInput instanceof URL
+                  ? callInput.toString()
+                  : callInput.url;
+            return callUrl.includes("status=pending");
+          }).length ?? 0;
+        if (pendingCalls === 1) {
+          return mkResp({
+            tenant_id: "tenant-1",
+            status: "pending",
+            alerts: [operatorAlert({ alert_id: "pending-1" })],
+            count: 1,
+          });
+        }
+        throw new Error("poll failed");
+      }
+      if (url.includes("status=acknowledged")) {
+        return mkResp({
+          tenant_id: "tenant-1",
+          status: "acknowledged",
+          alerts: [],
+          count: 0,
+        });
+      }
+      if (url.includes("status=resolved")) {
+        return mkResp({
+          tenant_id: "tenant-1",
+          status: "resolved",
+          alerts: [],
+          count: 0,
+        });
+      }
+      throw new Error(`unexpected request: ${url}`);
+    });
+
+    render(<OperatorAlertCentre fetchImpl={fetchImpl as typeof fetch} intervalMs={1} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("operator-alert-summary-pending")).toHaveTextContent("1");
+    });
+    expect(screen.getByTestId("operator-alert-pending-1")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("operator-alerts-error")).toBeInTheDocument();
+    });
+
+    expect(screen.getByTestId("operator-alert-summary-pending")).toHaveTextContent("1");
+    expect(screen.getByTestId("operator-alert-pending-1")).toBeInTheDocument();
+    expect(screen.getByText(/Failed to update operator alert|Failed to load operator alerts/)).toBeInTheDocument();
   });
 });
