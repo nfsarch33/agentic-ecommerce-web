@@ -1,4 +1,4 @@
-import { generateDescription, getAISuggestions } from "@/lib/adapters/api/ai-content";
+import { AIContentApiError, generateDescription, getAISuggestions } from "@/lib/adapters/api/ai-content";
 import { fetchProductBySlug } from "@/lib/adapters/api/products";
 import { selectLatestSuggestion, type AIProductDescriptionSuggestion } from "@/lib/domain/ai-description";
 import type { Product, ProductFields } from "@/lib/domain/product";
@@ -12,6 +12,7 @@ export interface LoadProductContentEditorResult {
   readonly product: Product;
   readonly suggestions: readonly AIProductDescriptionSuggestion[];
   readonly activeSuggestion?: AIProductDescriptionSuggestion;
+  readonly suggestionsError?: string;
 }
 
 export interface LoadProductContentEditorDeps {
@@ -52,14 +53,27 @@ export async function loadProductContentEditor(
 ): Promise<LoadProductContentEditorResult> {
   const fetchProductImpl = deps.fetchProductImpl ?? fetchProductBySlug;
   const getSuggestionsImpl = deps.getSuggestionsImpl ?? getAISuggestions;
-  const [product, suggestions] = await Promise.all([
+  const [product, suggestionState] = await Promise.all([
     fetchProductImpl({ baseUrl: input.baseUrl, slug: input.productId }),
-    getSuggestionsImpl({ baseUrl: input.baseUrl, productId: input.productId }),
+    getSuggestionsImpl({ baseUrl: input.baseUrl, productId: input.productId })
+      .then((suggestions) => ({ suggestions }))
+      .catch((err) => {
+        if (err instanceof AIContentApiError && err.status === 504) {
+          return {
+            suggestions: [] as readonly AIProductDescriptionSuggestion[],
+            suggestionsError: err.message,
+          };
+        }
+        throw err;
+      }),
   ]);
+  const suggestions = suggestionState.suggestions;
+  const suggestionsError = "suggestionsError" in suggestionState ? suggestionState.suggestionsError : undefined;
   return {
     product,
     suggestions,
     activeSuggestion: selectLatestSuggestion(suggestions),
+    suggestionsError,
   };
 }
 

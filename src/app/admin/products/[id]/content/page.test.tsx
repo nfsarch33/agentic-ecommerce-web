@@ -10,14 +10,17 @@ vi.mock("@/components/AIProductDescriptionPanel", () => ({
   AIProductDescriptionPanel: ({
     product,
     initialSuggestions,
+    initialError,
   }: {
     product: { title: string };
     initialSuggestions: unknown[];
+    initialError?: string;
   }) => (
     <div>
       <h1>AI Description Studio</h1>
       <p>Product: {product.title}</p>
       <p>Suggestions: {initialSuggestions.length}</p>
+      {initialError ? <p>Initial error: {initialError}</p> : null}
     </div>
   ),
 }));
@@ -99,5 +102,33 @@ describe("Product content admin page", () => {
     expect(meta.title).toContain("p_1");
     expect(meta.alternates?.canonical).toBe("/admin/products/p_1/content");
     expect(meta.robots).toMatchObject({ index: false, follow: false });
+  });
+
+  it("forwards degraded suggestion-loading warnings to the AI panel", async () => {
+    mockLoadProductContentEditor.mockResolvedValue({
+      product: {
+        id: "p_1",
+        sku: "BAND-001",
+        title: "Resistance Band Set",
+        slug: "resistance-band-set",
+        price: { amount: 2495, currency: "AUD" },
+        stock: 12,
+        description: "Current copy",
+      } as never,
+      suggestions: [] as never,
+      activeSuggestion: undefined,
+      suggestionsError: "The AI suggestion service hit its runtime limit. Retry after checking backend health.",
+    } as never);
+    mockLoadProductMedia.mockResolvedValue({
+      assets: [] as never,
+    });
+
+    render(await ProductContentPage({ params: Promise.resolve({ id: "p_1" }) }));
+
+    expect(
+      screen.getByText(
+        "Initial error: The AI suggestion service hit its runtime limit. Retry after checking backend health.",
+      ),
+    ).toBeInTheDocument();
   });
 });

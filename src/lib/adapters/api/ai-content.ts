@@ -44,6 +44,9 @@ export class AIContentApiError extends Error {
   }
 }
 
+const generateTimeoutMessage = "The content agent hit its runtime limit. Retry after checking backend health.";
+const suggestionsTimeoutMessage = "The AI suggestion service hit its runtime limit. Retry after checking backend health.";
+
 interface RawQualityScore {
   readonly overall?: unknown;
   readonly readability?: unknown;
@@ -302,7 +305,7 @@ export async function generateDescription(
       },
     );
     if (res.status === 504 && (await readErrorCode(res)) === "dependency_timeout") {
-      throw new AIContentApiError("The content agent hit its runtime limit. Retry after checking backend health.", {
+      throw new AIContentApiError(generateTimeoutMessage, {
         status: res.status,
       });
     }
@@ -334,6 +337,9 @@ export async function getAISuggestions(
     );
   } catch (err) {
     throw new AIContentApiError("getAISuggestions: network error", { cause: err });
+  }
+  if (res.status === 504 && (await readErrorCode(res)) === "dependency_timeout") {
+    throw new AIContentApiError(suggestionsTimeoutMessage, { status: res.status });
   }
   const raw = (await readJson(res, "getAISuggestions")) as RawSuggestionsResponse | unknown[];
   if (isBackendContentSuggestion(raw)) {

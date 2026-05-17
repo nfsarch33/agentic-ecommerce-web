@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { Product } from "@/lib/domain/product";
 import { createAISuggestion } from "@/lib/domain/ai-description";
+import { AIContentApiError } from "@/lib/adapters/api/ai-content";
 import {
   defaultDescriptionPrompt,
   generateDescriptionForProduct,
@@ -53,6 +54,25 @@ describe("loadProductContentEditor", () => {
     expect(getSuggestionsImpl).toHaveBeenCalledWith(
       expect.objectContaining({ baseUrl: "http://api.test", productId: product.id }),
     );
+  });
+
+  it("degrades to an empty suggestion list when the suggestion fetch hits its runtime limit", async () => {
+    const fetchProductImpl = vi.fn().mockResolvedValue(product);
+    const getSuggestionsImpl = vi
+      .fn()
+      .mockRejectedValue(new AIContentApiError("The AI suggestion service hit its runtime limit. Retry after checking backend health.", { status: 504 }));
+
+    const result = await loadProductContentEditor(
+      { baseUrl: "http://api.test", productId: product.id },
+      { fetchProductImpl, getSuggestionsImpl },
+    );
+
+    expect(result).toMatchObject({
+      product,
+      suggestions: [],
+      activeSuggestion: undefined,
+      suggestionsError: "The AI suggestion service hit its runtime limit. Retry after checking backend health.",
+    });
   });
 });
 

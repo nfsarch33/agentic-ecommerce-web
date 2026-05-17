@@ -24,7 +24,7 @@ export default async function ProductContentPage({ params }: ProductContentPageP
   const { id } = await params;
   const serverBaseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
   const clientBaseUrl = process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? serverBaseUrl;
-  const [{ product, suggestions }, media] = await Promise.all([
+  const [contentState, media] = await Promise.all([
     loadProductContentEditor({
       baseUrl: serverBaseUrl,
       productId: id,
@@ -34,6 +34,7 @@ export default async function ProductContentPage({ params }: ProductContentPageP
       productId: id,
     }),
   ]);
+  const { product, suggestions, suggestionsError } = contentState;
   const productFields = {
     id: product.id,
     sku: product.sku,
@@ -50,6 +51,7 @@ export default async function ProductContentPage({ params }: ProductContentPageP
         apiBaseUrl={clientBaseUrl}
         product={productFields}
         initialSuggestions={suggestions}
+        initialError={suggestionsError}
         fallbackBffBaseUrl=""
       />
       <ProductMediaPanel apiBaseUrl={clientBaseUrl} productId={id} initialAssets={media.assets} />
