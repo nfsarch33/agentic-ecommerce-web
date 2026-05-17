@@ -1,10 +1,12 @@
 import type { CartState } from "@/lib/domain/cart";
 import type { ShippingAddress } from "@/lib/domain/order";
-import type { CreateOrderRequest } from "@/lib/adapters/api/orders";
+import type { CreateOrderRequest, DeliveryOption } from "@/lib/adapters/api/orders";
 
 export interface BuildCheckoutOrderInput {
   readonly cart: CartState;
   readonly customerEmail: string;
+  readonly deliveryOption: DeliveryOption;
+  readonly idempotencyKey: string;
   readonly shippingAddress: ShippingAddress;
 }
 
@@ -18,6 +20,8 @@ export function buildCheckoutOrder(input: BuildCheckoutOrderInput): CreateOrderR
   }
   return {
     customerEmail: input.customerEmail,
+    deliveryOption: input.deliveryOption,
+    idempotencyKey: input.idempotencyKey,
     shippingAddress: input.shippingAddress,
     items: input.cart.items.map((item) => ({
       productId: item.productId,

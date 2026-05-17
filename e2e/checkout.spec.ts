@@ -26,7 +26,7 @@ test("shopper checks out from product browse to order confirmation", async ({ pa
     page.getByRole("button", { name: /place order/i }).click(),
   ]);
 
-  await expect(page.getByRole("heading", { name: /order confirmed/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /order received/i })).toBeVisible();
   await expect(page.getByText("shopper@example.com")).toBeVisible();
   await expect(page.getByText(/Resistance Band Set x 1/i)).toBeVisible();
 });

@@ -38,6 +38,12 @@ export interface Order {
   readonly updatedAt: string;
 }
 
+export interface OrderStatusPresentation {
+  readonly eyebrow: string;
+  readonly title: string;
+  readonly toneClassName: string;
+}
+
 const ORDER_STATUSES: readonly OrderStatus[] = [
   "pending",
   "paid",
@@ -64,6 +70,30 @@ export function isTerminalOrderStatus(status: OrderStatus): boolean {
 
 export function isInFlightOrder(order: Pick<Order, "status">): boolean {
   return !isTerminalOrderStatus(order.status);
+}
+
+export function orderStatusPresentation(status: OrderStatus): OrderStatusPresentation {
+  switch (status) {
+    case "pending":
+      return {
+        eyebrow: "Order received",
+        title: "Order received",
+        toneClassName: "text-amber-700",
+      };
+    case "failed":
+    case "cancelled":
+      return {
+        eyebrow: "Order needs attention",
+        title: "Order needs attention",
+        toneClassName: "text-red-700",
+      };
+    default:
+      return {
+        eyebrow: "Order confirmed",
+        title: "Order confirmed",
+        toneClassName: "text-green-700",
+      };
+  }
 }
 
 export function orderShippingLines(address: ShippingAddress): readonly string[] {

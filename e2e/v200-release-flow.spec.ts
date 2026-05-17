@@ -33,7 +33,7 @@ test("release flow covers storefront, Temporal, MIS, mocked WooCommerce, and n8n
     page.waitForURL(new RegExp(`/orders/${orderId}$`), { timeout: 20_000 }),
     page.getByRole("button", { name: /place order/i }).click(),
   ]);
-  await expect(page.getByRole("heading", { name: /order confirmed/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /order received/i })).toBeVisible();
   await expect(page.getByText("shopper@example.com")).toBeVisible();
 
   await signInAs(page, "admin");

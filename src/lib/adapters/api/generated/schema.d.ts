@@ -2872,6 +2872,9 @@ export interface components {
         CreateOrderRequest: {
             /** Format: email */
             customer_email: string;
+            idempotency_key?: string;
+            /** @enum {string} */
+            delivery_option: "standard" | "express";
             items: components["schemas"]["OrderItemInput"][];
             shipping_address: components["schemas"]["ShippingAddress"];
             shipping?: components["schemas"]["Money"];

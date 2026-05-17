@@ -35,10 +35,11 @@ const order: Order = {
 };
 
 describe("OrderConfirmation", () => {
-  it("renders order id, status, customer, and totals", () => {
+  it("renders a pending order as received instead of confirmed", () => {
     render(<OrderConfirmation order={order} />);
 
-    expect(screen.getByRole("heading", { name: /order confirmed/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /order received/i })).toBeInTheDocument();
+    expect(screen.queryByText(/^order confirmed$/i)).not.toBeInTheDocument();
     expect(screen.getByText("218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c")).toBeInTheDocument();
     expect(screen.getByText(/pending/i)).toBeInTheDocument();
     expect(screen.getByText("buyer@example.com")).toBeInTheDocument();

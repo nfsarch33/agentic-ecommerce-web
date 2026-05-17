@@ -8,8 +8,10 @@ function jsonResponse(body: unknown, init: ResponseInit = { status: 200 }): Resp
   });
 }
 
-const createOrderRequest: CreateOrderRequest = {
+const createOrderRequest = {
   customerEmail: "buyer@example.com",
+  deliveryOption: "standard",
+  idempotencyKey: "checkout-abc123",
   shippingAddress: {
     name: "Buyer Example",
     line1: "1 Market Street",
@@ -28,7 +30,7 @@ const createOrderRequest: CreateOrderRequest = {
       unitPrice: { amount: 3500, currency: "AUD" },
     },
   ],
-};
+} as CreateOrderRequest & { deliveryOption: string; idempotencyKey: string };
 
 const rawOrder = {
   id: "218f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b3c",
@@ -81,6 +83,8 @@ describe("createOrder", () => {
         headers: expect.objectContaining({ "content-type": "application/json" }),
         body: JSON.stringify({
           customer_email: "buyer@example.com",
+          delivery_option: "standard",
+          idempotency_key: "checkout-abc123",
           shipping_address: {
             name: "Buyer Example",
             line1: "1 Market Street",

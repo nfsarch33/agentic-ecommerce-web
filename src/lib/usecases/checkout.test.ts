@@ -30,11 +30,15 @@ describe("buildCheckoutOrder", () => {
     const request = buildCheckoutOrder({
       cart,
       customerEmail: "buyer@example.com",
+      deliveryOption: "standard",
+      idempotencyKey: "checkout-123",
       shippingAddress,
     });
 
     expect(request).toEqual({
       customerEmail: "buyer@example.com",
+      deliveryOption: "standard",
+      idempotencyKey: "checkout-123",
       shippingAddress,
       items: [
         {
@@ -54,6 +58,8 @@ describe("buildCheckoutOrder", () => {
       buildCheckoutOrder({
         cart: emptyCartState,
         customerEmail: "buyer@example.com",
+        deliveryOption: "standard",
+        idempotencyKey: "checkout-123",
         shippingAddress,
       }),
     ).toThrow(CheckoutValidationError);
@@ -61,6 +67,8 @@ describe("buildCheckoutOrder", () => {
       buildCheckoutOrder({
         cart: emptyCartState,
         customerEmail: "buyer@example.com",
+        deliveryOption: "standard",
+        idempotencyKey: "checkout-123",
         shippingAddress,
       }),
     ).toThrow(/at least one item/);
@@ -83,8 +91,12 @@ describe("buildCheckoutOrder", () => {
     const request = buildCheckoutOrder({
       cart: multi,
       customerEmail: "buyer@example.com",
+      deliveryOption: "express",
+      idempotencyKey: "checkout-456",
       shippingAddress,
     });
     expect(request.items.map((item) => item.sku)).toEqual(["BAND-001", "MAT-001"]);
+    expect(request.deliveryOption).toBe("express");
+    expect(request.idempotencyKey).toBe("checkout-456");
   });
 });
