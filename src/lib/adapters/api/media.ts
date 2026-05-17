@@ -327,18 +327,12 @@ export async function fetchMediaAssets(opts: FetchMediaAssetsOptions): Promise<M
   if (opts.productId) params.set("product_id", opts.productId);
   if (opts.status && opts.status !== "all") params.set("status", opts.status);
   const query = params.size > 0 ? `?${params.toString()}` : "";
-  let body: { assets?: unknown };
-  try {
-    body = (await requestJson(
-      opts,
-      `/api/v1/media${query}`,
-      { method: "GET" },
-      "fetchMediaAssets",
-    )) as { assets?: unknown };
-  } catch (err) {
-    if (err instanceof MediaApiError && /HTTP (404|405)/.test(err.message)) return [];
-    throw err;
-  }
+  const body = (await requestJson(
+    opts,
+    `/api/v1/media${query}`,
+    { method: "GET" },
+    "fetchMediaAssets",
+  )) as { assets?: unknown };
   if (!Array.isArray(body.assets)) {
     throw new MediaApiError("fetchMediaAssets: response body must include assets array");
   }

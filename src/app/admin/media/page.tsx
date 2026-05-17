@@ -16,7 +16,12 @@ export const metadata: Metadata = {
 export default async function MediaAdminPage() {
   const serverBaseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
   const clientBaseUrl = process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? serverBaseUrl;
-  const { assets } = await loadMediaLibrary({ baseUrl: serverBaseUrl });
+  try {
+    const { assets } = await loadMediaLibrary({ baseUrl: serverBaseUrl });
 
-  return <MediaLibrary assets={assets} apiBaseUrl={clientBaseUrl} />;
+    return <MediaLibrary assets={assets} apiBaseUrl={clientBaseUrl} />;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unable to load media library.";
+    return <MediaLibrary assets={[]} apiBaseUrl={clientBaseUrl} initialError={message} />;
+  }
 }

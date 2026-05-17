@@ -275,4 +275,31 @@ describe("ProductMediaPanel", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/approval failed/i);
     expect(approveButton).toBeEnabled();
   });
+
+  it("disables process actions for assets that are still pending approval or already rejected", () => {
+    const rejectedAsset: MediaAsset = {
+      ...imageEditVariant,
+      id: "media_variant_rejected",
+      metadata: {
+        altText: "Rejected variant with supplier watermark still visible",
+        title: "Rejected lifestyle edit",
+        tags: ["image_edit_variant", "rejected"],
+      },
+      reviewState: "rejected",
+      reviewNote: "Supplier watermark is still visible",
+      reviewedAt: "2026-05-12T11:13:00Z",
+      reviewer: "operator@example.com",
+    };
+
+    render(
+      <ProductMediaPanel
+        apiBaseUrl="https://api.example"
+        productId="p_1"
+        initialAssets={[asset, imageEditVariant, rejectedAsset]}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /process lifestyle edit variant/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /process rejected lifestyle edit/i })).toBeDisabled();
+  });
 });
