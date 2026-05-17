@@ -4742,6 +4742,7 @@ export interface operations {
     listOperatorAlerts: {
         parameters: {
             query: {
+                /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
                 tenant_id: string;
                 status?: "pending" | "acknowledged" | "resolved" | "expired";
             };
@@ -4783,6 +4784,7 @@ export interface operations {
     acknowledgeOperatorAlert: {
         parameters: {
             query: {
+                /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
                 tenant_id: string;
             };
             header?: never;
@@ -4843,6 +4845,7 @@ export interface operations {
     resolveOperatorAlert: {
         parameters: {
             query: {
+                /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
                 tenant_id: string;
                 action: "approve" | "deny";
             };

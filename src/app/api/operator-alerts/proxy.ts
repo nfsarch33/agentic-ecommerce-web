@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+const OPERATOR_ALERT_MUTATION_PATH = /^\/[^/]+\/(acknowledge|resolve)$/;
+
 export function backendBaseUrl(): string {
   return (
     process.env.MC_API_BASE_URL ??
@@ -19,6 +21,9 @@ export function deriveUpstreamPath(request: Request): string | null {
   const tail = pathname.slice(prefix.length);
   if (tail === "" || tail === "/") {
     return "/api/v1/operator/alerts";
+  }
+  if (!OPERATOR_ALERT_MUTATION_PATH.test(tail)) {
+    return null;
   }
   return `/api/v1/operator/alerts${tail}`;
 }

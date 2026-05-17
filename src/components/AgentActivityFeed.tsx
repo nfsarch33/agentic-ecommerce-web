@@ -43,6 +43,10 @@ const SUBSCRIBED_EVENTS = [
 
 type ConnectionState = "connecting" | "open" | "closed" | "error";
 
+function approvedStreamUrl(streamUrl: string): string {
+  return streamUrl.startsWith("/") ? streamUrl : DEFAULT_STREAM_URL;
+}
+
 export function AgentActivityFeed({
   streamUrl = DEFAULT_STREAM_URL,
   maxEvents = DEFAULT_MAX_EVENTS,
@@ -54,13 +58,14 @@ export function AgentActivityFeed({
   const counterRef = useRef(0);
 
   const Source = useMemo(() => EventSourceImpl ?? (typeof EventSource !== "undefined" ? EventSource : undefined), [EventSourceImpl]);
+  const resolvedStreamUrl = useMemo(() => approvedStreamUrl(streamUrl), [streamUrl]);
   const renderedState = Source || typeof window === "undefined" ? state : "error";
 
   useEffect(() => {
     if (!Source) {
       return;
     }
-    const source = new Source(streamUrl);
+    const source = new Source(resolvedStreamUrl);
     source.onopen = () => setState("open");
     source.onerror = () => setState("error");
 
@@ -108,7 +113,7 @@ export function AgentActivityFeed({
       source.close();
       setState("closed");
     };
-  }, [Source, streamUrl, maxEvents]);
+  }, [Source, resolvedStreamUrl, maxEvents]);
 
   return (
     <section aria-label="Agent activity feed" className="flex flex-col gap-4">
