@@ -363,6 +363,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve sourced media
+         * @description Transitions a sourced media asset from pending review to approved so it can be processed.
+         */
+        post: operations["approveMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject sourced media
+         * @description Rejects a sourced media asset and records reviewer audit information.
+         */
+        post: operations["rejectMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/{id}/compliance-check": {
         parameters: {
             query?: never;
@@ -2616,6 +2656,16 @@ export interface components {
             /** @default false */
             remove_background: boolean;
         };
+        MediaApproveRequest: {
+            reviewer: string;
+            /** @description Optional operator note captured with the approval decision. */
+            note?: string;
+        };
+        MediaRejectRequest: {
+            reviewer: string;
+            /** @description Required operator note explaining the rejection. */
+            note: string;
+        };
         MediaResizeOptions: {
             max_width?: number;
             max_height?: number;
@@ -2630,8 +2680,18 @@ export interface components {
             processing?: components["schemas"]["MediaProcessingInfo"];
             quality?: components["schemas"]["MediaQualityReport"];
             storage?: components["schemas"]["MediaStorageInfo"];
+            /** @enum {string} */
+            review_state: "pending" | "approved" | "rejected";
+            /** @enum {string} */
+            process_state: "pending" | "processed";
+            review_note?: string;
             /** Format: date-time */
-            created_at?: string;
+            reviewed_at?: string;
+            reviewer?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         MediaMetadata: {
             mime_type: string;
@@ -4219,6 +4279,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description Existing media asset replayed for a duplicate source request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
             /** @description Media asset sourced and registered. */
             201: {
                 headers: {
@@ -4306,6 +4375,15 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Media asset is not in an approvable state for processing. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Missing media ID. */
             422: {
                 headers: {
@@ -4370,6 +4448,130 @@ export interface operations {
             };
             /** @description Media asset not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    approveMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Media asset approved for processing. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset is not in a pending review state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing reviewer or invalid path parameter. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rejectMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Media asset rejected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset is not in a pending review state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing reviewer, review note, or invalid path parameter. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

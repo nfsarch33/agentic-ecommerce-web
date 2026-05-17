@@ -47,6 +47,18 @@ export interface ProcessMediaAssetOptions extends MediaApiOptions {
   readonly mediaId: string;
 }
 
+export interface ApproveMediaAssetOptions extends MediaApiOptions {
+  readonly mediaId: string;
+  readonly reviewer: string;
+  readonly note?: string;
+}
+
+export interface RejectMediaAssetOptions extends MediaApiOptions {
+  readonly mediaId: string;
+  readonly reviewer: string;
+  readonly note: string;
+}
+
 export interface ValidateMediaAssetOptions extends MediaApiOptions {
   readonly mediaId: string;
 }
@@ -116,6 +128,34 @@ function originalFilename(raw: Record<string, unknown>, storage: Record<string, 
   );
 }
 
+function reviewState(
+  raw: Record<string, unknown>,
+  quality: Record<string, unknown>,
+  storage: Record<string, unknown>,
+): "pending" | "approved" | "rejected" {
+  const explicit = raw["review_state"];
+  if (explicit === "pending" || explicit === "approved" || explicit === "rejected") {
+    return explicit;
+  }
+  if (typeof quality["pass"] === "boolean" || stringValue(storage["key"]) !== "") return "approved";
+  return "pending";
+}
+
+function processState(
+  raw: Record<string, unknown>,
+  quality: Record<string, unknown>,
+  storage: Record<string, unknown>,
+): "pending" | "processed" {
+  const explicit = raw["process_state"];
+  if (explicit === "pending" || explicit === "processed") {
+    return explicit;
+  }
+  if (typeof quality["pass"] === "boolean") return "processed";
+  if (stringValue(storage["key"]) !== "") return "processed";
+  if (Array.isArray(asRecord(raw["processing"])["operations"])) return "processed";
+  return "pending";
+}
+
 function processingStatus(
   raw: Record<string, unknown>,
   quality: Record<string, unknown>,
@@ -131,9 +171,14 @@ function processingStatus(
   ) {
     return explicit;
   }
-  if (typeof quality["pass"] === "boolean") return quality["pass"] ? "validated" : "failed";
-  if (stringValue(storage["key"]) !== "") return "processed";
-  if (Array.isArray(asRecord(raw["processing"])["operations"])) return "processed";
+  const review = reviewState(raw, quality, storage);
+  const process = processState(raw, quality, storage);
+  if (review === "rejected") return "failed";
+  if (process === "processed") {
+    if (typeof quality["pass"] === "boolean") return quality["pass"] ? "validated" : "failed";
+    return "processed";
+  }
+  if (review === "approved") return "processing";
   return "sourced";
 }
 
@@ -206,6 +251,8 @@ function mapMediaAsset(rawAsset: unknown): MediaAsset {
   const storage = asRecord(raw["storage"] ?? raw["object_store_location"]);
   const filename = originalFilename(raw, storage);
   const createdAt = stringValue(raw["created_at"], fallbackTimestamp);
+  const lifecycleReviewState = reviewState(raw, quality, storage);
+  const lifecycleProcessState = processState(raw, quality, storage);
 
   return createMediaAsset({
     id: String(raw["id"] ?? ""),
@@ -217,6 +264,11 @@ function mapMediaAsset(rawAsset: unknown): MediaAsset {
     width: optionalNumber(raw["width"] ?? metadata["width"]),
     height: optionalNumber(raw["height"] ?? metadata["height"]),
     processingStatus: processingStatus(raw, quality, storage),
+    reviewState: lifecycleReviewState,
+    processState: lifecycleProcessState,
+    reviewNote: optionalString(raw["review_note"]),
+    reviewedAt: optionalString(raw["reviewed_at"]),
+    reviewer: optionalString(raw["reviewer"]),
     objectStoreLocation: stringValue(storage["key"]) !== ""
       ? {
           provider: stringValue(storage["provider"], "local") as ObjectStoreProvider,
@@ -344,6 +396,42 @@ export async function processMediaAsset(opts: ProcessMediaAssetOptions): Promise
       body: JSON.stringify({ media_id: opts.mediaId }),
     },
     "processMediaAsset",
+  );
+  return assetFromBody(body);
+}
+
+export async function approveMediaAsset(opts: ApproveMediaAssetOptions): Promise<MediaAsset> {
+  const mediaId = encodeURIComponent(opts.mediaId);
+  const body = await requestJson(
+    opts,
+    `/api/v1/media/${mediaId}/approve`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        reviewer: opts.reviewer,
+        ...(opts.note ? { note: opts.note } : {}),
+      }),
+    },
+    "approveMediaAsset",
+  );
+  return assetFromBody(body);
+}
+
+export async function rejectMediaAsset(opts: RejectMediaAssetOptions): Promise<MediaAsset> {
+  const mediaId = encodeURIComponent(opts.mediaId);
+  const body = await requestJson(
+    opts,
+    `/api/v1/media/${mediaId}/reject`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        reviewer: opts.reviewer,
+        note: opts.note,
+      }),
+    },
+    "rejectMediaAsset",
   );
   return assetFromBody(body);
 }

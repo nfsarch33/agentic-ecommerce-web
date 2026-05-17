@@ -26,6 +26,11 @@ const assets: MediaAsset[] = [
       title: "Resistance band hero image",
       tags: ["fitness", "hero"],
     },
+    reviewState: "approved",
+    processState: "processed",
+    reviewNote: "Approved for hero placement",
+    reviewedAt: "2026-05-08T00:30:00Z",
+    reviewer: "operator@example.com",
     qaResult: {
       status: "passed",
       score: 92,
@@ -52,6 +57,11 @@ const assets: MediaAsset[] = [
       title: "Tiny supplier thumbnail",
       tags: ["supplier"],
     },
+    reviewState: "rejected",
+    processState: "pending",
+    reviewNote: "Supplier thumbnail is too small",
+    reviewedAt: "2026-05-08T00:45:00Z",
+    reviewer: "qa@example.com",
     qaResult: {
       status: "failed",
       score: 24,
@@ -161,15 +171,30 @@ describe("MediaLibrary", () => {
     render(<MediaLibrary assets={[]} sourceMediaImpl={sourceMediaImpl} />);
 
     await user.upload(screen.getByLabelText(/file metadata/i), file);
-    expect(screen.getByText(/upload.png ready as metadata stub/i)).toBeInTheDocument();
+    expect(screen.getByText("upload.png")).toBeInTheDocument();
+    expect(screen.getByText("image/png")).toBeInTheDocument();
+    expect(screen.getByText("5 bytes")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/source url/i), {
+      target: { value: "https://supplier.example/upload.png" },
+    });
     await user.click(screen.getByRole("button", { name: /source media/i }));
 
     expect(sourceMediaImpl).toHaveBeenCalledWith(
       expect.objectContaining({
+        sourceUrl: "https://supplier.example/upload.png",
         file: expect.objectContaining({ name: "upload.png", type: "image/png" }),
         metadata: expect.objectContaining({ title: "upload.png" }),
       }),
     );
+  });
+
+  it("renders review and process lifecycle badges from the backend asset contract", () => {
+    render(<MediaLibrary assets={assets} />);
+
+    expect(screen.getByText("Approved")).toBeInTheDocument();
+    expect(screen.getByText("Rejected")).toBeInTheDocument();
+    expect(screen.getByText("Complete")).toBeInTheDocument();
+    expect(screen.getByText("Pending")).toBeInTheDocument();
   });
 
   it("shows source and metadata editor errors", async () => {

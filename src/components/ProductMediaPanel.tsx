@@ -2,17 +2,28 @@
 
 import { useState } from "react";
 import {
+  approveMediaAsset,
+  processMediaAsset,
+  rejectMediaAsset,
   sourceMedia,
   validateMediaAsset,
+  type ApproveMediaAssetOptions,
+  type ProcessMediaAssetOptions,
+  type RejectMediaAssetOptions,
   type SourceMediaOptions,
   type ValidateMediaAssetOptions,
 } from "@/lib/adapters/api/media";
 import {
+  mediaProcessStateLabel,
+  mediaProcessStateTone,
   mediaQAStatusLabel,
   mediaQAStatusTone,
+  mediaReviewStateLabel,
+  mediaReviewStateTone,
   mediaStatusLabel,
   mediaStatusTone,
   type MediaAsset,
+  type MediaReviewState,
   type StatusTone,
 } from "@/lib/domain/media";
 
@@ -20,24 +31,12 @@ export interface ProductMediaPanelProps {
   readonly apiBaseUrl: string;
   readonly productId: string;
   readonly initialAssets: readonly MediaAsset[];
+  readonly reviewer?: string;
   readonly sourceMediaImpl?: (opts: SourceMediaOptions) => Promise<MediaAsset>;
+  readonly approveMediaAssetImpl?: (opts: ApproveMediaAssetOptions) => Promise<MediaAsset>;
+  readonly rejectMediaAssetImpl?: (opts: RejectMediaAssetOptions) => Promise<MediaAsset>;
+  readonly processMediaAssetImpl?: (opts: ProcessMediaAssetOptions) => Promise<MediaAsset>;
   readonly validateMediaAssetImpl?: (opts: ValidateMediaAssetOptions) => Promise<MediaAsset>;
-  readonly reviewImageVariantImpl?: (
-    opts: ReviewImageVariantOptions,
-  ) => Promise<ReviewImageVariantResult>;
-}
-
-export type ImageVariantDecision = "approved" | "rejected";
-
-export interface ReviewImageVariantOptions {
-  readonly productId: string;
-  readonly mediaId: string;
-  readonly decision: ImageVariantDecision;
-}
-
-export interface ReviewImageVariantResult {
-  readonly mediaId: string;
-  readonly decision: ImageVariantDecision;
 }
 
 const toneClasses: Record<StatusTone, string> = {
@@ -71,31 +70,28 @@ function isImageEditVariant(asset: MediaAsset): boolean {
   return asset.metadata.tags.includes("image_edit_variant");
 }
 
-function imageVariantStatusLabel(decision?: ImageVariantDecision): string {
-  if (decision === "approved") return "Approved for publish";
-  if (decision === "rejected") return "Rejected";
+function imageVariantStatusLabel(reviewState?: MediaReviewState): string {
+  if (reviewState === "approved") return "Approved for publish";
+  if (reviewState === "rejected") return "Rejected";
   return "Pending approval";
 }
 
-function imageVariantStatusTone(decision?: ImageVariantDecision): StatusTone {
-  if (decision === "approved") return "green";
-  if (decision === "rejected") return "red";
+function imageVariantStatusTone(reviewState?: MediaReviewState): StatusTone {
+  if (reviewState === "approved") return "green";
+  if (reviewState === "rejected") return "red";
   return "amber";
-}
-
-async function defaultReviewImageVariant(
-  opts: ReviewImageVariantOptions,
-): Promise<ReviewImageVariantResult> {
-  return { mediaId: opts.mediaId, decision: opts.decision };
 }
 
 export function ProductMediaPanel({
   apiBaseUrl,
   productId,
   initialAssets,
+  reviewer = "operator",
   sourceMediaImpl = sourceMedia,
+  approveMediaAssetImpl = approveMediaAsset,
+  rejectMediaAssetImpl = rejectMediaAsset,
+  processMediaAssetImpl = processMediaAsset,
   validateMediaAssetImpl = validateMediaAsset,
-  reviewImageVariantImpl = defaultReviewImageVariant,
 }: ProductMediaPanelProps) {
   const [assets, setAssets] = useState<readonly MediaAsset[]>(initialAssets);
   const [sourceUrl, setSourceUrl] = useState("");
@@ -104,13 +100,16 @@ export function ProductMediaPanel({
   const [tags, setTags] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reviewingVariantId, setReviewingVariantId] = useState<string | null>(null);
-  const [variantDecisions, setVariantDecisions] = useState<
-    Readonly<Record<string, ImageVariantDecision>>
-  >({});
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const imageEditVariants = assets.filter(isImageEditVariant);
+
+  function replaceAsset(updated: MediaAsset): void {
+    setAssets((current) =>
+      current.map((candidate) => (candidate.id === updated.id ? updated : candidate)),
+    );
+  }
 
   async function handleSourceMedia(): Promise<void> {
     setMessage(null);
@@ -166,23 +165,29 @@ export function ProductMediaPanel({
 
   async function handleReviewImageVariant(
     asset: MediaAsset,
-    decision: ImageVariantDecision,
+    action: "approve" | "reject",
   ): Promise<void> {
     setMessage(null);
     setError(null);
     setReviewingVariantId(asset.id);
     try {
-      const result = await reviewImageVariantImpl({
-        productId,
-        mediaId: asset.id,
-        decision,
-      });
-      setVariantDecisions((current) => ({
-        ...current,
-        [result.mediaId]: result.decision,
-      }));
+      const updated =
+        action === "approve"
+          ? await approveMediaAssetImpl({
+              baseUrl: apiBaseUrl,
+              mediaId: asset.id,
+              reviewer,
+              note: "Ready for publishing",
+            })
+          : await rejectMediaAssetImpl({
+              baseUrl: apiBaseUrl,
+              mediaId: asset.id,
+              reviewer,
+              note: "Rejected during operator review",
+            });
+      replaceAsset(updated);
       setMessage(
-        result.decision === "approved"
+        action === "approve"
           ? "Image edit variant approved."
           : "Image edit variant rejected.",
       );
@@ -190,6 +195,24 @@ export function ProductMediaPanel({
       setError(err instanceof Error ? err.message : "Unable to review image edit variant.");
     } finally {
       setReviewingVariantId(null);
+    }
+  }
+
+  async function handleProcess(asset: MediaAsset): Promise<void> {
+    setMessage(null);
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const updated = await processMediaAssetImpl({
+        baseUrl: apiBaseUrl,
+        mediaId: asset.id,
+      });
+      replaceAsset(updated);
+      setMessage("Media processing complete.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to process media.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -297,7 +320,6 @@ export function ProductMediaPanel({
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {imageEditVariants.map((variant) => {
-              const decision = variantDecisions[variant.id];
               const previewUrl = variant.objectStoreLocation?.url ?? variant.sourceUrl;
               const reviewing = reviewingVariantId === variant.id;
               return (
@@ -317,8 +339,8 @@ export function ProductMediaPanel({
                     )}
                     <div className="min-w-0 flex-1">
                       <StatusBadge
-                        label={imageVariantStatusLabel(decision)}
-                        tone={imageVariantStatusTone(decision)}
+                        label={imageVariantStatusLabel(variant.reviewState)}
+                        tone={imageVariantStatusTone(variant.reviewState)}
                       />
                       <h4 className="mt-3 text-base font-semibold text-gray-950">
                         {assetTitle(variant)}
@@ -332,7 +354,7 @@ export function ProductMediaPanel({
                     <button
                       type="button"
                       disabled={reviewing}
-                      onClick={() => void handleReviewImageVariant(variant, "approved")}
+                      onClick={() => void handleReviewImageVariant(variant, "approve")}
                       aria-label={`Approve ${assetTitle(variant)}`}
                       className="rounded-md bg-[var(--color-brand-500)] px-3 py-2 text-sm font-medium text-white disabled:bg-gray-300"
                     >
@@ -341,7 +363,7 @@ export function ProductMediaPanel({
                     <button
                       type="button"
                       disabled={reviewing}
-                      onClick={() => void handleReviewImageVariant(variant, "rejected")}
+                      onClick={() => void handleReviewImageVariant(variant, "reject")}
                       aria-label={`Reject ${assetTitle(variant)}`}
                       className="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-800 disabled:text-gray-400"
                     >
@@ -365,6 +387,14 @@ export function ProductMediaPanel({
           <article key={asset.id} className="rounded-lg border border-gray-200 p-4">
             <div className="flex flex-wrap gap-2">
               <StatusBadge
+                label={mediaReviewStateLabel(asset.reviewState ?? "pending")}
+                tone={mediaReviewStateTone(asset.reviewState ?? "pending")}
+              />
+              <StatusBadge
+                label={mediaProcessStateLabel(asset.processState ?? "pending")}
+                tone={mediaProcessStateTone(asset.processState ?? "pending")}
+              />
+              <StatusBadge
                 label={mediaStatusLabel(asset.processingStatus)}
                 tone={mediaStatusTone(asset.processingStatus)}
               />
@@ -382,6 +412,15 @@ export function ProductMediaPanel({
                 {check.message}
               </p>
             ))}
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => void handleProcess(asset)}
+              aria-label={`Process ${assetTitle(asset)}`}
+              className="mt-4 mr-2 rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-gray-800 disabled:text-gray-400"
+            >
+              Process media
+            </button>
             <button
               type="button"
               disabled={isSubmitting}

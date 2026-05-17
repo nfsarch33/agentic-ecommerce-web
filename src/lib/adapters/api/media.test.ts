@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  approveMediaAsset,
   fetchMediaAsset,
   fetchMediaAssets,
   processMediaAsset,
+  rejectMediaAsset,
   sourceMedia,
   updateMediaMetadata,
   validateMediaAsset,
@@ -32,6 +34,9 @@ const rawAsset = {
     size_bytes: 450_123,
   },
   created_at: "2026-05-08T00:00:00Z",
+  updated_at: "2026-05-08T01:00:00Z",
+  review_state: "pending",
+  process_state: "pending",
 };
 
 function jsonResponse(body: unknown, init: ResponseInit = {}) {
@@ -57,6 +62,8 @@ describe("media API adapter", () => {
       expect.objectContaining({ method: "GET" }),
     );
     expect(assets[0]?.metadata.altText).toBe("Resistance band set with five tension levels");
+    expect(assets[0]?.reviewState).toBe("pending");
+    expect(assets[0]?.processState).toBe("pending");
   });
 
   it("fetches the whole media library without optional filters", async () => {
@@ -167,6 +174,69 @@ describe("media API adapter", () => {
       "https://api.example/api/v1/media/media_hero/metadata",
       expect.objectContaining({ method: "PATCH" }),
     );
+  });
+
+  it("approves and rejects media assets with explicit reviewer evidence", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          ...rawAsset,
+          review_state: "approved",
+          reviewer: "operator@example.com",
+          review_note: "Ready for processing",
+          reviewed_at: "2026-05-08T00:30:00Z",
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          ...rawAsset,
+          review_state: "rejected",
+          reviewer: "operator@example.com",
+          review_note: "Supplier watermark is still visible",
+          reviewed_at: "2026-05-08T00:45:00Z",
+        }),
+      );
+
+    const approved = await approveMediaAsset({
+      baseUrl: "https://api.example",
+      mediaId: "media_hero",
+      reviewer: "operator@example.com",
+      note: "Ready for processing",
+      fetchImpl,
+    });
+    const rejected = await rejectMediaAsset({
+      baseUrl: "https://api.example",
+      mediaId: "media_hero",
+      reviewer: "operator@example.com",
+      note: "Supplier watermark is still visible",
+      fetchImpl,
+    });
+
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      1,
+      "https://api.example/api/v1/media/media_hero/approve",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          reviewer: "operator@example.com",
+          note: "Ready for processing",
+        }),
+      }),
+    );
+    expect(fetchImpl).toHaveBeenNthCalledWith(
+      2,
+      "https://api.example/api/v1/media/media_hero/reject",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          reviewer: "operator@example.com",
+          note: "Supplier watermark is still visible",
+        }),
+      }),
+    );
+    expect(approved.reviewState).toBe("approved");
+    expect(rejected.reviewState).toBe("rejected");
   });
 
   it("raises useful errors for backend failures", async () => {

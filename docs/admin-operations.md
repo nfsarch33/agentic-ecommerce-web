@@ -8,7 +8,7 @@ The current admin UI is the operator console for backend workflows, Media Intell
 | --- | --- | --- |
 | `/admin/workflows` | List workflow runs and current status. | `GET /api/v1/workflows/{id}` plus workflow start routes documented in backend `docs/temporal-workflow-specs.md`. |
 | `/admin/workflows/[id]` | Inspect an activity timeline and terminal state. | Workflow status response from `api/openapi.yaml`. |
-| `/admin/media` | Browse sourced media assets, quality status, and metadata. | `/api/v1/media/source`, `/api/v1/media/process`, `/api/v1/media/{id}`, `/api/v1/media/{id}/validate`. |
+| `/admin/media` | Browse sourced media assets, review lifecycle state, process status, and metadata. | `/api/v1/media/source`, `/api/v1/media/process`, `/api/v1/media/{id}`, `/api/v1/media/{id}/approve`, `/api/v1/media/{id}/reject`, `/api/v1/media/{id}/validate`. |
 | `/admin/products/[id]/content` | Review generated content, RAG/fact-check evidence, media state, and compliance readiness. | RAG, compliance, media, and workflow routes from backend OpenAPI. |
 | `/admin/settings/webhooks` | Register, test, and delete outbound webhooks for n8n or other approved receivers. | `/api/v1/webhooks`, `/api/v1/webhooks/{id}`, `/api/v1/webhooks/{id}/test`. |
 | `/admin/settings/tenant` | Edit tenant branding, WooCommerce credential references, AI preferences, and compliance overrides. | `/api/v1/tenant/settings`. |
@@ -29,6 +29,16 @@ The browser and Next.js server must not connect to Temporal gRPC.
 ## Media Intelligence Operations
 
 Media state is sourced from backend API responses. The frontend may preview URLs returned by the backend and CDN configuration, but it must not store supplier credentials, object-store credentials, or temporary upload secrets. Production media URLs should be HTTPS and rooted in the configured CDN or backend-approved public base URL.
+
+The admin surfaces must treat backend lifecycle fields as authoritative:
+
+- render `pending`, `approved`, `rejected`, `processing`, `processed`, and
+  `failed` states from backend responses rather than inventing local aliases;
+- send approve/reject actions to the backend review endpoints instead of
+  mutating local state optimistically without server confirmation;
+- only surface processing actions for assets the backend reports as approved;
+- display backend-provided timestamps and error messages so operators can retry
+  from a real audit trail.
 
 Use `NEXT_PUBLIC_MEDIA_CDN_BASE_URL` to constrain Next Image remote patterns for future image optimization. Do not add arbitrary supplier domains to public image allowlists.
 
