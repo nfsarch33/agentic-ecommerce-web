@@ -420,6 +420,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/operator/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List operator alerts
+         * @description Approved public operator-alert surface consumed by the web BFF for alert review queues.
+         */
+        get: operations["listOperatorAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operator/alerts/{alert_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge an operator alert
+         * @description Moves a pending operator alert into the acknowledged state without resolving the underlying action.
+         */
+        post: operations["acknowledgeOperatorAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operator/alerts/{alert_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve an operator alert
+         * @description Resolves a pending or acknowledged operator alert with an explicit approve or deny action.
+         */
+        post: operations["resolveOperatorAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/products/{id}/compliance-check": {
         parameters: {
             query?: never;
@@ -3456,6 +3516,52 @@ export interface components {
         AdminChannelsResponse: {
             data: components["schemas"]["AdminChannelStatus"][];
         };
+        OperatorAlert: {
+            tenant_id: string;
+            alert_id: string;
+            /** @enum {string} */
+            alert_type: "large_refund_pending_approval" | "large_dropship_pending_approval" | "price_change_pending_approval" | "captcha_detected" | "omniparser_unavailable" | "rate_limit_drain" | "channel_status_update_failed" | "large_margin_alert";
+            /** @enum {string} */
+            severity: "info" | "warning" | "critical";
+            /** @enum {string} */
+            status: "pending" | "acknowledged" | "resolved" | "expired";
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            action_taken?: "approve" | "deny";
+            operator_email?: string;
+            note?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            acknowledged_at?: string;
+            /** Format: date-time */
+            resolved_at?: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        OperatorAlertListResponse: {
+            tenant_id: string;
+            /** @enum {string} */
+            status: "pending" | "acknowledged" | "resolved" | "expired";
+            alerts: components["schemas"]["OperatorAlert"][];
+            count: number;
+        };
+        OperatorAlertAcknowledgeResponse: {
+            tenant_id: string;
+            alert_id: string;
+            /** @enum {string} */
+            status: "acknowledged";
+        };
+        OperatorAlertResolveResponse: {
+            tenant_id: string;
+            alert_id: string;
+            /** @enum {string} */
+            status: "resolved";
+            /** @enum {string} */
+            action_taken: "approve" | "deny";
+        };
         CoachingTipRequest: {
             /** @enum {string} */
             context: "onboarding" | "pricing_strategy" | "channel_optimization" | "inventory_management";
@@ -4624,6 +4730,168 @@ export interface operations {
             };
             /** @description Missing reviewer, review note, or invalid path parameter. */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listOperatorAlerts: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                status?: "pending" | "acknowledged" | "resolved" | "expired";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator alerts for the requested tenant and lifecycle state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorAlertListResponse"];
+                };
+            };
+            /** @description Missing tenant identifier or invalid query parameters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert repository failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    acknowledgeOperatorAlert: {
+        parameters: {
+            query: {
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator alert acknowledged. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorAlertAcknowledgeResponse"];
+                };
+            };
+            /** @description Missing tenant identifier or invalid alert path. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert not found for the tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert is already resolved. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert repository failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resolveOperatorAlert: {
+        parameters: {
+            query: {
+                tenant_id: string;
+                action: "approve" | "deny";
+            };
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator alert resolved with an explicit action. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorAlertResolveResponse"];
+                };
+            };
+            /** @description Missing tenant identifier, invalid alert path, or unsupported action. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert not found for the tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert is already resolved. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert repository or event publication failure. */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };

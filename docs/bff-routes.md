@@ -9,6 +9,9 @@ The frontend keeps browser-facing session and AI helper routes under `src/app/ap
 | `/api/auth/login` | `POST` | Validate login input, call backend login, and set the httpOnly session cookie. | `POST /api/v1/auth/login` |
 | `/api/auth/me` | `GET` | Read the session cookie and fetch the current backend session. | `GET /api/v1/auth/me` |
 | `/api/auth/logout` | `POST` | Best-effort backend logout and browser session cookie clear. | `POST /api/v1/auth/logout` |
+| `/api/operator-alerts` | `GET` | Poll the approved operator-alert review queue without exposing bearer tokens to the browser. | `GET /api/v1/operator/alerts` |
+| `/api/operator-alerts/[...path]` | `POST` | Proxy operator-alert acknowledge and resolve actions through the Next.js runtime. | `POST /api/v1/operator/alerts/{alert_id}/acknowledge`, `POST /api/v1/operator/alerts/{alert_id}/resolve` |
+| `/api/agent-activity/stream` | `GET` | Stream the approved agent-activity SSE feed through the BFF because `EventSource` cannot attach auth headers directly. | `GET /api/v1/agent-activity/stream` |
 | `/api/ai-describe` | `POST` | Optional AI describe fallback through the approved fleet bridge. | OpenAI-compatible bridge endpoint |
 
 ## Security Boundaries
