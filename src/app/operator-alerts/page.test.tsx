@@ -1,10 +1,24 @@
 // File scope: v3.9.1 EC-9-5 operator alerts page wiring tests.
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const requireServerSession = vi.fn();
+
+vi.mock("@/lib/server/auth-session", () => ({
+  requireServerSession: (...args: unknown[]) => requireServerSession(...args),
+}));
+
 import OperatorAlertsPage, { metadata } from "./page";
 
 describe("OperatorAlertsPage", () => {
-  it("returns a JSX tree without throwing", () => {
-    const tree = OperatorAlertsPage();
+  it("requires an operator session before rendering", async () => {
+    requireServerSession.mockResolvedValueOnce({
+      user: { id: "u_operator", email: "operator@example.com", role: "operator" },
+      expiresAt: "2026-05-18T00:00:00Z",
+    });
+
+    const tree = await OperatorAlertsPage();
+
+    expect(requireServerSession).toHaveBeenCalledWith("operator");
     expect(tree).toBeDefined();
   });
 

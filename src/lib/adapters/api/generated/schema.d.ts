@@ -3626,6 +3626,8 @@ export interface components {
             alert_id: string;
             /** @enum {string} */
             status: "acknowledged";
+            /** Format: date-time */
+            acknowledged_at: string;
         };
         OperatorAlertResolveResponse: {
             tenant_id: string;
@@ -3634,6 +3636,8 @@ export interface components {
             status: "resolved";
             /** @enum {string} */
             action_taken: "approve" | "deny";
+            /** Format: date-time */
+            resolved_at: string;
         };
         CoachingTipRequest: {
             /** @enum {string} */
@@ -4843,6 +4847,24 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated caller lacks operator-alert read access. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             /** @description Operator alert repository failure. */
             500: {
                 headers: {
@@ -4879,6 +4901,24 @@ export interface operations {
             };
             /** @description Missing tenant identifier or invalid alert path. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated caller lacks operator-alert mutation access. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4941,6 +4981,24 @@ export interface operations {
             };
             /** @description Missing tenant identifier, invalid alert path, or unsupported action. */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated caller lacks operator-alert mutation access. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
