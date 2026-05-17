@@ -10,7 +10,7 @@ The frontend keeps browser-facing session and AI helper routes under `src/app/ap
 | `/api/auth/me` | `GET` | Read the session cookie and fetch the current backend session. | `GET /api/v1/auth/me` |
 | `/api/auth/logout` | `POST` | Best-effort backend logout and browser session cookie clear. | `POST /api/v1/auth/logout` |
 | `/api/operator-alerts` | `GET` | Poll the approved operator-alert review queue for authenticated operator surfaces without exposing bearer tokens to the browser. | `GET /api/v1/operator/alerts` |
-| `/api/operator-alerts/[...path]` | `POST` | Proxy operator-alert acknowledge and resolve actions for authenticated operators through the Next.js runtime. | `POST /api/v1/operator/alerts/{alert_id}/acknowledge`, `POST /api/v1/operator/alerts/{alert_id}/resolve` |
+| `/api/operator-alerts/[...path]` | `POST` | Require an operator session and proxy operator-alert acknowledge / resolve actions through the Next.js runtime. | `POST /api/v1/operator/alerts/{alert_id}/acknowledge`, `POST /api/v1/operator/alerts/{alert_id}/resolve` |
 | `/api/agent-activity/stream` | `GET` | Stream the approved agent-activity SSE feed through the BFF because `EventSource` cannot attach auth headers directly. | `GET /api/v1/agent-activity/stream` |
 | `/api/ai-describe` | `POST` | Optional AI describe fallback through the approved fleet bridge. | OpenAI-compatible bridge endpoint |
 
@@ -18,7 +18,8 @@ The frontend keeps browser-facing session and AI helper routes under `src/app/ap
 
 - BFF routes run in the Node.js runtime and must not expose backend tokens, bridge URLs, or secret values to the browser.
 - The auth routes store the backend access token in an httpOnly cookie. Frontend role checks are convenience UI only; backend JWT validation and RBAC remain authoritative.
-- The `/operator-alerts` page now requires `requireServerSession("operator")` before rendering. The backend keeps `GET /api/v1/operator/alerts` viewer-readable where explicitly needed, but all acknowledge/resolve mutations require `operator` or `admin` and emit backend audit events.
+- The `/operator-alerts` page now requires `requireServerSession("operator")` before rendering, and the mutation route under `/api/operator-alerts/[...path]` now asserts the same operator session boundary before proxying upstream.
+- The backend keeps `GET /api/v1/operator/alerts` viewer-readable where explicitly needed, but all acknowledge/resolve mutations require `operator` or `admin`, emit backend audit events, and only allow resolution after acknowledgement.
 - `/api/ai-describe` resolves `FLEET_AI_BRIDGE_URL` server-side and rejects direct MiniMax, loopback, or unapproved bridge targets through `fleetBridgeUrl`.
 - If `FLEET_AI_BRIDGE_URL` is unset, `/api/ai-describe` returns `503 ai_routing_disabled` instead of falling back to any direct provider endpoint.
 

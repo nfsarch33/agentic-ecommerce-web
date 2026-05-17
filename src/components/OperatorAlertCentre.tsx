@@ -153,11 +153,12 @@ export function OperatorAlertCentre({
         setPhase("ready");
       } catch (err) {
         if (cancelled) return;
-        setPhase("error");
-        setData({
-          alertsByStatus: emptyAlertCollections(),
-          errorMessage: err instanceof Error ? err.message : "unknown",
-        });
+        const message = err instanceof Error ? err.message : "unknown";
+        setData((prev) => ({
+          alertsByStatus: prev.alertsByStatus,
+          errorMessage: message,
+        }));
+        setPhase((prev) => (prev === "loading" ? "error" : "ready"));
       }
       if (!cancelled) {
         timer = setTimeout(poll, intervalMs);
@@ -326,7 +327,7 @@ export function OperatorAlertCentre({
                       Acknowledge
                     </button>
                   ) : null}
-                  {alert.status !== "resolved" ? (
+                  {alert.status === "acknowledged" ? (
                     <>
                       <button
                         type="button"
