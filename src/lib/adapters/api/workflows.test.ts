@@ -118,6 +118,30 @@ describe("workflows API adapter", () => {
     ]);
   });
 
+  it("maps review evidence from workflow detail responses", async () => {
+    const result = await fetchWorkflowDetail({
+      baseUrl: "http://api.test",
+      workflowId: "wf_product_publish_1",
+      fetchImpl: mockFetch({
+        ...rawDetail,
+        status: "failed",
+        review: {
+          approved: false,
+          reviewer: "lead@example.com",
+          note: "copy needs work",
+        },
+      }),
+    });
+
+    expect(result).toMatchObject({
+      review: {
+        approved: false,
+        reviewer: "lead@example.com",
+        note: "copy needs work",
+      },
+    });
+  });
+
   it("rejects legacy status-only workflow detail responses to avoid synthetic timelines", async () => {
     await expect(
       fetchWorkflowDetail({
@@ -282,6 +306,21 @@ describe("workflows API adapter", () => {
         fetchImpl: mockFetch({ status: "signaled" }, 202),
       }),
     ).rejects.toThrow("sendWorkflowReviewSignal: response body must include workflow detail");
+  });
+
+  it("rejects request_changes because the backend has no distinct contract for it", async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(
+      sendWorkflowReviewSignal({
+        baseUrl: "http://api.test",
+        workflowId: "wf_product_publish_1",
+        signal: "request_changes" as never,
+        fetchImpl,
+      }),
+    ).rejects.toThrow(/request_changes/i);
+
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it("throws WorkflowsApiError for HTTP failures and invalid response bodies", async () => {

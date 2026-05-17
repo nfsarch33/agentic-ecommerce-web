@@ -4,9135 +4,9037 @@
  */
 
 export interface paths {
-  "/healthz": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Health check */
-    get: operations["getHealthz"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/readyz": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Readiness check */
-    get: operations["getReadyz"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/metrics": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Prometheus metrics */
-    get: operations["getMetrics"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/login": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Bootstrap admin login
-     * @description Development/admin bootstrap login. Credentials must be supplied via
-     *     runtime configuration; the API contract intentionally uses placeholders
-     *     and does not define real secrets.
-     */
-    post: operations["login"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/refresh": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Refresh JWT access token
-     * @description Rotates a configured refresh session and returns a new access token pair.
-     */
-    post: operations["refreshAccessToken"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get current authenticated session */
-    get: operations["getCurrentSession"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/logout": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Validate logout request
-     * @description Stateless JWT logout endpoint for BFF compatibility. Clients clear their own httpOnly session cookie.
-     */
-    post: operations["logout"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/products": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List storefront products */
-    get: operations["listProducts"];
-    put?: never;
-    /** Create a product */
-    post: operations["createProduct"];
-    delete?: never;
-    /** Products CORS preflight */
-    options: operations["productsPreflight"];
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/products/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get a product by ID or slug */
-    get: operations["getProduct"];
-    /** Update a product */
-    put: operations["updateProduct"];
-    post?: never;
-    /** Delete a product */
-    delete: operations["deleteProduct"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/products/{id}/generate-description": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Generate AI product content suggestions
-     * @description Uses the configured fleet AI bridge. The backend never calls MiniMax directly.
-     */
-    post: operations["generateProductDescription"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/products/{id}/ai-suggestions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Get AI content suggestions for a product
-     * @description Generates non-persisted product description, SEO title, and meta description suggestions.
-     */
-    get: operations["getProductAISuggestions"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/rag/documents": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Ingest a RAG source document
-     * @description Chunks and embeds source material for fact-check evidence search. Embeddings are produced through the configured embedding port; the backend never calls MiniMax directly.
-     */
-    post: operations["ingestRAGDocument"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/rag/search": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Search fact-check evidence */
-    get: operations["searchRAGEvidence"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/content/generate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Generate product content with fact-checking
-     * @description Generates product copy, extracts factual claims, searches RAG evidence, and returns a combined quality/factual approval decision.
-     */
-    post: operations["generateFactCheckedContent"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/content/fact-checks/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Retrieve a stored fact-check result */
-    get: operations["getFactCheckResult"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/media/source": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Source supplier media
-     * @description Fetches an image from a supplier URL through the backend media intelligence service and extracts deterministic metadata.
-     */
-    post: operations["sourceMedia"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/media": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List media assets */
-    get: operations["listMedia"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/media/process": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Process sourced media
-     * @description Applies deterministic resize/format stubs and records explicit TODO metadata for background removal.
-     */
-    post: operations["processMedia"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/media/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get media asset */
-    get: operations["getMedia"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/media/{id}/validate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Validate media quality
-     * @description Runs resolution, aspect ratio, format, alt text, and brand-safety placeholder checks.
-     */
-    post: operations["validateMedia"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/media/{id}/approve": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Approve sourced media
-     * @description Transitions a sourced media asset from pending review to approved so it can be processed.
-     */
-    post: operations["approveMedia"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/media/{id}/reject": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Reject sourced media
-     * @description Rejects a sourced media asset and records reviewer audit information.
-     */
-    post: operations["rejectMedia"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/operator/alerts": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List operator alerts
-     * @description Approved public operator-alert surface consumed by the web BFF for alert review queues.
-     */
-    get: operations["listOperatorAlerts"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/operator/alerts/{alert_id}/acknowledge": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Acknowledge an operator alert
-     * @description Moves a pending operator alert into the acknowledged state without resolving the underlying action.
-     */
-    post: operations["acknowledgeOperatorAlert"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/operator/alerts/{alert_id}/resolve": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Resolve an operator alert
-     * @description Resolves a pending or acknowledged operator alert with an explicit approve or deny action.
-     */
-    post: operations["resolveOperatorAlert"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/products/{id}/compliance-check": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Run product content compliance checks
-     * @description Runs deterministic compliance rules before product publish. This endpoint does not call live AI services.
-     */
-    post: operations["checkProductCompliance"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/products/{id}/seo-suggestions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Generate deterministic SEO suggestions
-     * @description Generates SEO title, meta description, slug, keyword density, and score without live AI calls.
-     */
-    post: operations["suggestProductSEO"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/compliance/rules": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List built-in compliance rules */
-    get: operations["listComplianceRules"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tenant/settings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get tenant settings */
-    get: operations["getTenantSettings"];
-    /** Update tenant settings */
-    put: operations["updateTenantSettings"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/compliance/custom-rules": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List tenant custom compliance rules */
-    get: operations["listCustomComplianceRules"];
-    put?: never;
-    /** Create tenant custom compliance rule */
-    post: operations["createCustomComplianceRule"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/compliance/custom-rules/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /** Update tenant custom compliance rule */
-    put: operations["updateCustomComplianceRule"];
-    post?: never;
-    /** Delete tenant custom compliance rule */
-    delete: operations["deleteCustomComplianceRule"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/compliance/reports/summary": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get tenant compliance reporting summary */
-    get: operations["getComplianceReportSummary"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/compliance/reports/export": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Export tenant compliance report */
-    get: operations["exportComplianceReport"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orders": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Create an order */
-    post: operations["createOrder"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orders/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get an order by ID */
-    get: operations["getOrder"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orders/{id}/status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Advance order status */
-    patch: operations["updateOrderStatus"];
-    trace?: never;
-  };
-  "/api/v1/cart/{session_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get a cart session */
-    get: operations["getCart"];
-    /** Replace a cart session */
-    put: operations["putCart"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/sync/status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get WooCommerce sync status */
-    get: operations["getSyncStatus"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/sync/dlq": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List marketplace sync DLQ records */
-    get: operations["listMarketplaceDLQ"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/sync/dlq/{id}/replay": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Replay a marketplace sync DLQ record */
-    post: operations["replayMarketplaceDLQ"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/sync/conflicts": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List pending WooCommerce sync conflicts */
-    get: operations["listSyncConflicts"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/sync/conflicts/{id}/resolve": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Resolve a WooCommerce sync conflict */
-    post: operations["resolveSyncConflict"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/sync/products/{id}/publish": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Publish a local product to WooCommerce */
-    post: operations["publishProductToWooCommerce"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/webhooks/woocommerce/orders": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Receive WooCommerce order webhooks */
-    post: operations["receiveWooCommerceOrderWebhook"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/webhooks/woocommerce/products": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Receive WooCommerce product webhooks */
-    post: operations["receiveWooCommerceProductWebhook"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agents": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List registered backend agents */
-    get: operations["listAgents"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agents/{id}/run": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Queue a backend agent run */
-    post: operations["runAgent"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agents/{id}/history": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List historical runs for an agent */
-    get: operations["listAgentHistory"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agent-runs/{run_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get a backend agent run */
-    get: operations["getAgentRun"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agent-schedules": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List configured backend agent schedules */
-    get: operations["listAgentSchedules"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agent-schedules/{id}/enable": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Enable a configured backend agent schedule */
-    post: operations["enableAgentSchedule"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agent-schedules/{id}/disable": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Disable a configured backend agent schedule */
-    post: operations["disableAgentSchedule"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/webhooks": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List outbound webhook endpoints */
-    get: operations["listWebhooks"];
-    put?: never;
-    /**
-     * Register an outbound webhook endpoint
-     * @description Registers an HTTPS endpoint that receives HMAC-signed event deliveries. The raw secret is accepted only at creation time and is never returned.
-     */
-    post: operations["createWebhook"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/webhooks/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Delete an outbound webhook endpoint */
-    delete: operations["deleteWebhook"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/webhooks/{id}/test": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Send a signed test event to an outbound webhook endpoint */
-    post: operations["testWebhook"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/events/recent": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List recent backend events */
-    get: operations["listRecentEvents"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/payments": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List payments
-     * @description v4.3.0 — paginated list of payments for a tenant, filterable by
-     *     status and provider. Sorted by created_at descending.
-     */
-    get: operations["listPayments"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/analytics/gmv": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * GMV analytics — daily rollup
-     * @description v3.6.0 EC-9-1 — daily GMV rollup over the supplied date window.
-     *     Reads the gmv_daily_rollup materialized view (migration 0016)
-     *     for the tenant resolved from the JWT (X-Tenant-Id header takes
-     *     precedence; tenant_id query parameter is accepted as a fallback).
-     *     Acceptance: p95 < 200ms over 30-day window with 10K orders/tenant.
-     */
-    get: operations["getGMVDailyRollup"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/analytics/gmv/by-channel": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * GMV analytics — per-channel breakdown
-     * @description v3.6.0 EC-9-1 — channel-level GMV breakdown.
-     */
-    get: operations["getGMVByChannel"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/analytics/gmv/by-product": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * GMV analytics — top products
-     * @description v3.6.0 EC-9-1 — top-N products by GMV (default limit 20, max 100).
-     */
-    get: operations["getGMVByProduct"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/agent-activity/stream": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Agent activity SSE stream
-     * @description v3.6.0 EC-9-2 — Server-Sent Events stream of normalised agent
-     *     activity (pricing decisions, dropship orders, customer messages,
-     *     supplier cost changes). 30s heartbeat. Per-client buffer of 100
-     *     events; on overflow the oldest event is dropped and a `dropped`
-     *     event is emitted so the client can re-sync. Tenant scoping is
-     *     derived from the JWT-bearing X-Tenant-Id header; the tenant_id
-     *     query parameter is accepted only when the header is absent.
-     */
-    get: operations["streamAgentActivity"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/product-publish": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start the ProductPublishWorkflow
-     * @description Starts the canonical Temporal workflow that checks compliance, validates media, waits for human review, and publishes to WooCommerce.
-     */
-    post: operations["startProductPublishWorkflow"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/marketplace-sync": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start the MarketplaceSyncWorkflow
-     * @description Starts the Temporal workflow that dispatches a product sync event to the configured marketplace provider router.
-     */
-    post: operations["startMarketplaceSyncWorkflow"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/marketplace-replay": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start the MarketplaceReplayWorkflow
-     * @description Starts the Temporal workflow that replays one marketplace DLQ record through the provider router.
-     */
-    post: operations["startMarketplaceReplayWorkflow"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/content-generation": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start the ContentGenerationWorkflow
-     * @description Starts the Temporal workflow that generates content, fact-checks claims against RAG evidence, evaluates quality, and auto-approves or rejects the result.
-     */
-    post: operations["startContentGenerationWorkflow"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/media-processing": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start the MediaProcessingWorkflow
-     * @description Starts the Temporal workflow that sources supplier media, processes it, runs QA, stores it, and links it to a product.
-     */
-    post: operations["startMediaProcessingWorkflow"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/sourcing": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Start the SourcingWorkflow
-     * @description Starts the Temporal workflow that searches deterministic supplier candidates, scores them, compares landed prices, checks margin, and recommends a supplier.
-     */
-    post: operations["startSourcingWorkflow"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List Temporal workflows with lifecycle visibility */
-    get: operations["listWorkflows"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get Temporal workflow lifecycle detail */
-    get: operations["getWorkflowStatus"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/workflows/{id}/signals/review": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Signal ProductPublishWorkflow human review */
-    post: operations["signalProductPublishReview"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/membership-plans": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List membership plans for the active tenant */
-    get: operations["listMembershipPlans"];
-    put?: never;
-    /** Create a membership plan within the tenant */
-    post: operations["createMembershipPlan"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/membership-plans/{id}": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Get a membership plan */
-    get: operations["getMembershipPlan"];
-    put?: never;
-    post?: never;
-    /** Delete a membership plan */
-    delete: operations["deleteMembershipPlan"];
-    options?: never;
-    head?: never;
-    /** Update a membership plan */
-    patch: operations["updateMembershipPlan"];
-    trace?: never;
-  };
-  "/api/v1/memberships": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List memberships for the active tenant */
-    get: operations["listMemberships"];
-    put?: never;
-    /** Create a membership (subscription) for a member */
-    post: operations["createMembership"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/memberships/{id}": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Get a single membership */
-    get: operations["getMembership"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update the plan attached to a membership */
-    patch: operations["updateMembership"];
-    trace?: never;
-  };
-  "/api/v1/memberships/{id}/cancel": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Cancel a membership (terminal) */
-    post: operations["cancelMembership"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/memberships/{id}/pause": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Pause a membership (active only) */
-    post: operations["pauseMembership"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/memberships/{id}/resume": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Resume a paused membership */
-    post: operations["resumeMembership"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/digital-products": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    /** List digital products */
-    get: operations["listDigitalProducts"];
-    put?: never;
-    /** Create a digital product */
-    post: operations["createDigitalProduct"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/digital-products/{id}": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Read a digital product */
-    get: operations["getDigitalProduct"];
-    put?: never;
-    post?: never;
-    /** Delete a digital product */
-    delete: operations["deleteDigitalProduct"];
-    options?: never;
-    head?: never;
-    /** Update a digital product */
-    patch: operations["updateDigitalProduct"];
-    trace?: never;
-  };
-  "/api/v1/digital-products/{id}/download": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Mint a download URL for a granted product (admin) */
-    get: operations["adminDigitalProductDownload"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/licenses": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    /** List licences */
-    get: operations["listLicenses"];
-    put?: never;
-    /** Issue a licence */
-    post: operations["createLicense"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/licenses/{id}": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Read a licence */
-    get: operations["getLicense"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/licenses/{id}/revoke": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Revoke a licence */
-    post: operations["revokeLicense"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/me/licenses": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    /** List the authenticated customer's licences */
-    get: operations["listMyLicenses"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/me/licenses/{id}/download": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Mint a download URL for the authenticated customer */
-    get: operations["customerDigitalDownload"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/marketplace/plugins": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    /** List marketplace plugin manifests */
-    get: operations["listMarketplacePlugins"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/marketplace/plugins/{slug}": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    /** Read a marketplace plugin manifest */
-    get: operations["getMarketplacePlugin"];
-    put?: never;
-    post?: never;
-    /** Uninstall the per-tenant installation */
-    delete: operations["uninstallMarketplacePlugin"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/marketplace/plugins/{slug}/install": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Install a marketplace plugin for the current tenant */
-    post: operations["installMarketplacePlugin"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/marketplace/plugins/{slug}/activate": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Activate an installed plugin */
-    post: operations["activateMarketplacePlugin"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/marketplace/plugins/{slug}/deactivate": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Deactivate an active plugin */
-    post: operations["deactivateMarketplacePlugin"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/marketplace/installations/{slug}/settings": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    /** Read per-tenant per-plugin settings */
-    get: operations["getMarketplaceInstallationSettings"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update per-tenant per-plugin settings */
-    patch: operations["updateMarketplaceInstallationSettings"];
-    trace?: never;
-  };
-  "/api/v1/marketplace/plugins/submit": {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Submit a marketplace plugin manifest for review */
-    post: operations["submitMarketplacePlugin"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/marketplace/submissions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List pending plugin submissions (super-admin) */
-    get: operations["listMarketplaceSubmissions"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/marketplace/submissions/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Read a submission */
-    get: operations["getMarketplaceSubmission"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/marketplace/submissions/{id}/approve": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Approve a pending submission and publish it to the catalogue */
-    post: operations["approveMarketplaceSubmission"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/marketplace/submissions/{id}/reject": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Reject a pending submission with review notes */
-    post: operations["rejectMarketplaceSubmission"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tenants": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List tenants (super-admin) */
-    get: operations["listTenants"];
-    put?: never;
-    /** Provision a tenant */
-    post: operations["createTenant"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tenants/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Read a tenant */
-    get: operations["getTenant"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update name or plan */
-    patch: operations["updateTenant"];
-    trace?: never;
-  };
-  "/api/v1/tenants/{id}/suspend": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Suspend an active tenant */
-    post: operations["suspendTenant"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tenants/{id}/activate": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Activate a tenant (provisioning|suspended -> active) */
-    post: operations["activateTenant"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tenants/{id}/archive": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Archive a tenant (terminal) */
-    post: operations["archiveTenant"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/register": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Submit tenant registration
-     * @description Public endpoint that creates a RegistrationRequest in
-     *     status=pending_email_verification and emails an HMAC-signed
-     *     verification token. No bearer auth; rate-limited via the
-     *     same token bucket as the rest of the API.
-     */
-    post: operations["submitRegistration"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/register/verify": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Consume verification token */
-    post: operations["verifyRegistration"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/register/onboarding": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Complete onboarding and provision tenant */
-    post: operations["completeRegistrationOnboarding"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/subscriptions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List billing subscriptions for tenant */
-    get: operations["listBillingSubscriptions"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/subscriptions/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Get a billing subscription */
-    get: operations["getBillingSubscription"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/subscriptions/{id}/cancel": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Cancel a billing subscription */
-    post: operations["cancelBillingSubscription"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/subscriptions/{id}/pause": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Pause an active billing subscription */
-    post: operations["pauseBillingSubscription"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/subscriptions/{id}/resume": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Resume a paused billing subscription */
-    post: operations["resumeBillingSubscription"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/invoices": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** List invoices for tenant */
-    get: operations["listBillingInvoices"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/invoices/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    /** Get an invoice */
-    get: operations["getBillingInvoice"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/admin/billing/usage": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Current-period usage rollup */
-    get: operations["getBillingUsage"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/webhooks/stripe": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Stripe webhook receiver
-     * @description Authenticated via Stripe-Signature header (HMAC-SHA256, 5-minute
-     *     replay window). Idempotent on Stripe event_id.
-     */
-    post: operations["stripeWebhook"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
+    "/healthz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health check */
+        get: operations["getHealthz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readiness check */
+        get: operations["getReadyz"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prometheus metrics */
+        get: operations["getMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bootstrap admin login
+         * @description Development/admin bootstrap login. Credentials must be supplied via
+         *     runtime configuration; the API contract intentionally uses placeholders
+         *     and does not define real secrets.
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh JWT access token
+         * @description Rotates a configured refresh session and returns a new access token pair.
+         */
+        post: operations["refreshAccessToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get current authenticated session */
+        get: operations["getCurrentSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate logout request
+         * @description Stateless JWT logout endpoint for BFF compatibility. Clients clear their own httpOnly session cookie.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List storefront products */
+        get: operations["listProducts"];
+        put?: never;
+        /** Create a product */
+        post: operations["createProduct"];
+        delete?: never;
+        /** Products CORS preflight */
+        options: operations["productsPreflight"];
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a product by ID or slug */
+        get: operations["getProduct"];
+        /** Update a product */
+        put: operations["updateProduct"];
+        post?: never;
+        /** Delete a product */
+        delete: operations["deleteProduct"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{id}/generate-description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate AI product content suggestions
+         * @description Uses the configured fleet AI bridge. The backend never calls MiniMax directly.
+         */
+        post: operations["generateProductDescription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{id}/ai-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get AI content suggestions for a product
+         * @description Generates non-persisted product description, SEO title, and meta description suggestions.
+         */
+        get: operations["getProductAISuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rag/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest a RAG source document
+         * @description Chunks and embeds source material for fact-check evidence search. Embeddings are produced through the configured embedding port; the backend never calls MiniMax directly.
+         */
+        post: operations["ingestRAGDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rag/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search fact-check evidence */
+        get: operations["searchRAGEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate product content with fact-checking
+         * @description Generates product copy, extracts factual claims, searches RAG evidence, and returns a combined quality/factual approval decision.
+         */
+        post: operations["generateFactCheckedContent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/content/fact-checks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Retrieve a stored fact-check result */
+        get: operations["getFactCheckResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/source": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Source supplier media
+         * @description Fetches an image from a supplier URL through the backend media intelligence service and extracts deterministic metadata.
+         */
+        post: operations["sourceMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List media assets */
+        get: operations["listMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process sourced media
+         * @description Applies deterministic resize/format stubs and records explicit TODO metadata for background removal.
+         */
+        post: operations["processMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get media asset */
+        get: operations["getMedia"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{id}/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate media quality
+         * @description Runs resolution, aspect ratio, format, alt text, and brand-safety placeholder checks.
+         */
+        post: operations["validateMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve sourced media
+         * @description Transitions a sourced media asset from pending review to approved so it can be processed.
+         */
+        post: operations["approveMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject sourced media
+         * @description Rejects a sourced media asset and records reviewer audit information.
+         */
+        post: operations["rejectMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operator/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List operator alerts
+         * @description Approved public operator-alert surface consumed by the web BFF for alert review queues.
+         */
+        get: operations["listOperatorAlerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operator/alerts/{alert_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Acknowledge an operator alert
+         * @description Moves a pending operator alert into the acknowledged state without resolving the underlying action.
+         */
+        post: operations["acknowledgeOperatorAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operator/alerts/{alert_id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve an operator alert
+         * @description Resolves a pending or acknowledged operator alert with an explicit approve or deny action.
+         */
+        post: operations["resolveOperatorAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{id}/compliance-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run product content compliance checks
+         * @description Runs deterministic compliance rules before product publish. This endpoint does not call live AI services.
+         */
+        post: operations["checkProductCompliance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/products/{id}/seo-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate deterministic SEO suggestions
+         * @description Generates SEO title, meta description, slug, keyword density, and score without live AI calls.
+         */
+        post: operations["suggestProductSEO"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List built-in compliance rules */
+        get: operations["listComplianceRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenant/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant settings */
+        get: operations["getTenantSettings"];
+        /** Update tenant settings */
+        put: operations["updateTenantSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/custom-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tenant custom compliance rules */
+        get: operations["listCustomComplianceRules"];
+        put?: never;
+        /** Create tenant custom compliance rule */
+        post: operations["createCustomComplianceRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/custom-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update tenant custom compliance rule */
+        put: operations["updateCustomComplianceRule"];
+        post?: never;
+        /** Delete tenant custom compliance rule */
+        delete: operations["deleteCustomComplianceRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get tenant compliance reporting summary */
+        get: operations["getComplianceReportSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/compliance/reports/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export tenant compliance report */
+        get: operations["exportComplianceReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an order */
+        post: operations["createOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an order by ID */
+        get: operations["getOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Advance order status */
+        patch: operations["updateOrderStatus"];
+        trace?: never;
+    };
+    "/api/v1/cart/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a cart session */
+        get: operations["getCart"];
+        /** Replace a cart session */
+        put: operations["putCart"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get WooCommerce sync status */
+        get: operations["getSyncStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/dlq": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List marketplace sync DLQ records */
+        get: operations["listMarketplaceDLQ"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/dlq/{id}/replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replay a marketplace sync DLQ record */
+        post: operations["replayMarketplaceDLQ"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/conflicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending WooCommerce sync conflicts */
+        get: operations["listSyncConflicts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/conflicts/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve a WooCommerce sync conflict */
+        post: operations["resolveSyncConflict"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/products/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a local product to WooCommerce */
+        post: operations["publishProductToWooCommerce"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/woocommerce/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Receive WooCommerce order webhooks */
+        post: operations["receiveWooCommerceOrderWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/woocommerce/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Receive WooCommerce product webhooks */
+        post: operations["receiveWooCommerceProductWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List registered backend agents */
+        get: operations["listAgents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/{id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Queue a backend agent run */
+        post: operations["runAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List historical runs for an agent */
+        get: operations["listAgentHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a backend agent run */
+        get: operations["getAgentRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-schedules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List configured backend agent schedules */
+        get: operations["listAgentSchedules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-schedules/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable a configured backend agent schedule */
+        post: operations["enableAgentSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-schedules/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable a configured backend agent schedule */
+        post: operations["disableAgentSchedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List outbound webhook endpoints */
+        get: operations["listWebhooks"];
+        put?: never;
+        /**
+         * Register an outbound webhook endpoint
+         * @description Registers an HTTPS endpoint that receives HMAC-signed event deliveries. The raw secret is accepted only at creation time and is never returned.
+         */
+        post: operations["createWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an outbound webhook endpoint */
+        delete: operations["deleteWebhook"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a signed test event to an outbound webhook endpoint */
+        post: operations["testWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent backend events */
+        get: operations["listRecentEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List payments
+         * @description v4.3.0 — paginated list of payments for a tenant, filterable by
+         *     status and provider. Sorted by created_at descending.
+         */
+        get: operations["listPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/gmv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GMV analytics — daily rollup
+         * @description v3.6.0 EC-9-1 — daily GMV rollup over the supplied date window.
+         *     Reads the gmv_daily_rollup materialized view (migration 0016)
+         *     for the tenant resolved from the JWT (X-Tenant-Id header takes
+         *     precedence; tenant_id query parameter is accepted as a fallback).
+         *     Acceptance: p95 < 200ms over 30-day window with 10K orders/tenant.
+         */
+        get: operations["getGMVDailyRollup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/gmv/by-channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GMV analytics — per-channel breakdown
+         * @description v3.6.0 EC-9-1 — channel-level GMV breakdown.
+         */
+        get: operations["getGMVByChannel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/gmv/by-product": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GMV analytics — top products
+         * @description v3.6.0 EC-9-1 — top-N products by GMV (default limit 20, max 100).
+         */
+        get: operations["getGMVByProduct"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent-activity/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agent activity SSE stream
+         * @description v3.6.0 EC-9-2 — Server-Sent Events stream of normalised agent
+         *     activity (pricing decisions, dropship orders, customer messages,
+         *     supplier cost changes). 30s heartbeat. Per-client buffer of 100
+         *     events; on overflow the oldest event is dropped and a `dropped`
+         *     event is emitted so the client can re-sync. Tenant scoping is
+         *     derived from the JWT-bearing X-Tenant-Id header; the tenant_id
+         *     query parameter is accepted only when the header is absent.
+         */
+        get: operations["streamAgentActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/product-publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the ProductPublishWorkflow
+         * @description Starts the canonical Temporal workflow that checks compliance, validates media, waits for human review, and publishes to WooCommerce.
+         */
+        post: operations["startProductPublishWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/marketplace-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the MarketplaceSyncWorkflow
+         * @description Starts the Temporal workflow that dispatches a product sync event to the configured marketplace provider router.
+         */
+        post: operations["startMarketplaceSyncWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/marketplace-replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the MarketplaceReplayWorkflow
+         * @description Starts the Temporal workflow that replays one marketplace DLQ record through the provider router.
+         */
+        post: operations["startMarketplaceReplayWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/content-generation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the ContentGenerationWorkflow
+         * @description Starts the Temporal workflow that generates content, fact-checks claims against RAG evidence, evaluates quality, and auto-approves or rejects the result.
+         */
+        post: operations["startContentGenerationWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/media-processing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the MediaProcessingWorkflow
+         * @description Starts the Temporal workflow that sources supplier media, processes it, runs QA, stores it, and links it to a product.
+         */
+        post: operations["startMediaProcessingWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/sourcing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the SourcingWorkflow
+         * @description Starts the Temporal workflow that searches deterministic supplier candidates, scores them, compares landed prices, checks margin, and recommends a supplier.
+         */
+        post: operations["startSourcingWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Temporal workflows with lifecycle visibility */
+        get: operations["listWorkflows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Temporal workflow lifecycle detail */
+        get: operations["getWorkflowStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workflows/{id}/signals/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Signal ProductPublishWorkflow human review */
+        post: operations["signalProductPublishReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/membership-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List membership plans for the active tenant */
+        get: operations["listMembershipPlans"];
+        put?: never;
+        /** Create a membership plan within the tenant */
+        post: operations["createMembershipPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/membership-plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Get a membership plan */
+        get: operations["getMembershipPlan"];
+        put?: never;
+        post?: never;
+        /** Delete a membership plan */
+        delete: operations["deleteMembershipPlan"];
+        options?: never;
+        head?: never;
+        /** Update a membership plan */
+        patch: operations["updateMembershipPlan"];
+        trace?: never;
+    };
+    "/api/v1/memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List memberships for the active tenant */
+        get: operations["listMemberships"];
+        put?: never;
+        /** Create a membership (subscription) for a member */
+        post: operations["createMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Get a single membership */
+        get: operations["getMembership"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the plan attached to a membership */
+        patch: operations["updateMembership"];
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a membership (terminal) */
+        post: operations["cancelMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause a membership (active only) */
+        post: operations["pauseMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/memberships/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume a paused membership */
+        post: operations["resumeMembership"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/digital-products": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List digital products */
+        get: operations["listDigitalProducts"];
+        put?: never;
+        /** Create a digital product */
+        post: operations["createDigitalProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/digital-products/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Read a digital product */
+        get: operations["getDigitalProduct"];
+        put?: never;
+        post?: never;
+        /** Delete a digital product */
+        delete: operations["deleteDigitalProduct"];
+        options?: never;
+        head?: never;
+        /** Update a digital product */
+        patch: operations["updateDigitalProduct"];
+        trace?: never;
+    };
+    "/api/v1/digital-products/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Mint a download URL for a granted product (admin) */
+        get: operations["adminDigitalProductDownload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licenses": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List licences */
+        get: operations["listLicenses"];
+        put?: never;
+        /** Issue a licence */
+        post: operations["createLicense"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licenses/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Read a licence */
+        get: operations["getLicense"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licenses/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a licence */
+        post: operations["revokeLicense"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/licenses": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List the authenticated customer's licences */
+        get: operations["listMyLicenses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/licenses/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Mint a download URL for the authenticated customer */
+        get: operations["customerDigitalDownload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List marketplace plugin manifests */
+        get: operations["listMarketplacePlugins"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /** Read a marketplace plugin manifest */
+        get: operations["getMarketplacePlugin"];
+        put?: never;
+        post?: never;
+        /** Uninstall the per-tenant installation */
+        delete: operations["uninstallMarketplacePlugin"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}/install": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Install a marketplace plugin for the current tenant */
+        post: operations["installMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}/activate": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate an installed plugin */
+        post: operations["activateMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/{slug}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deactivate an active plugin */
+        post: operations["deactivateMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/marketplace/installations/{slug}/settings": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        /** Read per-tenant per-plugin settings */
+        get: operations["getMarketplaceInstallationSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update per-tenant per-plugin settings */
+        patch: operations["updateMarketplaceInstallationSettings"];
+        trace?: never;
+    };
+    "/api/v1/marketplace/plugins/submit": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a marketplace plugin manifest for review */
+        post: operations["submitMarketplacePlugin"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List pending plugin submissions (super-admin) */
+        get: operations["listMarketplaceSubmissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Read a submission */
+        get: operations["getMarketplaceSubmission"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a pending submission and publish it to the catalogue */
+        post: operations["approveMarketplaceSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/marketplace/submissions/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a pending submission with review notes */
+        post: operations["rejectMarketplaceSubmission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List tenants (super-admin) */
+        get: operations["listTenants"];
+        put?: never;
+        /** Provision a tenant */
+        post: operations["createTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Read a tenant */
+        get: operations["getTenant"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update name or plan */
+        patch: operations["updateTenant"];
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}/suspend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suspend an active tenant */
+        post: operations["suspendTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate a tenant (provisioning|suspended -> active) */
+        post: operations["activateTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenants/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive a tenant (terminal) */
+        post: operations["archiveTenant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit tenant registration
+         * @description Public endpoint that creates a RegistrationRequest in
+         *     status=pending_email_verification and emails an HMAC-signed
+         *     verification token. No bearer auth; rate-limited via the
+         *     same token bucket as the rest of the API.
+         */
+        post: operations["submitRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/register/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume verification token */
+        post: operations["verifyRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/register/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete onboarding and provision tenant */
+        post: operations["completeRegistrationOnboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List billing subscriptions for tenant */
+        get: operations["listBillingSubscriptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/subscriptions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Get a billing subscription */
+        get: operations["getBillingSubscription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/subscriptions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a billing subscription */
+        post: operations["cancelBillingSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/subscriptions/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause an active billing subscription */
+        post: operations["pauseBillingSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/subscriptions/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume a paused billing subscription */
+        post: operations["resumeBillingSubscription"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/invoices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List invoices for tenant */
+        get: operations["listBillingInvoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/invoices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Get an invoice */
+        get: operations["getBillingInvoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Current-period usage rollup */
+        get: operations["getBillingUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stripe webhook receiver
+         * @description Authenticated via Stripe-Signature header (HMAC-SHA256, 5-minute
+         *     replay window). Idempotent on Stripe event_id.
+         */
+        post: operations["stripeWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /** @description Supply either username or email plus password. */
-    LoginRequest: {
-      /** @example admin@example.invalid */
-      username?: string;
-      /**
-       * Format: email
-       * @example admin@example.invalid
-       */
-      email?: string;
-      /**
-       * Format: password
-       * @example ${ECOMMERCE_ADMIN_PASSWORD}
-       */
-      password: string;
-    };
-    RefreshTokenRequest: {
-      /** @description Opaque refresh token returned by the login or refresh endpoint. */
-      refresh_token: string;
-    };
-    AuthTokenResponse: {
-      /** @description Short-lived JWT access token. */
-      access_token: string;
-      /** @description Opaque refresh token. Store securely and never log. */
-      refresh_token: string;
-      /** @constant */
-      token_type: "Bearer";
-      /** @description Access token lifetime in seconds. */
-      expires_in: number;
-      /** @enum {string} */
-      role: "admin" | "operator" | "viewer";
-      session: components["schemas"]["AuthSession"];
-    };
-    AuthSession: {
-      user: components["schemas"]["AuthUser"];
-      /** Format: date-time */
-      expires_at: string;
-    };
-    AuthUser: {
-      id: string;
-      /** Format: email */
-      email: string;
-      /** @enum {string} */
-      role: "admin" | "operator" | "viewer";
-    };
-    HealthResponse: {
-      /** @constant */
-      status: "ok";
-      /** @constant */
-      service: "agentic-ecommerce-mc-api";
-    };
-    ReadyResponse: {
-      /** @enum {string} */
-      status: "ready" | "not_ready";
-      /** @constant */
-      service: "agentic-ecommerce-mc-api";
-      agents: number;
-      agent_worker: components["schemas"]["AgentWorkerReadiness"];
-      checks: {
-        database: components["schemas"]["DependencyReadiness"];
-        redis: components["schemas"]["DependencyReadiness"];
-        eventbus: components["schemas"]["DependencyReadiness"];
-      };
-    };
-    DependencyReadiness: {
-      /** @enum {string} */
-      status: "ok" | "fail" | "skipped";
-      /** @description True when the dependency is not configured and therefore does not gate readiness. */
-      optional: boolean;
-      latency_ms: number;
-      /** @description Present only for failed checks. The value is intentionally generic to avoid leaking connection details. */
-      error?: string;
-      /**
-       * @description Cloud load-balancer-safe failure detail without connection strings, credentials, hosts, or provider secrets.
-       * @enum {string}
-       */
-      detail?: "dependency_failed" | "dependency_timeout";
-    };
-    AgentWorkerReadiness: {
-      ready: boolean;
-      /** @enum {string} */
-      scheduler: "in_process";
-      registered_agents: number;
-    };
-    AgentDescriptor: {
-      /** @enum {string} */
-      id: "sourcing" | "pricing" | "compliance";
-      name: string;
-      description?: string;
-      capabilities?: string[];
-    };
-    AgentsListResponse: {
-      agents: components["schemas"]["AgentDescriptor"][];
-    };
-    AgentRunRequest: {
-      /** @default 0 */
-      priority: number;
-      /** @description Structured agent-specific input. Examples include sourcing candidates, pricing cost/competition data, or content compliance payloads. */
-      payload?: {
-        [key: string]: unknown;
-      };
-    };
-    AgentRunError: {
-      code?: string;
-      detail?: string;
-    };
-    AgentRun: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      task_id: string;
-      /** @enum {string} */
-      agent_id: "sourcing" | "pricing" | "compliance";
-      /** @enum {string} */
-      state: "queued" | "running" | "succeeded" | "failed" | "cancelled";
-      priority: number;
-      input?: {
-        [key: string]: unknown;
-      };
-      result?: {
-        [key: string]: unknown;
-      };
-      error?: components["schemas"]["AgentRunError"];
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      started_at?: string;
-      /** Format: date-time */
-      finished_at?: string;
-    };
-    AgentHistoryResponse: {
-      runs: components["schemas"]["AgentRun"][];
-    };
-    AgentSchedule: {
-      id: string;
-      /** @enum {string} */
-      agent_id: "sourcing" | "pricing" | "compliance";
-      /** @description Optional cron-like schedule expression when configured. */
-      cron?: string;
-      /** @description Deterministic interval fallback used by in-repo schedules. */
-      interval_seconds?: number;
-      enabled: boolean;
-      priority: number;
-      payload: {
-        [key: string]: unknown;
-      };
-      /** Format: date-time */
-      next_run_at?: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    AgentSchedulesResponse: {
-      schedules: components["schemas"]["AgentSchedule"][];
-    };
-    AgentScheduleResponse: {
-      schedule: components["schemas"]["AgentSchedule"];
-    };
-    CreateWebhookRequest: {
-      /**
-       * Format: uri
-       * @description HTTP or HTTPS endpoint that receives signed JSON events.
-       */
-      url: string;
-      event_types: (
-        | "agent.run.completed"
-        | "compliance.checked"
-        | "order.placed"
-        | "product.created"
-        | "product.updated"
-        | "sync.completed"
-      )[];
-      /**
-       * Format: password
-       * @description HMAC signing secret. Accepted only on create and never returned by the API.
-       */
-      secret: string;
-      /** @description Optional operator-managed secret reference for future durable secret stores. */
-      secret_ref?: string;
-      /** @default true */
-      enabled: boolean;
-    };
-    TestWebhookRequest: {
-      /**
-       * @description Optional subscribed event type to use for the test delivery. Defaults to the first registered type.
-       * @enum {string}
-       */
-      event_type?:
-        | "agent.run.completed"
-        | "compliance.checked"
-        | "order.placed"
-        | "product.created"
-        | "product.updated"
-        | "sync.completed";
-    };
-    WebhookRegistration: {
-      /** Format: uuid */
-      id: string;
-      /** @description Tenant scope for tenant-scoped webhook registrations. */
-      tenant_id?: string;
-      /** Format: uri */
-      url: string;
-      event_types: (
-        | "agent.run.completed"
-        | "compliance.checked"
-        | "order.placed"
-        | "product.created"
-        | "product.updated"
-        | "sync.completed"
-      )[];
-      secret_ref?: string;
-      /** @description SHA-256 hash fingerprint of the signing secret, never the secret value. */
-      secret_hash: string;
-      enabled: boolean;
-      /** Format: date-time */
-      created_at: string;
-    };
-    WebhookListResponse: {
-      webhooks: components["schemas"]["WebhookRegistration"][];
-    };
-    WebhookDeliveryResult: {
-      /** Format: uuid */
-      id?: string;
-      /** Format: uuid */
-      webhook_id: string;
-      event_id: string;
-      /** @enum {string} */
-      event_type:
-        | "agent.run.completed"
-        | "compliance.checked"
-        | "order.placed"
-        | "product.created"
-        | "product.updated"
-        | "sync.completed";
-      success: boolean;
-      /** @description HTTP response status, or 0 when no response was received. */
-      status: number;
-      attempts: number;
-      /** @description Sanitised machine-readable delivery failure reason. */
-      error?: string;
-      /** Format: date-time */
-      created_at: string;
-    };
-    WebhookTestResponse: {
-      delivery: components["schemas"]["WebhookDeliveryResult"];
-    };
-    Money: {
-      /** @description Amount in the smallest currency unit (for example, cents). */
-      amount: number;
-      /** @enum {string} */
-      currency: "AUD" | "USD" | "GBP" | "EUR";
-    };
-    Product: {
-      /** Format: uuid */
-      id: string;
-      sku: string;
-      title: string;
-      slug: string;
-      price: components["schemas"]["Money"];
-      stock: number;
-      /** @enum {string} */
-      status: "draft" | "active" | "archived";
-      description?: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateProductRequest: {
-      sku: string;
-      title: string;
-      /** @description Auto-generated from title if omitted. */
-      slug?: string;
-      description?: string;
-      price: components["schemas"]["Money"];
-      /** @default 0 */
-      stock: number;
-      /**
-       * @default draft
-       * @enum {string}
-       */
-      status: "draft" | "active" | "archived";
-    };
-    ProductListResponse: {
-      products: components["schemas"]["Product"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    GenerateDescriptionRequest: {
-      /**
-       * @default professional
-       * @enum {string}
-       */
-      style: "professional" | "casual" | "luxury" | "technical";
-      /** @default en-AU */
-      language: string;
-      /** @default 120 */
-      max_words: number;
-      keywords?: string[];
-    };
-    ContentSuggestion: {
-      /** Format: uuid */
-      product_id: string;
-      description: string;
-      seo_title: string;
-      meta_description: string;
-      score: number;
-      pass: boolean;
-      tokens_used: number;
-      evaluation: components["schemas"]["ContentEvaluation"];
-    };
-    GenerateFactCheckedContentRequest: {
-      /** Format: uuid */
-      product_id: string;
-      /**
-       * @default professional
-       * @enum {string}
-       */
-      style: "professional" | "casual" | "luxury" | "technical";
-      /** @default en-AU */
-      language: string;
-      /** @default 120 */
-      max_words: number;
-      keywords?: string[];
-    };
-    ContentFactCheckResponse: {
-      fact_check_id: string;
-      /** Format: uuid */
-      product_id: string;
-      description: string;
-      seo_title: string;
-      meta_description: string;
-      score: number;
-      pass: boolean;
-      tokens_used: number;
-      evaluation: components["schemas"]["ContentEvaluation"];
-      fact_check: components["schemas"]["FactCheckResult"];
-    };
-    FactCheckResult: {
-      id?: string;
-      product_id?: string;
-      pass: boolean;
-      confidence: number;
-      /** Format: date-time */
-      checked_at?: string;
-      claims: components["schemas"]["ClaimCheck"][];
-      issues: string[];
-    };
-    ClaimCheck: {
-      claim: {
-        text: string;
-      };
-      text: string;
-      /** @enum {string} */
-      status: "supported" | "unsupported" | "contradicted" | "ambiguous";
-      confidence: number;
-      evidence: components["schemas"]["RAGSearchResult"][];
-    };
-    RAGDocumentRequest: {
-      id: string;
-      /** @default default */
-      tenant_id: string;
-      title?: string;
-      source?: string;
-      content: string;
-      metadata?: {
-        [key: string]: string;
-      };
-    };
-    RAGIngestResponse: {
-      document_id: string;
-      chunks: number;
-    };
-    RAGSearchResponse: {
-      query: string;
-      results: components["schemas"]["RAGSearchResult"][];
-    };
-    RAGSearchResult: {
-      chunk_id: string;
-      document_id: string;
-      tenant_id?: string;
-      title?: string;
-      source?: string;
-      text: string;
-      score: number;
-      metadata?: {
-        [key: string]: string;
-      };
-    };
-    ComplianceCheckRequest: {
-      keywords?: string[];
-      seo_title?: string;
-      meta_description?: string;
-      /** @default 70 */
-      seo_score_min: number;
-      legal_disclaimer?: string;
-    };
-    ComplianceCheckResponse: {
-      /** Format: uuid */
-      product_id: string;
-      pass: boolean;
-      score: number;
-      reasons: string[];
-      rule_ids: string[];
-      severity: components["schemas"]["ComplianceSeverity"];
-      results: components["schemas"]["ComplianceRuleResult"][];
-    };
-    ComplianceRuleResult: {
-      id: string;
-      pass: boolean;
-      score: number;
-      severity: components["schemas"]["ComplianceSeverity"];
-      reasons: string[];
-    };
-    ComplianceRuleDescriptor: {
-      id: string;
-      description: string;
-      severity: components["schemas"]["ComplianceSeverity"];
-    };
-    ComplianceRulesResponse: {
-      rules: components["schemas"]["ComplianceRuleDescriptor"][];
-    };
-    /** @enum {string} */
-    ComplianceSeverity: "info" | "warning" | "error" | "critical";
-    TenantSettings: {
-      tenant_id: string;
-      branding: components["schemas"]["TenantBrandingSettings"];
-      woocommerce: components["schemas"]["TenantWooCredentialRefs"];
-      ai: components["schemas"]["TenantAIPreferences"];
-      compliance: components["schemas"]["TenantComplianceOverrides"];
-      /** Format: date-time */
-      updated_at: string;
-    };
-    TenantSettingsUpdate: {
-      branding?: components["schemas"]["TenantBrandingSettings"];
-      woocommerce?: components["schemas"]["TenantWooCredentialRefs"];
-      ai?: components["schemas"]["TenantAIPreferences"];
-      compliance?: components["schemas"]["TenantComplianceOverrides"];
-    };
-    TenantBrandingSettings: {
-      store_name?: string;
-      /** Format: uri */
-      logo_url?: string;
-      primary_color?: string;
-      accent_color?: string;
-    };
-    TenantWooCredentialRefs: {
-      /** Format: uri */
-      store_url?: string;
-      consumer_key_ref?: string;
-      consumer_secret_ref?: string;
-    };
-    TenantAIPreferences: {
-      content_tone?: string;
-      model_tier?: string;
-      auto_generate_seo?: boolean;
-      fact_check_required?: boolean;
-    };
-    TenantComplianceOverrides: {
-      disabled_rule_ids?: string[];
-      severity_override?: {
-        [key: string]: "info" | "warning" | "error" | "critical";
-      };
-      seo_score_min?: number;
-    };
-    ComplianceCustomRulesResponse: {
-      rules: components["schemas"]["ComplianceCustomRule"][];
-    };
-    ComplianceCustomRule: {
-      tenant_id: string;
-      id: string;
-      version: number;
-      name: string;
-      description?: string;
-      severity: components["schemas"]["ComplianceSeverity"];
-      enabled: boolean;
-      definition: components["schemas"]["ComplianceCustomRuleDefinition"];
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    ComplianceCustomRuleRequest: {
-      id: string;
-      name: string;
-      description?: string;
-      severity: components["schemas"]["ComplianceSeverity"];
-      enabled: boolean;
-      definition: components["schemas"]["ComplianceCustomRuleDefinition"];
-    };
-    ComplianceCustomRuleUpdate: {
-      name: string;
-      description?: string;
-      severity: components["schemas"]["ComplianceSeverity"];
-      enabled: boolean;
-      definition: components["schemas"]["ComplianceCustomRuleDefinition"];
-    };
-    ComplianceCustomRuleDefinition: {
-      /** @enum {string} */
-      type: "contains_any";
-      /** @enum {string} */
-      field: "title" | "description" | "meta_description" | "seo_title";
-      values: string[];
-      fail_reason?: string;
-    };
-    ComplianceSummary: {
-      tenant_id: string;
-      total_checks: number;
-      passed_checks: number;
-      failed_checks: number;
-      pass_rate: number;
-      rule_stats: {
-        [key: string]: components["schemas"]["ComplianceRuleStat"];
-      };
-      product_stats: {
-        [key: string]: components["schemas"]["ComplianceProductStat"];
-      };
-      trends: components["schemas"]["ComplianceTrendPoint"][];
-    };
-    ComplianceRuleStat: {
-      rule_id: string;
-      passed: number;
-      failed: number;
-      total: number;
-    };
-    ComplianceProductStat: {
-      product_id: string;
-      passed: number;
-      failed: number;
-      total: number;
-    };
-    ComplianceTrendPoint: {
-      /** Format: date */
-      date: string;
-      passed: number;
-      failed: number;
-      total: number;
-    };
-    ComplianceEvaluationRecord: {
-      tenant_id: string;
-      product_id: string;
-      /** Format: date-time */
-      checked_at: string;
-      result: components["schemas"]["ComplianceCheckResponse"];
-    };
-    ComplianceExportResponse: components["schemas"]["ComplianceEvaluationRecord"][];
-    SEOSuggestionRequest: {
-      keywords?: string[];
-    };
-    SEOSuggestionResponse: {
-      /** Format: uuid */
-      product_id: string;
-      title: string;
-      meta_description: string;
-      slug: string;
-      score: number;
-      keyword_density: {
-        [key: string]: number;
-      };
-      pass: boolean;
-      reasons: string[];
-    };
-    ContentEvaluation: {
-      score: number;
-      pass: boolean;
-      readability_score: number;
-      keyword_density: {
-        [key: string]: number;
-      };
-      tone: components["schemas"]["ContentToneEvaluation"];
-      length: components["schemas"]["ContentLengthEvaluation"];
-      factual_issues: string[];
-    };
-    ContentToneEvaluation: {
-      /** @enum {string} */
-      style: "professional" | "casual" | "luxury" | "technical";
-      pass: boolean;
-      issues: string[];
-    };
-    ContentLengthEvaluation: {
-      word_count: number;
-      max_words: number;
-      within_limit: boolean;
-    };
-    MediaSourceRequest: {
-      /** Format: uri */
-      url: string;
-      /** @description Product identifier to associate with the sourced asset. */
-      product_id?: string;
-      /** @description Candidate alt text from supplier data or operator input. */
-      alt_text?: string;
-    };
-    MediaProcessRequest: {
-      media_id: string;
-      resize?: components["schemas"]["MediaResizeOptions"];
-      /** @enum {string} */
-      format?:
-        | "image/jpeg"
-        | "image/png"
-        | "image/webp"
-        | "image/gif"
-        | "jpeg"
-        | "png"
-        | "webp"
-        | "gif";
-      /** @default false */
-      remove_background: boolean;
-    };
-    MediaApproveRequest: {
-      reviewer: string;
-      /** @description Optional operator note captured with the approval decision. */
-      note?: string;
-    };
-    MediaRejectRequest: {
-      reviewer: string;
-      /** @description Required operator note explaining the rejection. */
-      note: string;
-    };
-    MediaResizeOptions: {
-      max_width?: number;
-      max_height?: number;
-    };
-    MediaAsset: {
-      id: string;
-      product_id?: string;
-      /** Format: uri */
-      source_url?: string;
-      alt_text?: string;
-      metadata: components["schemas"]["MediaMetadata"];
-      processing?: components["schemas"]["MediaProcessingInfo"];
-      quality?: components["schemas"]["MediaQualityReport"];
-      storage?: components["schemas"]["MediaStorageInfo"];
-      /** @enum {string} */
-      review_state: "pending" | "approved" | "rejected";
-      /** @enum {string} */
-      process_state: "pending" | "processed";
-      review_note?: string;
-      /** Format: date-time */
-      reviewed_at?: string;
-      reviewer?: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    MediaAssetListResponse: {
-      assets: components["schemas"]["MediaAsset"][];
-    };
-    MediaMetadata: {
-      mime_type: string;
-      content_length: number;
-      checksum_sha256: string;
-      width: number;
-      height: number;
-    };
-    MediaProcessingInfo: {
-      operations?: components["schemas"]["MediaProcessingOperation"][];
-    };
-    MediaProcessingOperation: {
-      /** @enum {string} */
-      id: "resize_stub" | "format_conversion_stub" | "background_removal_todo";
-      message: string;
-    };
-    MediaQualityReport: {
-      pass: boolean;
-      score: number;
-      issues?: components["schemas"]["MediaQualityIssue"][];
-    };
-    MediaQualityIssue: {
-      id: string;
-      message: string;
-      /** @enum {string} */
-      severity?: "info" | "warning" | "error" | "critical";
-      blocking: boolean;
-    };
-    MediaStorageInfo: {
-      key?: string;
-      url?: string;
-      content_type?: string;
-      size_bytes?: number;
-    };
-    ShippingAddress: {
-      name: string;
-      line1: string;
-      line2?: string;
-      city: string;
-      region?: string;
-      postal_code: string;
-      country: string;
-    };
-    Totals: {
-      subtotal: components["schemas"]["Money"];
-      shipping: components["schemas"]["Money"];
-      total: components["schemas"]["Money"];
-    };
-    OrderItem: {
-      /** Format: uuid */
-      product_id: string;
-      sku: string;
-      title: string;
-      quantity: number;
-      unit_price: components["schemas"]["Money"];
-      line_total: components["schemas"]["Money"];
-    };
-    OrderItemInput: {
-      /** Format: uuid */
-      product_id: string;
-      sku: string;
-      title: string;
-      quantity: number;
-      unit_price: components["schemas"]["Money"];
-    };
-    Order: {
-      /** Format: uuid */
-      id: string;
-      /** Format: email */
-      customer_email: string;
-      items: components["schemas"]["OrderItem"][];
-      /** @enum {string} */
-      status: "pending" | "paid" | "fulfilled" | "shipped" | "completed" | "failed" | "cancelled";
-      totals: components["schemas"]["Totals"];
-      shipping_address: components["schemas"]["ShippingAddress"];
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CreateOrderRequest: {
-      /** Format: email */
-      customer_email: string;
-      items: components["schemas"]["OrderItemInput"][];
-      shipping_address: components["schemas"]["ShippingAddress"];
-      shipping?: components["schemas"]["Money"];
-    };
-    UpdateOrderStatusRequest: {
-      /** @enum {string} */
-      status: "pending" | "paid" | "fulfilled" | "shipped" | "completed" | "failed" | "cancelled";
-    };
-    Cart: {
-      session_id: string;
-      items: components["schemas"]["OrderItem"][];
-      totals: components["schemas"]["Totals"];
-      /** Format: date-time */
-      updated_at: string;
-    };
-    CartRequest: {
-      items: components["schemas"]["OrderItemInput"][];
-    };
-    StartProductPublishWorkflowRequest: {
-      /** Format: uuid */
-      product_id: string;
-      /** @description Operator identity recorded in workflow audit events. */
-      requested_by?: string;
-    };
-    StartContentGenerationWorkflowRequest: {
-      /** Format: uuid */
-      product_id: string;
-      /** @description Operator identity recorded in workflow audit events. */
-      requested_by?: string;
-      /**
-       * @default professional
-       * @enum {string}
-       */
-      style: "professional" | "casual" | "luxury" | "technical";
-      /** @default en-AU */
-      language: string;
-      /** @default 120 */
-      max_words: number;
-      keywords?: string[];
-    };
-    StartMediaProcessingWorkflowRequest: {
-      /** @description Product identifier to link the processed media to. */
-      product_id: string;
-      /** Format: uri */
-      source_url: string;
-      alt_text?: string;
-      /** @description Operator identity recorded in workflow audit events. */
-      requested_by?: string;
-      resize?: components["schemas"]["MediaResizeOptions"];
-      /** @enum {string} */
-      format?:
-        | "image/jpeg"
-        | "image/png"
-        | "image/webp"
-        | "image/gif"
-        | "jpeg"
-        | "png"
-        | "webp"
-        | "gif";
-      /** @default false */
-      remove_background: boolean;
-    };
-    SourcingCandidate: {
-      supplier_id: string;
-      sku: string;
-      unit_cost_cents: number;
-      shipping_cents: number;
-      estimated_sell_price_cents: number;
-      lead_time_days?: number;
-      reliability_score?: number;
-      demand_score?: number;
-      competition_score?: number;
-    };
-    StartSourcingWorkflowRequest: {
-      sku: string;
-      query?: string;
-      estimated_sell_price_cents?: number;
-      /** @default 0.3 */
-      minimum_margin_pct: number;
-      /** @description Operator identity recorded in workflow audit events. */
-      requested_by?: string;
-      candidate_limit?: number;
-      candidates: components["schemas"]["SourcingCandidate"][];
-    };
-    WorkflowStartResponse: {
-      workflow_id: string;
-      run_id: string;
-      /** @enum {string} */
-      status: "started";
-      /** @enum {string} */
-      task_queue: "ec-workflows";
-    };
-    MarketplaceSyncEvent: {
-      tenant_id: string;
-      provider: string;
-      /** @enum {string} */
-      entity_type: "product";
-      entity_id: string;
-      external_id?: string;
-      /** @enum {string} */
-      operation: "upsert" | "delete";
-      version: string;
-      payload?: {
-        [key: string]: unknown;
-      };
-    };
-    MarketplaceDLQRecord: {
-      id: string;
-      event: components["schemas"]["MarketplaceSyncEvent"];
-      attempts: number;
-      reason: string;
-    };
-    StartMarketplaceSyncWorkflowRequest: {
-      event: components["schemas"]["MarketplaceSyncEvent"];
-    };
-    StartMarketplaceReplayWorkflowRequest: {
-      record: components["schemas"]["MarketplaceDLQRecord"];
-    };
-    WorkflowSummaryResponse: {
-      id: string;
-      type: string;
-      /** @enum {string} */
-      status:
-        | "queued"
-        | "running"
-        | "waiting_review"
-        | "completed"
-        | "failed"
-        | "canceled"
-        | "terminated"
-        | "continued_as_new"
-        | "timed_out"
-        | "unspecified";
-      product_id?: string;
-      product_title?: string;
-      current_activity?: string;
-      /** Format: date-time */
-      started_at: string;
-      /** Format: date-time */
-      updated_at: string;
-      /** Format: date-time */
-      completed_at?: string;
-      error?: string;
-    };
-    WorkflowActivityResponse: {
-      id: string;
-      name: string;
-      /** @enum {string} */
-      status: "pending" | "running" | "waiting_review" | "completed" | "failed" | "skipped";
-      /** Format: date-time */
-      started_at?: string;
-      /** Format: date-time */
-      completed_at?: string;
-      message?: string;
-      attempt?: number;
-      error?: string;
-    };
-    WorkflowListResponse: {
-      workflows: components["schemas"]["WorkflowSummaryResponse"][];
-    };
-    WorkflowDetailResponse: {
-      id: string;
-      type: string;
-      /** @enum {string} */
-      status:
-        | "queued"
-        | "running"
-        | "waiting_review"
-        | "completed"
-        | "failed"
-        | "canceled"
-        | "terminated"
-        | "continued_as_new"
-        | "timed_out"
-        | "unspecified";
-      product_id?: string;
-      product_title?: string;
-      current_activity?: string;
-      /** Format: date-time */
-      started_at: string;
-      /** Format: date-time */
-      updated_at: string;
-      /** Format: date-time */
-      completed_at?: string;
-      error?: string;
-      run_id?: string;
-      activities: components["schemas"]["WorkflowActivityResponse"][];
-    };
-    WorkflowSignalResponse: {
-      /** @enum {string} */
-      status: "signaled";
-      workflow?: components["schemas"]["WorkflowDetailResponse"];
-    };
-    WorkflowStatusResponse: {
-      workflow_id: string;
-      run_id?: string;
-      /** @enum {string} */
-      status:
-        | "unspecified"
-        | "running"
-        | "completed"
-        | "failed"
-        | "canceled"
-        | "terminated"
-        | "continued_as_new"
-        | "timed_out";
-      /** Format: date-time */
-      start_time?: string;
-      /** Format: date-time */
-      close_time?: string;
-    };
-    ProductPublishReviewSignal: {
-      approved: boolean;
-      reviewer?: string;
-      note?: string;
-    };
-    StatusResponse: {
-      status: string;
-    };
-    RecentEventsResponse: {
-      events: components["schemas"]["EventItem"][];
-    };
-    EventItem: {
-      id: string;
-      /** @enum {string} */
-      type:
-        | "product.created"
-        | "product.updated"
-        | "order.placed"
-        | "sync.completed"
-        | "agent.run.completed"
-        | "compliance.checked";
-      /** @enum {string} */
-      severity: "info" | "warning" | "error";
-      message: string;
-      /** Format: date-time */
-      occurred_at: string;
-      metadata?: {
-        [key: string]: unknown;
-      };
-    };
-    SyncEvent: {
-      /** Format: uuid */
-      id: string;
-      /** @enum {string} */
-      type:
-        | "product_imported"
-        | "product_published"
-        | "inventory_reconciled"
-        | "conflict_detected"
-        | "sync_failed";
-      /** Format: uuid */
-      product_id?: string;
-      remote_id?: number;
-      message?: string;
-      metadata?: {
-        [key: string]: string;
-      };
-      /** Format: date-time */
-      created_at: string;
-    };
-    SyncStatus: {
-      total_events: number;
-      pending_conflicts: number;
-      last_event?: components["schemas"]["SyncEvent"];
-      last_error?: string;
-      /** Format: date-time */
-      updated_at: string;
-      dlq_depth: number;
-      marketplace_replay: components["schemas"]["MarketplaceReplayState"];
-      marketplace_reconciliation: components["schemas"]["MarketplaceReconciliationState"];
-    };
-    MarketplaceReplayState: {
-      /** @enum {string} */
-      state: "idle" | "queued" | "applied" | "dlq" | "failed";
-      record_id?: string;
-      /** Format: date-time */
-      updated_at?: string;
-    };
-    MarketplaceReconciliationState: {
-      total_local: number;
-      total_remote: number;
-      mismatch_count: number;
-    };
-    MarketplaceDLQListResponse: {
-      records: components["schemas"]["MarketplaceDLQRecord"][];
-      total: number;
-    };
-    SyncConflictField: {
-      /** @enum {string} */
-      field: "title" | "price" | "stock" | "description";
-      local_value: string;
-      remote_value: string;
-    };
-    SyncConflict: {
-      /** Format: uuid */
-      id: string;
-      /** Format: uuid */
-      product_id?: string;
-      sku: string;
-      remote_id: number;
-      /** @enum {string} */
-      status: "pending" | "resolved";
-      fields: components["schemas"]["SyncConflictField"][];
-      resolution?: string;
-      note?: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      resolved_at?: string;
-    };
-    ConflictListResponse: {
-      conflicts: components["schemas"]["SyncConflict"][];
-    };
-    ResolveConflictRequest: {
-      /**
-       * @description Operator decision: keep local data, accept remote WooCommerce data, or mark as manually reconciled.
-       * @enum {string}
-       */
-      resolution: "local" | "remote" | "manual";
-      note?: string;
-    };
-    WooCommerceOrderWebhook: {
-      id: number;
-      status: string;
-      total?: string;
-      currency?: string;
-      billing?: {
-        /** Format: email */
-        email?: string;
-      };
-      line_items?: {
-        id?: number;
-        name?: string;
-        product_id?: number;
-        quantity?: number;
-        total?: string;
-      }[];
-    };
-    WooCommerceProductWebhook: {
-      id: number;
-      sku: string;
-      name: string;
-    };
-    MembershipPlanRequest: {
-      name: string;
-      description?: string;
-      /** @enum {string} */
-      billing_cycle: "monthly" | "quarterly" | "annual";
-      price: components["schemas"]["Money"];
-      benefits?: string[];
-      stripe_price_id?: string;
-    };
-    MembershipPlanResponse: {
-      /** Format: uuid */
-      id: string;
-      tenant_id: string;
-      name: string;
-      description?: string;
-      /** @enum {string} */
-      billing_cycle: "monthly" | "quarterly" | "annual";
-      price: components["schemas"]["Money"];
-      benefits: string[];
-      stripe_price_id?: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    MembershipPlansListResponse: {
-      plans: components["schemas"]["MembershipPlanResponse"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    MembershipCreateRequest: {
-      /** Format: email */
-      member_email: string;
-      /** Format: uuid */
-      plan_id: string;
-      /** @default 0 */
-      trial_days: number;
-    };
-    MembershipUpdateRequest: {
-      /** Format: uuid */
-      plan_id?: string;
-    };
-    MembershipResponse: {
-      /** Format: uuid */
-      id: string;
-      tenant_id: string;
-      /** Format: uuid */
-      member_id: string;
-      /** Format: email */
-      member_email: string;
-      /** Format: uuid */
-      plan_id: string;
-      /** @enum {string} */
-      state: "trial" | "active" | "paused" | "cancelled" | "expired";
-      /** Format: date-time */
-      current_period_start: string;
-      /** Format: date-time */
-      current_period_end: string;
-      /** Format: date-time */
-      trial_ends_at: string;
-      stripe_subscription_id?: string;
-      /** Format: date-time */
-      cancelled_at?: string | null;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-      plan: components["schemas"]["MembershipPlanResponse"];
-    };
-    MembershipsListResponse: {
-      memberships: components["schemas"]["MembershipResponse"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    ErrorResponse: {
-      error: string;
-    };
-    DigitalProductRequest: {
-      sku: string;
-      name: string;
-      description?: string;
-      file_path: string;
-      /** Format: int64 */
-      file_size: number;
-      content_type?: string;
-      checksum?: string;
-      version: string;
-    };
-    DigitalProductResponse: {
-      /** Format: uuid */
-      id: string;
-      tenant_id: string;
-      sku: string;
-      name: string;
-      description?: string;
-      file_path: string;
-      /** Format: int64 */
-      file_size: number;
-      content_type?: string;
-      checksum?: string;
-      version: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    DigitalProductsListResponse: {
-      products: components["schemas"]["DigitalProductResponse"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    LicenseRequest: {
-      /** Format: uuid */
-      product_id: string;
-      /** Format: uuid */
-      customer_id: string;
-      /** @enum {string} */
-      source?: "purchase" | "gift" | "admin";
-      max_activations?: number;
-      /** Format: date-time */
-      expires_at?: string | null;
-    };
-    LicenseResponse: {
-      /** Format: uuid */
-      id: string;
-      tenant_id: string;
-      /** Format: uuid */
-      product_id: string;
-      /** Format: uuid */
-      customer_id: string;
-      key: string;
-      /** @enum {string} */
-      state: "active" | "revoked" | "expired";
-      /** Format: date-time */
-      issued_at: string;
-      /** Format: date-time */
-      expires_at?: string | null;
-      max_activations: number;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    LicensesListResponse: {
-      licenses: components["schemas"]["LicenseResponse"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    DigitalDownloadResponse: {
-      url: string;
-      /** Format: date-time */
-      expires_at: string;
-      uses_allowed: number;
-    };
-    MarketplacePluginManifest: {
-      /** @description Kebab-case unique identifier. */
-      slug: string;
-      name: string;
-      version: string;
-      vendor: string;
-      description?: string;
-      category?: string;
-      homepage_url?: string;
-      event_subscriptions?: string[];
-      permissions?: string[];
-      dependencies?: components["schemas"]["MarketplacePluginDependency"][];
-    };
-    MarketplacePluginDependency: {
-      slug: string;
-      /** @description Semver constraint: ^X.Y.Z, =X.Y.Z, or empty (treated as caret). */
-      constraint?: string;
-    };
-    MarketplacePluginsListResponse: {
-      plugins: components["schemas"]["MarketplacePluginManifest"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    MarketplaceInstallation: {
-      tenant_id: string;
-      slug: string;
-      installed_version: string;
-      /** @enum {string} */
-      state: "installed" | "active" | "deactivated";
-      installed_at: string;
-      activated_at?: string;
-      updated_at: string;
-    };
-    MarketplaceSettingsResponse: {
-      settings: {
-        [key: string]: unknown;
-      };
-    };
-    MarketplaceSubmissionRequest: {
-      /** Format: email */
-      submitter_email: string;
-      slug: string;
-      name: string;
-      version: string;
-      vendor: string;
-      description?: string;
-      category?: string;
-      homepage_url?: string;
-      event_subscriptions?: string[];
-      permissions?: string[];
-      dependencies?: {
-        slug?: string;
-        constraint?: string;
-      }[];
-    };
-    MarketplaceSubmissionReviewAction: {
-      review_notes?: string;
-    };
-    MarketplaceSubmission: {
-      id: string;
-      tenant_id: string;
-      submitter_email: string;
-      manifest: components["schemas"]["MarketplacePluginManifest"];
-      /** @enum {string} */
-      state: "pending_review" | "approved" | "rejected";
-      review_notes?: string;
-      submitted_at: string;
-      reviewed_at?: string;
-      reviewer?: string;
-    };
-    MarketplaceSubmissionsListResponse: {
-      submissions: components["schemas"]["MarketplaceSubmission"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    TenantResponse: {
-      id: string;
-      slug: string;
-      name: string;
-      plan: string;
-      /** @enum {string} */
-      status: "provisioning" | "active" | "suspended" | "archived";
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    TenantsListResponse: {
-      tenants: components["schemas"]["TenantResponse"][];
-      total: number;
-      page: number;
-      per_page: number;
-    };
-    CreateTenantRequest: {
-      id?: string;
-      slug: string;
-      name: string;
-      plan?: string;
-    };
-    UpdateTenantRequest: {
-      name?: string;
-      plan?: string;
-    };
-    RegistrationSubmitRequest: {
-      /** Format: email */
-      email: string;
-      slug_requested: string;
-      plan_requested?: string;
-    };
-    RegistrationVerifyRequest: {
-      token: string;
-    };
-    RegistrationOnboardingRequest: {
-      registration_id: string;
-      company_name: string;
-      plan?: string;
-    };
-    RegistrationResponse: {
-      id: string;
-      email: string;
-      slug_requested: string;
-      plan_requested: string;
-      /** @enum {string} */
-      status: "pending_email_verification" | "email_verified" | "onboarding" | "active";
-      tenant_id?: string;
-      company_name?: string;
-    };
-    RegistrationSubmitResponse: {
-      registration: components["schemas"]["RegistrationResponse"];
-      message: string;
-    };
-    RegistrationOnboardingResponse: {
-      registration: components["schemas"]["RegistrationResponse"];
-      tenant: components["schemas"]["TenantResponse"];
-    };
-    BillingSubscriptionResponse: {
-      id: string;
-      tenant_id: string;
-      plan_id: string;
-      /** @enum {string} */
-      state: "trialing" | "active" | "past_due" | "paused" | "canceled";
-      stripe_subscription_id?: string;
-      stripe_customer_id?: string;
-      /** Format: date-time */
-      current_period_start: string;
-      /** Format: date-time */
-      current_period_end: string;
-      cancel_at_period_end?: boolean;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      updated_at: string;
-    };
-    BillingSubscriptionListResponse: {
-      subscriptions: components["schemas"]["BillingSubscriptionResponse"][];
-      total: number;
-    };
-    BillingInvoiceResponse: {
-      id: string;
-      tenant_id: string;
-      subscription_id: string;
-      amount: number;
-      currency: string;
-      /** @enum {string} */
-      status: "open" | "paid" | "void" | "uncollectible";
-      /** Format: date-time */
-      period_start?: string;
-      /** Format: date-time */
-      period_end?: string;
-      /** Format: date-time */
-      created_at?: string;
-    };
-    BillingInvoiceListResponse: {
-      invoices: components["schemas"]["BillingInvoiceResponse"][];
-      total: number;
-    };
-    BillingUsageRollup: {
-      metric: string;
-      value: number;
-      limit: number;
-    };
-    BillingUsageResponse: {
-      tenant_id: string;
-      plan: string;
-      /** Format: date-time */
-      period_start: string;
-      /** Format: date-time */
-      period_end: string;
-      rollups: components["schemas"]["BillingUsageRollup"][];
-    };
-    PaymentRow: {
-      payment_id: string;
-      tenant_id: string;
-      order_id: string;
-      /** @enum {string} */
-      provider: "stripe" | "alipay" | "wechat" | "paypal";
-      /** @enum {string} */
-      status: "pending" | "succeeded" | "failed" | "refunded";
-      /** Format: int64 */
-      amount_cents: number;
-      currency: string;
-      /** Format: date-time */
-      created_at: string;
-    };
-    PaymentsListResponse: {
-      tenant_id: string;
-      payments: components["schemas"]["PaymentRow"][];
-      total: number;
-      limit: number;
-      offset: number;
-    };
-    AdminSummary: {
-      /** Format: int64 */
-      active_orders: number;
-      /** Format: int64 */
-      gmv_today_aud_cents: number;
-      pending_alerts: number;
-      channel_health: components["schemas"]["AdminChannelStatus"][];
-    };
-    AdminChannelStatus: {
-      channel: string;
-      /** @enum {string} */
-      status: "healthy" | "degraded" | "down";
-    };
-    AdminOrderRow: {
-      order_id: string;
-      status: string;
-      /** Format: int64 */
-      total_cents: number;
-      channel: string;
-      /** Format: date-time */
-      created_at: string;
-    };
-    PaginationMeta: {
-      page: number;
-      limit: number;
-      total: number;
-    };
-    PaginationLinks: {
-      next?: string | null;
-      prev?: string | null;
-    };
-    AdminSummaryResponse: {
-      data: components["schemas"]["AdminSummary"];
-    };
-    AdminOrdersResponse: {
-      data: components["schemas"]["AdminOrderRow"][];
-      meta: components["schemas"]["PaginationMeta"];
-      links: components["schemas"]["PaginationLinks"];
-    };
-    AdminAlertActionResponse: {
-      data: {
-        alert_id?: string;
+    schemas: {
+        /** @description Supply either username or email plus password. */
+        LoginRequest: {
+            /** @example admin@example.invalid */
+            username?: string;
+            /**
+             * Format: email
+             * @example admin@example.invalid
+             */
+            email?: string;
+            /**
+             * Format: password
+             * @example ${ECOMMERCE_ADMIN_PASSWORD}
+             */
+            password: string;
+        };
+        RefreshTokenRequest: {
+            /** @description Opaque refresh token returned by the login or refresh endpoint. */
+            refresh_token: string;
+        };
+        AuthTokenResponse: {
+            /** @description Short-lived JWT access token. */
+            access_token: string;
+            /** @description Opaque refresh token. Store securely and never log. */
+            refresh_token: string;
+            /** @constant */
+            token_type: "Bearer";
+            /** @description Access token lifetime in seconds. */
+            expires_in: number;
+            /** @enum {string} */
+            role: "admin" | "operator" | "viewer";
+            session: components["schemas"]["AuthSession"];
+        };
+        AuthSession: {
+            user: components["schemas"]["AuthUser"];
+            /** Format: date-time */
+            expires_at: string;
+        };
+        AuthUser: {
+            id: string;
+            /** Format: email */
+            email: string;
+            /** @enum {string} */
+            role: "admin" | "operator" | "viewer";
+        };
+        HealthResponse: {
+            /** @constant */
+            status: "ok";
+            /** @constant */
+            service: "agentic-ecommerce-mc-api";
+        };
+        ReadyResponse: {
+            /** @enum {string} */
+            status: "ready" | "not_ready";
+            /** @constant */
+            service: "agentic-ecommerce-mc-api";
+            agents: number;
+            agent_worker: components["schemas"]["AgentWorkerReadiness"];
+            checks: {
+                database: components["schemas"]["DependencyReadiness"];
+                redis: components["schemas"]["DependencyReadiness"];
+                eventbus: components["schemas"]["DependencyReadiness"];
+            };
+        };
+        DependencyReadiness: {
+            /** @enum {string} */
+            status: "ok" | "fail" | "skipped";
+            /** @description True when the dependency is not configured and therefore does not gate readiness. */
+            optional: boolean;
+            latency_ms: number;
+            /** @description Present only for failed checks. The value is intentionally generic to avoid leaking connection details. */
+            error?: string;
+            /**
+             * @description Cloud load-balancer-safe failure detail without connection strings, credentials, hosts, or provider secrets.
+             * @enum {string}
+             */
+            detail?: "dependency_failed" | "dependency_timeout";
+        };
+        AgentWorkerReadiness: {
+            ready: boolean;
+            /** @enum {string} */
+            scheduler: "in_process";
+            registered_agents: number;
+        };
+        AgentDescriptor: {
+            /** @enum {string} */
+            id: "sourcing" | "pricing" | "compliance";
+            name: string;
+            description?: string;
+            capabilities?: string[];
+        };
+        AgentsListResponse: {
+            agents: components["schemas"]["AgentDescriptor"][];
+        };
+        AgentRunRequest: {
+            /** @default 0 */
+            priority: number;
+            /** @description Structured agent-specific input. Examples include sourcing candidates, pricing cost/competition data, or content compliance payloads. */
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        AgentRunError: {
+            code?: string;
+            detail?: string;
+        };
+        AgentRun: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            task_id: string;
+            /** @enum {string} */
+            agent_id: "sourcing" | "pricing" | "compliance";
+            /** @enum {string} */
+            state: "queued" | "running" | "succeeded" | "failed" | "cancelled";
+            priority: number;
+            input?: {
+                [key: string]: unknown;
+            };
+            result?: {
+                [key: string]: unknown;
+            };
+            error?: components["schemas"]["AgentRunError"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            started_at?: string;
+            /** Format: date-time */
+            finished_at?: string;
+        };
+        AgentHistoryResponse: {
+            runs: components["schemas"]["AgentRun"][];
+        };
+        AgentSchedule: {
+            id: string;
+            /** @enum {string} */
+            agent_id: "sourcing" | "pricing" | "compliance";
+            /** @description Optional cron-like schedule expression when configured. */
+            cron?: string;
+            /** @description Deterministic interval fallback used by in-repo schedules. */
+            interval_seconds?: number;
+            enabled: boolean;
+            priority: number;
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            next_run_at?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        AgentSchedulesResponse: {
+            schedules: components["schemas"]["AgentSchedule"][];
+        };
+        AgentScheduleResponse: {
+            schedule: components["schemas"]["AgentSchedule"];
+        };
+        CreateWebhookRequest: {
+            /**
+             * Format: uri
+             * @description HTTP or HTTPS endpoint that receives signed JSON events.
+             */
+            url: string;
+            event_types: ("agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed")[];
+            /**
+             * Format: password
+             * @description HMAC signing secret. Accepted only on create and never returned by the API.
+             */
+            secret: string;
+            /** @description Optional operator-managed secret reference for future durable secret stores. */
+            secret_ref?: string;
+            /** @default true */
+            enabled: boolean;
+        };
+        TestWebhookRequest: {
+            /**
+             * @description Optional subscribed event type to use for the test delivery. Defaults to the first registered type.
+             * @enum {string}
+             */
+            event_type?: "agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed";
+        };
+        WebhookRegistration: {
+            /** Format: uuid */
+            id: string;
+            /** @description Tenant scope for tenant-scoped webhook registrations. */
+            tenant_id?: string;
+            /** Format: uri */
+            url: string;
+            event_types: ("agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed")[];
+            secret_ref?: string;
+            /** @description SHA-256 hash fingerprint of the signing secret, never the secret value. */
+            secret_hash: string;
+            enabled: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        WebhookListResponse: {
+            webhooks: components["schemas"]["WebhookRegistration"][];
+        };
+        WebhookDeliveryResult: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            webhook_id: string;
+            event_id: string;
+            /** @enum {string} */
+            event_type: "agent.run.completed" | "compliance.checked" | "order.placed" | "product.created" | "product.updated" | "sync.completed";
+            success: boolean;
+            /** @description HTTP response status, or 0 when no response was received. */
+            status: number;
+            attempts: number;
+            /** @description Sanitised machine-readable delivery failure reason. */
+            error?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        WebhookTestResponse: {
+            delivery: components["schemas"]["WebhookDeliveryResult"];
+        };
+        Money: {
+            /** @description Amount in the smallest currency unit (for example, cents). */
+            amount: number;
+            /** @enum {string} */
+            currency: "AUD" | "USD" | "GBP" | "EUR";
+        };
+        Product: {
+            /** Format: uuid */
+            id: string;
+            sku: string;
+            title: string;
+            slug: string;
+            price: components["schemas"]["Money"];
+            stock: number;
+            /** @enum {string} */
+            status: "draft" | "active" | "archived";
+            description?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        CreateProductRequest: {
+            sku: string;
+            title: string;
+            /** @description Auto-generated from title if omitted. */
+            slug?: string;
+            description?: string;
+            price: components["schemas"]["Money"];
+            /** @default 0 */
+            stock: number;
+            /**
+             * @default draft
+             * @enum {string}
+             */
+            status: "draft" | "active" | "archived";
+        };
+        ProductListResponse: {
+            products: components["schemas"]["Product"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        GenerateDescriptionRequest: {
+            /**
+             * @default professional
+             * @enum {string}
+             */
+            style: "professional" | "casual" | "luxury" | "technical";
+            /** @default en-AU */
+            language: string;
+            /** @default 120 */
+            max_words: number;
+            keywords?: string[];
+        };
+        ContentSuggestion: {
+            /** Format: uuid */
+            product_id: string;
+            description: string;
+            seo_title: string;
+            meta_description: string;
+            score: number;
+            pass: boolean;
+            tokens_used: number;
+            evaluation: components["schemas"]["ContentEvaluation"];
+        };
+        GenerateFactCheckedContentRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /**
+             * @default professional
+             * @enum {string}
+             */
+            style: "professional" | "casual" | "luxury" | "technical";
+            /** @default en-AU */
+            language: string;
+            /** @default 120 */
+            max_words: number;
+            keywords?: string[];
+        };
+        ContentFactCheckResponse: {
+            fact_check_id: string;
+            /** Format: uuid */
+            product_id: string;
+            description: string;
+            seo_title: string;
+            meta_description: string;
+            score: number;
+            pass: boolean;
+            tokens_used: number;
+            evaluation: components["schemas"]["ContentEvaluation"];
+            fact_check: components["schemas"]["FactCheckResult"];
+        };
+        FactCheckResult: {
+            id?: string;
+            product_id?: string;
+            pass: boolean;
+            confidence: number;
+            /** Format: date-time */
+            checked_at?: string;
+            claims: components["schemas"]["ClaimCheck"][];
+            issues: string[];
+        };
+        ClaimCheck: {
+            claim: {
+                text: string;
+            };
+            text: string;
+            /** @enum {string} */
+            status: "supported" | "unsupported" | "contradicted" | "ambiguous";
+            confidence: number;
+            evidence: components["schemas"]["RAGSearchResult"][];
+        };
+        RAGDocumentRequest: {
+            id: string;
+            /** @default default */
+            tenant_id: string;
+            title?: string;
+            source?: string;
+            content: string;
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        RAGIngestResponse: {
+            document_id: string;
+            chunks: number;
+        };
+        RAGSearchResponse: {
+            query: string;
+            results: components["schemas"]["RAGSearchResult"][];
+        };
+        RAGSearchResult: {
+            chunk_id: string;
+            document_id: string;
+            tenant_id?: string;
+            title?: string;
+            source?: string;
+            text: string;
+            score: number;
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        ComplianceCheckRequest: {
+            keywords?: string[];
+            seo_title?: string;
+            meta_description?: string;
+            /** @default 70 */
+            seo_score_min: number;
+            legal_disclaimer?: string;
+        };
+        ComplianceCheckResponse: {
+            /** Format: uuid */
+            product_id: string;
+            pass: boolean;
+            score: number;
+            reasons: string[];
+            rule_ids: string[];
+            severity: components["schemas"]["ComplianceSeverity"];
+            results: components["schemas"]["ComplianceRuleResult"][];
+        };
+        ComplianceRuleResult: {
+            id: string;
+            pass: boolean;
+            score: number;
+            severity: components["schemas"]["ComplianceSeverity"];
+            reasons: string[];
+        };
+        ComplianceRuleDescriptor: {
+            id: string;
+            description: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+        };
+        ComplianceRulesResponse: {
+            rules: components["schemas"]["ComplianceRuleDescriptor"][];
+        };
         /** @enum {string} */
-        action?: "approve" | "deny" | "snooze";
-        status?: string;
-      };
+        ComplianceSeverity: "info" | "warning" | "error" | "critical";
+        TenantSettings: {
+            tenant_id: string;
+            branding: components["schemas"]["TenantBrandingSettings"];
+            woocommerce: components["schemas"]["TenantWooCredentialRefs"];
+            ai: components["schemas"]["TenantAIPreferences"];
+            compliance: components["schemas"]["TenantComplianceOverrides"];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TenantSettingsUpdate: {
+            branding?: components["schemas"]["TenantBrandingSettings"];
+            woocommerce?: components["schemas"]["TenantWooCredentialRefs"];
+            ai?: components["schemas"]["TenantAIPreferences"];
+            compliance?: components["schemas"]["TenantComplianceOverrides"];
+        };
+        TenantBrandingSettings: {
+            store_name?: string;
+            /** Format: uri */
+            logo_url?: string;
+            primary_color?: string;
+            accent_color?: string;
+        };
+        TenantWooCredentialRefs: {
+            /** Format: uri */
+            store_url?: string;
+            consumer_key_ref?: string;
+            consumer_secret_ref?: string;
+        };
+        TenantAIPreferences: {
+            content_tone?: string;
+            model_tier?: string;
+            auto_generate_seo?: boolean;
+            fact_check_required?: boolean;
+        };
+        TenantComplianceOverrides: {
+            disabled_rule_ids?: string[];
+            severity_override?: {
+                [key: string]: "info" | "warning" | "error" | "critical";
+            };
+            seo_score_min?: number;
+        };
+        ComplianceCustomRulesResponse: {
+            rules: components["schemas"]["ComplianceCustomRule"][];
+        };
+        ComplianceCustomRule: {
+            tenant_id: string;
+            id: string;
+            version: number;
+            name: string;
+            description?: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+            enabled: boolean;
+            definition: components["schemas"]["ComplianceCustomRuleDefinition"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ComplianceCustomRuleRequest: {
+            id: string;
+            name: string;
+            description?: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+            enabled: boolean;
+            definition: components["schemas"]["ComplianceCustomRuleDefinition"];
+        };
+        ComplianceCustomRuleUpdate: {
+            name: string;
+            description?: string;
+            severity: components["schemas"]["ComplianceSeverity"];
+            enabled: boolean;
+            definition: components["schemas"]["ComplianceCustomRuleDefinition"];
+        };
+        ComplianceCustomRuleDefinition: {
+            /** @enum {string} */
+            type: "contains_any";
+            /** @enum {string} */
+            field: "title" | "description" | "meta_description" | "seo_title";
+            values: string[];
+            fail_reason?: string;
+        };
+        ComplianceSummary: {
+            tenant_id: string;
+            total_checks: number;
+            passed_checks: number;
+            failed_checks: number;
+            pass_rate: number;
+            rule_stats: {
+                [key: string]: components["schemas"]["ComplianceRuleStat"];
+            };
+            product_stats: {
+                [key: string]: components["schemas"]["ComplianceProductStat"];
+            };
+            trends: components["schemas"]["ComplianceTrendPoint"][];
+        };
+        ComplianceRuleStat: {
+            rule_id: string;
+            passed: number;
+            failed: number;
+            total: number;
+        };
+        ComplianceProductStat: {
+            product_id: string;
+            passed: number;
+            failed: number;
+            total: number;
+        };
+        ComplianceTrendPoint: {
+            /** Format: date */
+            date: string;
+            passed: number;
+            failed: number;
+            total: number;
+        };
+        ComplianceEvaluationRecord: {
+            tenant_id: string;
+            product_id: string;
+            /** Format: date-time */
+            checked_at: string;
+            result: components["schemas"]["ComplianceCheckResponse"];
+        };
+        ComplianceExportResponse: components["schemas"]["ComplianceEvaluationRecord"][];
+        SEOSuggestionRequest: {
+            keywords?: string[];
+        };
+        SEOSuggestionResponse: {
+            /** Format: uuid */
+            product_id: string;
+            title: string;
+            meta_description: string;
+            slug: string;
+            score: number;
+            keyword_density: {
+                [key: string]: number;
+            };
+            pass: boolean;
+            reasons: string[];
+        };
+        ContentEvaluation: {
+            score: number;
+            pass: boolean;
+            readability_score: number;
+            keyword_density: {
+                [key: string]: number;
+            };
+            tone: components["schemas"]["ContentToneEvaluation"];
+            length: components["schemas"]["ContentLengthEvaluation"];
+            factual_issues: string[];
+        };
+        ContentToneEvaluation: {
+            /** @enum {string} */
+            style: "professional" | "casual" | "luxury" | "technical";
+            pass: boolean;
+            issues: string[];
+        };
+        ContentLengthEvaluation: {
+            word_count: number;
+            max_words: number;
+            within_limit: boolean;
+        };
+        MediaSourceRequest: {
+            /** Format: uri */
+            url: string;
+            /** @description Product identifier to associate with the sourced asset. */
+            product_id?: string;
+            /** @description Candidate alt text from supplier data or operator input. */
+            alt_text?: string;
+        };
+        MediaProcessRequest: {
+            media_id: string;
+            resize?: components["schemas"]["MediaResizeOptions"];
+            /** @enum {string} */
+            format?: "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "jpeg" | "png" | "webp" | "gif";
+            /** @default false */
+            remove_background: boolean;
+        };
+        MediaApproveRequest: {
+            reviewer: string;
+            /** @description Optional operator note captured with the approval decision. */
+            note?: string;
+        };
+        MediaRejectRequest: {
+            reviewer: string;
+            /** @description Required operator note explaining the rejection. */
+            note: string;
+        };
+        MediaResizeOptions: {
+            max_width?: number;
+            max_height?: number;
+        };
+        MediaAsset: {
+            id: string;
+            product_id?: string;
+            /** Format: uri */
+            source_url?: string;
+            alt_text?: string;
+            metadata: components["schemas"]["MediaMetadata"];
+            processing?: components["schemas"]["MediaProcessingInfo"];
+            quality?: components["schemas"]["MediaQualityReport"];
+            storage?: components["schemas"]["MediaStorageInfo"];
+            /** @enum {string} */
+            review_state: "pending" | "approved" | "rejected";
+            /** @enum {string} */
+            process_state: "pending" | "processed";
+            review_note?: string;
+            /** Format: date-time */
+            reviewed_at?: string;
+            reviewer?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        MediaAssetListResponse: {
+            assets: components["schemas"]["MediaAsset"][];
+        };
+        MediaMetadata: {
+            mime_type: string;
+            content_length: number;
+            checksum_sha256: string;
+            width: number;
+            height: number;
+        };
+        MediaProcessingInfo: {
+            operations?: components["schemas"]["MediaProcessingOperation"][];
+        };
+        MediaProcessingOperation: {
+            /** @enum {string} */
+            id: "resize_stub" | "format_conversion_stub" | "background_removal_todo";
+            message: string;
+        };
+        MediaQualityReport: {
+            pass: boolean;
+            score: number;
+            issues?: components["schemas"]["MediaQualityIssue"][];
+        };
+        MediaQualityIssue: {
+            id: string;
+            message: string;
+            /** @enum {string} */
+            severity?: "info" | "warning" | "error" | "critical";
+            blocking: boolean;
+        };
+        MediaStorageInfo: {
+            key?: string;
+            url?: string;
+            content_type?: string;
+            size_bytes?: number;
+        };
+        ShippingAddress: {
+            name: string;
+            line1: string;
+            line2?: string;
+            city: string;
+            region?: string;
+            postal_code: string;
+            country: string;
+        };
+        Totals: {
+            subtotal: components["schemas"]["Money"];
+            shipping: components["schemas"]["Money"];
+            total: components["schemas"]["Money"];
+        };
+        OrderItem: {
+            /** Format: uuid */
+            product_id: string;
+            sku: string;
+            title: string;
+            quantity: number;
+            unit_price: components["schemas"]["Money"];
+            line_total: components["schemas"]["Money"];
+        };
+        OrderItemInput: {
+            /** Format: uuid */
+            product_id: string;
+            sku: string;
+            title: string;
+            quantity: number;
+            unit_price: components["schemas"]["Money"];
+        };
+        Order: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            customer_email: string;
+            items: components["schemas"]["OrderItem"][];
+            /** @enum {string} */
+            status: "pending" | "paid" | "fulfilled" | "shipped" | "completed" | "failed" | "cancelled";
+            totals: components["schemas"]["Totals"];
+            shipping_address: components["schemas"]["ShippingAddress"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        CreateOrderRequest: {
+            /** Format: email */
+            customer_email: string;
+            items: components["schemas"]["OrderItemInput"][];
+            shipping_address: components["schemas"]["ShippingAddress"];
+            shipping?: components["schemas"]["Money"];
+        };
+        UpdateOrderStatusRequest: {
+            /** @enum {string} */
+            status: "pending" | "paid" | "fulfilled" | "shipped" | "completed" | "failed" | "cancelled";
+        };
+        Cart: {
+            session_id: string;
+            items: components["schemas"]["OrderItem"][];
+            totals: components["schemas"]["Totals"];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        CartRequest: {
+            items: components["schemas"]["OrderItemInput"][];
+        };
+        StartProductPublishWorkflowRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /** @description Operator identity recorded in workflow audit events. */
+            requested_by?: string;
+        };
+        StartContentGenerationWorkflowRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /** @description Operator identity recorded in workflow audit events. */
+            requested_by?: string;
+            /**
+             * @default professional
+             * @enum {string}
+             */
+            style: "professional" | "casual" | "luxury" | "technical";
+            /** @default en-AU */
+            language: string;
+            /** @default 120 */
+            max_words: number;
+            keywords?: string[];
+        };
+        StartMediaProcessingWorkflowRequest: {
+            /** @description Product identifier to link the processed media to. */
+            product_id: string;
+            /** Format: uri */
+            source_url: string;
+            alt_text?: string;
+            /** @description Operator identity recorded in workflow audit events. */
+            requested_by?: string;
+            resize?: components["schemas"]["MediaResizeOptions"];
+            /** @enum {string} */
+            format?: "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "jpeg" | "png" | "webp" | "gif";
+            /** @default false */
+            remove_background: boolean;
+        };
+        SourcingCandidate: {
+            supplier_id: string;
+            sku: string;
+            unit_cost_cents: number;
+            shipping_cents: number;
+            estimated_sell_price_cents: number;
+            lead_time_days?: number;
+            reliability_score?: number;
+            demand_score?: number;
+            competition_score?: number;
+        };
+        StartSourcingWorkflowRequest: {
+            sku: string;
+            query?: string;
+            estimated_sell_price_cents?: number;
+            /** @default 0.3 */
+            minimum_margin_pct: number;
+            /** @description Operator identity recorded in workflow audit events. */
+            requested_by?: string;
+            candidate_limit?: number;
+            candidates: components["schemas"]["SourcingCandidate"][];
+        };
+        WorkflowStartResponse: {
+            workflow_id: string;
+            run_id: string;
+            /** @enum {string} */
+            status: "started";
+            /** @enum {string} */
+            task_queue: "ec-workflows";
+        };
+        MarketplaceSyncEvent: {
+            tenant_id: string;
+            provider: string;
+            /** @enum {string} */
+            entity_type: "product";
+            entity_id: string;
+            external_id?: string;
+            /** @enum {string} */
+            operation: "upsert" | "delete";
+            version: string;
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        MarketplaceDLQRecord: {
+            id: string;
+            event: components["schemas"]["MarketplaceSyncEvent"];
+            attempts: number;
+            reason: string;
+        };
+        StartMarketplaceSyncWorkflowRequest: {
+            event: components["schemas"]["MarketplaceSyncEvent"];
+        };
+        StartMarketplaceReplayWorkflowRequest: {
+            record: components["schemas"]["MarketplaceDLQRecord"];
+        };
+        WorkflowSummaryResponse: {
+            id: string;
+            type: string;
+            /** @enum {string} */
+            status: "queued" | "running" | "waiting_review" | "completed" | "failed" | "canceled" | "terminated" | "continued_as_new" | "timed_out" | "unspecified";
+            product_id?: string;
+            product_title?: string;
+            current_activity?: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            completed_at?: string;
+            error?: string;
+        };
+        WorkflowActivityResponse: {
+            id: string;
+            name: string;
+            /** @enum {string} */
+            status: "pending" | "running" | "waiting_review" | "completed" | "failed" | "skipped";
+            /** Format: date-time */
+            started_at?: string;
+            /** Format: date-time */
+            completed_at?: string;
+            message?: string;
+            attempt?: number;
+            error?: string;
+        };
+        WorkflowListResponse: {
+            workflows: components["schemas"]["WorkflowSummaryResponse"][];
+        };
+        WorkflowDetailResponse: {
+            id: string;
+            type: string;
+            /** @enum {string} */
+            status: "queued" | "running" | "waiting_review" | "completed" | "failed" | "canceled" | "terminated" | "continued_as_new" | "timed_out" | "unspecified";
+            product_id?: string;
+            product_title?: string;
+            current_activity?: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            completed_at?: string;
+            error?: string;
+            review?: components["schemas"]["ProductPublishReviewSignal"];
+            run_id?: string;
+            activities: components["schemas"]["WorkflowActivityResponse"][];
+        };
+        WorkflowSignalResponse: {
+            /** @enum {string} */
+            status: "signaled";
+            workflow?: components["schemas"]["WorkflowDetailResponse"];
+        };
+        WorkflowStatusResponse: {
+            workflow_id: string;
+            run_id?: string;
+            /** @enum {string} */
+            status: "unspecified" | "running" | "completed" | "failed" | "canceled" | "terminated" | "continued_as_new" | "timed_out";
+            /** Format: date-time */
+            start_time?: string;
+            /** Format: date-time */
+            close_time?: string;
+        };
+        ProductPublishReviewSignal: {
+            approved: boolean;
+            reviewer?: string;
+            note?: string;
+        };
+        StatusResponse: {
+            status: string;
+        };
+        RecentEventsResponse: {
+            events: components["schemas"]["EventItem"][];
+        };
+        EventItem: {
+            id: string;
+            /** @enum {string} */
+            type: "product.created" | "product.updated" | "order.placed" | "sync.completed" | "agent.run.completed" | "compliance.checked";
+            /** @enum {string} */
+            severity: "info" | "warning" | "error";
+            message: string;
+            /** Format: date-time */
+            occurred_at: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        SyncEvent: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            type: "product_imported" | "product_published" | "inventory_reconciled" | "conflict_detected" | "sync_failed";
+            /** Format: uuid */
+            product_id?: string;
+            remote_id?: number;
+            message?: string;
+            metadata?: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            created_at: string;
+        };
+        SyncStatus: {
+            total_events: number;
+            pending_conflicts: number;
+            last_event?: components["schemas"]["SyncEvent"];
+            last_error?: string;
+            /** Format: date-time */
+            updated_at: string;
+            dlq_depth: number;
+            marketplace_replay: components["schemas"]["MarketplaceReplayState"];
+            marketplace_reconciliation: components["schemas"]["MarketplaceReconciliationState"];
+        };
+        MarketplaceReplayState: {
+            /** @enum {string} */
+            state: "idle" | "queued" | "applied" | "dlq" | "failed";
+            record_id?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        MarketplaceReconciliationState: {
+            total_local: number;
+            total_remote: number;
+            mismatch_count: number;
+        };
+        MarketplaceDLQListResponse: {
+            records: components["schemas"]["MarketplaceDLQRecord"][];
+            total: number;
+        };
+        SyncConflictField: {
+            /** @enum {string} */
+            field: "title" | "price" | "stock" | "description";
+            local_value: string;
+            remote_value: string;
+        };
+        SyncConflict: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            product_id?: string;
+            sku: string;
+            remote_id: number;
+            /** @enum {string} */
+            status: "pending" | "resolved";
+            fields: components["schemas"]["SyncConflictField"][];
+            resolution?: string;
+            note?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            resolved_at?: string;
+        };
+        ConflictListResponse: {
+            conflicts: components["schemas"]["SyncConflict"][];
+        };
+        ResolveConflictRequest: {
+            /**
+             * @description Operator decision: keep local data, accept remote WooCommerce data, or mark as manually reconciled.
+             * @enum {string}
+             */
+            resolution: "local" | "remote" | "manual";
+            note?: string;
+        };
+        WooCommerceOrderWebhook: {
+            id: number;
+            status: string;
+            total?: string;
+            currency?: string;
+            billing?: {
+                /** Format: email */
+                email?: string;
+            };
+            line_items?: {
+                id?: number;
+                name?: string;
+                product_id?: number;
+                quantity?: number;
+                total?: string;
+            }[];
+        };
+        WooCommerceProductWebhook: {
+            id: number;
+            sku: string;
+            name: string;
+        };
+        MembershipPlanRequest: {
+            name: string;
+            description?: string;
+            /** @enum {string} */
+            billing_cycle: "monthly" | "quarterly" | "annual";
+            price: components["schemas"]["Money"];
+            benefits?: string[];
+            stripe_price_id?: string;
+        };
+        MembershipPlanResponse: {
+            /** Format: uuid */
+            id: string;
+            tenant_id: string;
+            name: string;
+            description?: string;
+            /** @enum {string} */
+            billing_cycle: "monthly" | "quarterly" | "annual";
+            price: components["schemas"]["Money"];
+            benefits: string[];
+            stripe_price_id?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        MembershipPlansListResponse: {
+            plans: components["schemas"]["MembershipPlanResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        MembershipCreateRequest: {
+            /** Format: email */
+            member_email: string;
+            /** Format: uuid */
+            plan_id: string;
+            /** @default 0 */
+            trial_days: number;
+        };
+        MembershipUpdateRequest: {
+            /** Format: uuid */
+            plan_id?: string;
+        };
+        MembershipResponse: {
+            /** Format: uuid */
+            id: string;
+            tenant_id: string;
+            /** Format: uuid */
+            member_id: string;
+            /** Format: email */
+            member_email: string;
+            /** Format: uuid */
+            plan_id: string;
+            /** @enum {string} */
+            state: "trial" | "active" | "paused" | "cancelled" | "expired";
+            /** Format: date-time */
+            current_period_start: string;
+            /** Format: date-time */
+            current_period_end: string;
+            /** Format: date-time */
+            trial_ends_at: string;
+            stripe_subscription_id?: string;
+            /** Format: date-time */
+            cancelled_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            plan: components["schemas"]["MembershipPlanResponse"];
+        };
+        MembershipsListResponse: {
+            memberships: components["schemas"]["MembershipResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        ErrorResponse: {
+            error: string;
+        };
+        DigitalProductRequest: {
+            sku: string;
+            name: string;
+            description?: string;
+            file_path: string;
+            /** Format: int64 */
+            file_size: number;
+            content_type?: string;
+            checksum?: string;
+            version: string;
+        };
+        DigitalProductResponse: {
+            /** Format: uuid */
+            id: string;
+            tenant_id: string;
+            sku: string;
+            name: string;
+            description?: string;
+            file_path: string;
+            /** Format: int64 */
+            file_size: number;
+            content_type?: string;
+            checksum?: string;
+            version: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DigitalProductsListResponse: {
+            products: components["schemas"]["DigitalProductResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        LicenseRequest: {
+            /** Format: uuid */
+            product_id: string;
+            /** Format: uuid */
+            customer_id: string;
+            /** @enum {string} */
+            source?: "purchase" | "gift" | "admin";
+            max_activations?: number;
+            /** Format: date-time */
+            expires_at?: string | null;
+        };
+        LicenseResponse: {
+            /** Format: uuid */
+            id: string;
+            tenant_id: string;
+            /** Format: uuid */
+            product_id: string;
+            /** Format: uuid */
+            customer_id: string;
+            key: string;
+            /** @enum {string} */
+            state: "active" | "revoked" | "expired";
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at?: string | null;
+            max_activations: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        LicensesListResponse: {
+            licenses: components["schemas"]["LicenseResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        DigitalDownloadResponse: {
+            url: string;
+            /** Format: date-time */
+            expires_at: string;
+            uses_allowed: number;
+        };
+        MarketplacePluginManifest: {
+            /** @description Kebab-case unique identifier. */
+            slug: string;
+            name: string;
+            version: string;
+            vendor: string;
+            description?: string;
+            category?: string;
+            homepage_url?: string;
+            event_subscriptions?: string[];
+            permissions?: string[];
+            dependencies?: components["schemas"]["MarketplacePluginDependency"][];
+        };
+        MarketplacePluginDependency: {
+            slug: string;
+            /** @description Semver constraint: ^X.Y.Z, =X.Y.Z, or empty (treated as caret). */
+            constraint?: string;
+        };
+        MarketplacePluginsListResponse: {
+            plugins: components["schemas"]["MarketplacePluginManifest"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        MarketplaceInstallation: {
+            tenant_id: string;
+            slug: string;
+            installed_version: string;
+            /** @enum {string} */
+            state: "installed" | "active" | "deactivated";
+            installed_at: string;
+            activated_at?: string;
+            updated_at: string;
+        };
+        MarketplaceSettingsResponse: {
+            settings: {
+                [key: string]: unknown;
+            };
+        };
+        MarketplaceSubmissionRequest: {
+            /** Format: email */
+            submitter_email: string;
+            slug: string;
+            name: string;
+            version: string;
+            vendor: string;
+            description?: string;
+            category?: string;
+            homepage_url?: string;
+            event_subscriptions?: string[];
+            permissions?: string[];
+            dependencies?: {
+                slug?: string;
+                constraint?: string;
+            }[];
+        };
+        MarketplaceSubmissionReviewAction: {
+            review_notes?: string;
+        };
+        MarketplaceSubmission: {
+            id: string;
+            tenant_id: string;
+            submitter_email: string;
+            manifest: components["schemas"]["MarketplacePluginManifest"];
+            /** @enum {string} */
+            state: "pending_review" | "approved" | "rejected";
+            review_notes?: string;
+            submitted_at: string;
+            reviewed_at?: string;
+            reviewer?: string;
+        };
+        MarketplaceSubmissionsListResponse: {
+            submissions: components["schemas"]["MarketplaceSubmission"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        TenantResponse: {
+            id: string;
+            slug: string;
+            name: string;
+            plan: string;
+            /** @enum {string} */
+            status: "provisioning" | "active" | "suspended" | "archived";
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        TenantsListResponse: {
+            tenants: components["schemas"]["TenantResponse"][];
+            total: number;
+            page: number;
+            per_page: number;
+        };
+        CreateTenantRequest: {
+            id?: string;
+            slug: string;
+            name: string;
+            plan?: string;
+        };
+        UpdateTenantRequest: {
+            name?: string;
+            plan?: string;
+        };
+        RegistrationSubmitRequest: {
+            /** Format: email */
+            email: string;
+            slug_requested: string;
+            plan_requested?: string;
+        };
+        RegistrationVerifyRequest: {
+            token: string;
+        };
+        RegistrationOnboardingRequest: {
+            registration_id: string;
+            company_name: string;
+            plan?: string;
+        };
+        RegistrationResponse: {
+            id: string;
+            email: string;
+            slug_requested: string;
+            plan_requested: string;
+            /** @enum {string} */
+            status: "pending_email_verification" | "email_verified" | "onboarding" | "active";
+            tenant_id?: string;
+            company_name?: string;
+        };
+        RegistrationSubmitResponse: {
+            registration: components["schemas"]["RegistrationResponse"];
+            message: string;
+        };
+        RegistrationOnboardingResponse: {
+            registration: components["schemas"]["RegistrationResponse"];
+            tenant: components["schemas"]["TenantResponse"];
+        };
+        BillingSubscriptionResponse: {
+            id: string;
+            tenant_id: string;
+            plan_id: string;
+            /** @enum {string} */
+            state: "trialing" | "active" | "past_due" | "paused" | "canceled";
+            stripe_subscription_id?: string;
+            stripe_customer_id?: string;
+            /** Format: date-time */
+            current_period_start: string;
+            /** Format: date-time */
+            current_period_end: string;
+            cancel_at_period_end?: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        BillingSubscriptionListResponse: {
+            subscriptions: components["schemas"]["BillingSubscriptionResponse"][];
+            total: number;
+        };
+        BillingInvoiceResponse: {
+            id: string;
+            tenant_id: string;
+            subscription_id: string;
+            amount: number;
+            currency: string;
+            /** @enum {string} */
+            status: "open" | "paid" | "void" | "uncollectible";
+            /** Format: date-time */
+            period_start?: string;
+            /** Format: date-time */
+            period_end?: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        BillingInvoiceListResponse: {
+            invoices: components["schemas"]["BillingInvoiceResponse"][];
+            total: number;
+        };
+        BillingUsageRollup: {
+            metric: string;
+            value: number;
+            limit: number;
+        };
+        BillingUsageResponse: {
+            tenant_id: string;
+            plan: string;
+            /** Format: date-time */
+            period_start: string;
+            /** Format: date-time */
+            period_end: string;
+            rollups: components["schemas"]["BillingUsageRollup"][];
+        };
+        PaymentRow: {
+            payment_id: string;
+            tenant_id: string;
+            order_id: string;
+            /** @enum {string} */
+            provider: "stripe" | "alipay" | "wechat" | "paypal";
+            /** @enum {string} */
+            status: "pending" | "succeeded" | "failed" | "refunded";
+            /** Format: int64 */
+            amount_cents: number;
+            currency: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        PaymentsListResponse: {
+            tenant_id: string;
+            payments: components["schemas"]["PaymentRow"][];
+            total: number;
+            limit: number;
+            offset: number;
+        };
+        AdminSummary: {
+            /** Format: int64 */
+            active_orders: number;
+            /** Format: int64 */
+            gmv_today_aud_cents: number;
+            pending_alerts: number;
+            channel_health: components["schemas"]["AdminChannelStatus"][];
+        };
+        AdminChannelStatus: {
+            channel: string;
+            /** @enum {string} */
+            status: "healthy" | "degraded" | "down";
+        };
+        AdminOrderRow: {
+            order_id: string;
+            status: string;
+            /** Format: int64 */
+            total_cents: number;
+            channel: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        PaginationMeta: {
+            page: number;
+            limit: number;
+            total: number;
+        };
+        PaginationLinks: {
+            next?: string | null;
+            prev?: string | null;
+        };
+        AdminSummaryResponse: {
+            data: components["schemas"]["AdminSummary"];
+        };
+        AdminOrdersResponse: {
+            data: components["schemas"]["AdminOrderRow"][];
+            meta: components["schemas"]["PaginationMeta"];
+            links: components["schemas"]["PaginationLinks"];
+        };
+        AdminAlertActionResponse: {
+            data: {
+                alert_id?: string;
+                /** @enum {string} */
+                action?: "approve" | "deny" | "snooze";
+                status?: string;
+            };
+        };
+        AdminChannelsResponse: {
+            data: components["schemas"]["AdminChannelStatus"][];
+        };
+        OperatorAlert: {
+            tenant_id: string;
+            alert_id: string;
+            /** @enum {string} */
+            alert_type: "large_refund_pending_approval" | "large_dropship_pending_approval" | "price_change_pending_approval" | "captcha_detected" | "omniparser_unavailable" | "rate_limit_drain" | "channel_status_update_failed" | "large_margin_alert";
+            /** @enum {string} */
+            severity: "info" | "warning" | "critical";
+            /** @enum {string} */
+            status: "pending" | "acknowledged" | "resolved" | "expired";
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            action_taken?: "approve" | "deny";
+            operator_email?: string;
+            note?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            acknowledged_at?: string;
+            /** Format: date-time */
+            resolved_at?: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        OperatorAlertListResponse: {
+            tenant_id: string;
+            /** @enum {string} */
+            status: "pending" | "acknowledged" | "resolved" | "expired";
+            alerts: components["schemas"]["OperatorAlert"][];
+            count: number;
+        };
+        OperatorAlertAcknowledgeResponse: {
+            tenant_id: string;
+            alert_id: string;
+            /** @enum {string} */
+            status: "acknowledged";
+        };
+        OperatorAlertResolveResponse: {
+            tenant_id: string;
+            alert_id: string;
+            /** @enum {string} */
+            status: "resolved";
+            /** @enum {string} */
+            action_taken: "approve" | "deny";
+        };
+        CoachingTipRequest: {
+            /** @enum {string} */
+            context: "onboarding" | "pricing_strategy" | "channel_optimization" | "inventory_management";
+            current_metrics?: {
+                [key: string]: number;
+            };
+        };
+        CoachingTipResponse: {
+            tip: string;
+            confidence: number;
+            /** @enum {string} */
+            source: "llm" | "rule";
+            context: string;
+        };
+        VendorResponse: {
+            vendor_id: string;
+            tenant_id: string;
+            name: string;
+            contact_email: string;
+            /** @enum {string} */
+            status: "active" | "suspended" | "deactivated";
+            commission_rate_bps: number;
+            /** Format: date-time */
+            joined_at: string;
+        };
+        CommissionReportResponse: {
+            vendor_id: string;
+            tenant_id: string;
+            /** Format: int64 */
+            total_orders_cents?: number;
+            /** Format: int64 */
+            total_commission_cents: number;
+            /** Format: int64 */
+            total_payout_cents: number;
+            /** Format: date-time */
+            period_start: string;
+            /** Format: date-time */
+            period_end: string;
+        };
     };
-    AdminChannelsResponse: {
-      data: components["schemas"]["AdminChannelStatus"][];
+    responses: never;
+    parameters: {
+        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+        TenantIDHeader: string;
     };
-    OperatorAlert: {
-      tenant_id: string;
-      alert_id: string;
-      /** @enum {string} */
-      alert_type:
-        | "large_refund_pending_approval"
-        | "large_dropship_pending_approval"
-        | "price_change_pending_approval"
-        | "captcha_detected"
-        | "omniparser_unavailable"
-        | "rate_limit_drain"
-        | "channel_status_update_failed"
-        | "large_margin_alert";
-      /** @enum {string} */
-      severity: "info" | "warning" | "critical";
-      /** @enum {string} */
-      status: "pending" | "acknowledged" | "resolved" | "expired";
-      payload?: {
-        [key: string]: unknown;
-      };
-      /** @enum {string} */
-      action_taken?: "approve" | "deny";
-      operator_email?: string;
-      note?: string;
-      /** Format: date-time */
-      created_at: string;
-      /** Format: date-time */
-      acknowledged_at?: string;
-      /** Format: date-time */
-      resolved_at?: string;
-      /** Format: date-time */
-      expires_at: string;
-    };
-    OperatorAlertListResponse: {
-      tenant_id: string;
-      /** @enum {string} */
-      status: "pending" | "acknowledged" | "resolved" | "expired";
-      alerts: components["schemas"]["OperatorAlert"][];
-      count: number;
-    };
-    OperatorAlertAcknowledgeResponse: {
-      tenant_id: string;
-      alert_id: string;
-      /** @enum {string} */
-      status: "acknowledged";
-    };
-    OperatorAlertResolveResponse: {
-      tenant_id: string;
-      alert_id: string;
-      /** @enum {string} */
-      status: "resolved";
-      /** @enum {string} */
-      action_taken: "approve" | "deny";
-    };
-    CoachingTipRequest: {
-      /** @enum {string} */
-      context: "onboarding" | "pricing_strategy" | "channel_optimization" | "inventory_management";
-      current_metrics?: {
-        [key: string]: number;
-      };
-    };
-    CoachingTipResponse: {
-      tip: string;
-      confidence: number;
-      /** @enum {string} */
-      source: "llm" | "rule";
-      context: string;
-    };
-    VendorResponse: {
-      vendor_id: string;
-      tenant_id: string;
-      name: string;
-      contact_email: string;
-      /** @enum {string} */
-      status: "active" | "suspended" | "deactivated";
-      commission_rate_bps: number;
-      /** Format: date-time */
-      joined_at: string;
-    };
-    CommissionReportResponse: {
-      vendor_id: string;
-      tenant_id: string;
-      /** Format: int64 */
-      total_orders_cents?: number;
-      /** Format: int64 */
-      total_commission_cents: number;
-      /** Format: int64 */
-      total_payout_cents: number;
-      /** Format: date-time */
-      period_start: string;
-      /** Format: date-time */
-      period_end: string;
-    };
-  };
-  responses: never;
-  parameters: {
-    /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-    TenantIDHeader: string;
-  };
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  getHealthz: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Service health */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HealthResponse"];
-        };
-      };
-    };
-  };
-  getReadyz: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Service readiness */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ReadyResponse"];
-        };
-      };
-      /** @description Service is live but not ready because a configured dependency check failed. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ReadyResponse"];
-        };
-      };
-    };
-  };
-  getMetrics: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Prometheus text exposition for build metadata, HTTP RED metrics, sync, agent, compliance, and media placeholders. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/plain": string;
-        };
-      };
-      /** @description Only GET is supported. */
-      405: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  login: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LoginRequest"];
-      };
-    };
-    responses: {
-      /** @description JWT access token and refresh token. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthTokenResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Invalid credentials. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description JWT auth or admin credentials are not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  refreshAccessToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RefreshTokenRequest"];
-      };
-    };
-    responses: {
-      /** @description New JWT access token and refresh token. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthTokenResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Invalid or expired refresh token. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description JWT auth is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getCurrentSession: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Current session derived from the JWT bearer token. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AuthSession"];
-        };
-      };
-      /** @description Missing, invalid, or expired JWT bearer token. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  logout: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Bearer token accepted; client may clear its session cookie. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Missing, invalid, or expired JWT bearer token. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listProducts: {
-    parameters: {
-      query?: {
-        page?: number;
-        per_page?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated product list */
-      200: {
-        headers: {
-          /** @description Present when the request origin matches ECOMMERCE_ALLOWED_ORIGIN. */
-          "Access-Control-Allow-Origin"?: string;
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ProductListResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Origin rejected by CORS policy. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  createProduct: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateProductRequest"];
-      };
-    };
-    responses: {
-      /** @description Product created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Product"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Duplicate product (SKU or slug collision). */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Validation failed (missing SKU, invalid price, etc). */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  productsPreflight: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Preflight accepted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Origin rejected by CORS policy. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getProduct: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Product UUID or slug. */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Product found */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Product"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  updateProduct: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateProductRequest"];
-      };
-    };
-    responses: {
-      /** @description Product updated */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Product"];
-        };
-      };
-      /** @description Invalid JSON body or invalid ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Validation failed. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  deleteProduct: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Product deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Invalid product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  generateProductDescription: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["GenerateDescriptionRequest"];
-      };
-    };
-    responses: {
-      /** @description Generated content suggestion and quality evaluation */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ContentSuggestion"];
-        };
-      };
-      /** @description Invalid JSON body or product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Fleet bridge generation failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Content agent is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getProductAISuggestions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Generated content suggestion and quality evaluation */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ContentSuggestion"];
-        };
-      };
-      /** @description Invalid product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Fleet bridge generation failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Content agent is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  ingestRAGDocument: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RAGDocumentRequest"];
-      };
-    };
-    responses: {
-      /** @description Document accepted and chunked. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RAGIngestResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Empty or invalid source document. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description RAG service is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  searchRAGEvidence: {
-    parameters: {
-      query: {
-        q: string;
-        top_k?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Ranked evidence chunks. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RAGSearchResponse"];
-        };
-      };
-      /** @description Missing query. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description RAG service is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  generateFactCheckedContent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["GenerateFactCheckedContentRequest"];
-      };
-    };
-    responses: {
-      /** @description Generated content with fact-check result. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ContentFactCheckResponse"];
-        };
-      };
-      /** @description Invalid JSON body or product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Content generation or fact-checking failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Content generator or fact checker is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getFactCheckResult: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Fact-check result. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FactCheckResult"];
-        };
-      };
-      /** @description Fact-check result not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  sourceMedia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MediaSourceRequest"];
-      };
-    };
-    responses: {
-      /** @description Existing media asset replayed for a duplicate source request. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaAsset"];
-        };
-      };
-      /** @description Media asset sourced and registered. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaAsset"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing or invalid source URL. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Supplier media fetch failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Media sourcing is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listMedia: {
-    parameters: {
-      query?: {
-        product_id?: string;
-        status?: "all" | "sourced" | "processing" | "processed" | "validated" | "failed";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Media asset collection for operator review. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaAssetListResponse"];
-        };
-      };
-      /** @description Media service is not configured. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  processMedia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MediaProcessRequest"];
-      };
-    };
-    responses: {
-      /** @description Processed media asset. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaAsset"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Media asset not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Media asset is not in an approvable state for processing. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing media ID. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getMedia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Media asset metadata. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaAsset"];
-        };
-      };
-      /** @description Media asset not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  validateMedia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Media quality assessment. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaQualityReport"];
-        };
-      };
-      /** @description Media asset not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  approveMedia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MediaApproveRequest"];
-      };
-    };
-    responses: {
-      /** @description Media asset approved for processing. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaAsset"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Media asset not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Media asset is not in a pending review state. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing reviewer or invalid path parameter. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  rejectMedia: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MediaRejectRequest"];
-      };
-    };
-    responses: {
-      /** @description Media asset rejected. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MediaAsset"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Media asset not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Media asset is not in a pending review state. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing reviewer, review note, or invalid path parameter. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listOperatorAlerts: {
-    parameters: {
-      query: {
-        /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
-        tenant_id: string;
-        status?: "pending" | "acknowledged" | "resolved" | "expired";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Operator alerts for the requested tenant and lifecycle state. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["OperatorAlertListResponse"];
-        };
-      };
-      /** @description Missing tenant identifier or invalid query parameters. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Operator alert repository failure. */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  acknowledgeOperatorAlert: {
-    parameters: {
-      query: {
-        /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
-        tenant_id: string;
-      };
-      header?: never;
-      path: {
-        alert_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Operator alert acknowledged. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["OperatorAlertAcknowledgeResponse"];
-        };
-      };
-      /** @description Missing tenant identifier or invalid alert path. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Operator alert not found for the tenant. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Operator alert is already resolved. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Operator alert repository failure. */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  resolveOperatorAlert: {
-    parameters: {
-      query: {
-        /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
-        tenant_id: string;
-        action: "approve" | "deny";
-      };
-      header?: never;
-      path: {
-        alert_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Operator alert resolved with an explicit action. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["OperatorAlertResolveResponse"];
-        };
-      };
-      /** @description Missing tenant identifier, invalid alert path, or unsupported action. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Operator alert not found for the tenant. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Operator alert is already resolved. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Operator alert repository or event publication failure. */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  checkProductCompliance: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["ComplianceCheckRequest"];
-      };
-    };
-    responses: {
-      /** @description Compliance check result */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ComplianceCheckResponse"];
-        };
-      };
-      /** @description Invalid JSON body or product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  suggestProductSEO: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["SEOSuggestionRequest"];
-      };
-    };
-    responses: {
-      /** @description SEO suggestion result */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SEOSuggestionResponse"];
-        };
-      };
-      /** @description Invalid JSON body or product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listComplianceRules: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Built-in compliance rules */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ComplianceRulesResponse"];
-        };
-      };
-    };
-  };
-  getTenantSettings: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant-scoped configuration settings. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantSettings"];
-        };
-      };
-      /** @description Tenant context is required. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  updateTenantSettings: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["TenantSettingsUpdate"];
-      };
-    };
-    responses: {
-      /** @description Updated tenant-scoped configuration settings. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantSettings"];
-        };
-      };
-      /** @description Invalid JSON body or missing tenant context. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Actor does not have permission to update tenant settings. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Tenant settings failed validation. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listCustomComplianceRules: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant-scoped custom compliance rules. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ComplianceCustomRulesResponse"];
-        };
-      };
-      /** @description Tenant context is required. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  createCustomComplianceRule: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ComplianceCustomRuleRequest"];
-      };
-    };
-    responses: {
-      /** @description Custom compliance rule created at version 1. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ComplianceCustomRule"];
-        };
-      };
-      /** @description Invalid JSON body or missing tenant context. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Actor does not have permission to mutate custom rules. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Custom rule validation failed. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  updateCustomComplianceRule: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ComplianceCustomRuleUpdate"];
-      };
-    };
-    responses: {
-      /** @description Custom compliance rule updated with incremented version. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ComplianceCustomRule"];
-        };
-      };
-      /** @description Invalid JSON body or missing tenant context. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Custom rule not found for this tenant. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Custom rule validation failed. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  deleteCustomComplianceRule: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Custom rule deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Missing tenant context. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Custom rule not found for this tenant. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getComplianceReportSummary: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Aggregated pass/fail reporting by tenant, rule, product, and trend. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ComplianceSummary"];
-        };
-      };
-      /** @description Tenant context is required. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  exportComplianceReport: {
-    parameters: {
-      query?: {
-        format?: "json" | "csv";
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant-scoped compliance history export. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ComplianceExportResponse"];
-          "text/csv": string;
-        };
-      };
-      /** @description Tenant context is required or export format is invalid. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  createOrder: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateOrderRequest"];
-      };
-    };
-    responses: {
-      /** @description Order created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Order"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Order validation failed. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getOrder: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Order found */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Order"];
-        };
-      };
-      /** @description Invalid order ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Order not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  updateOrderStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateOrderStatusRequest"];
-      };
-    };
-    responses: {
-      /** @description Updated order */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Order"];
-        };
-      };
-      /** @description Invalid JSON body or invalid ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Order not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Invalid status or status transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getCart: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        session_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Cart session */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Cart"];
-        };
-      };
-    };
-  };
-  putCart: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        session_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CartRequest"];
-      };
-    };
-    responses: {
-      /** @description Cart saved */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Cart"];
-        };
-      };
-      /** @description Invalid JSON body or session ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Cart validation failed. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getSyncStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Current sync status */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SyncStatus"];
-        };
-      };
-    };
-  };
-  listMarketplaceDLQ: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Marketplace sync DLQ records currently visible to the API process. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceDLQListResponse"];
-        };
-      };
-    };
-  };
-  replayMarketplaceDLQ: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Marketplace replay workflow accepted by Temporal. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowStartResponse"];
-        };
-      };
-      /** @description Invalid DLQ record ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description DLQ record was not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal rejected the replay workflow start request. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listSyncConflicts: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Pending conflicts queued for manual review */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ConflictListResponse"];
-        };
-      };
-    };
-  };
-  resolveSyncConflict: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ResolveConflictRequest"];
-      };
-    };
-    responses: {
-      /** @description Conflict marked resolved */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SyncConflict"];
-        };
-      };
-      /** @description Invalid JSON body or conflict ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Conflict cannot be resolved. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  publishProductToWooCommerce: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Product published */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["StatusResponse"];
-        };
-      };
-      /** @description Invalid product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description WooCommerce publish failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  receiveWooCommerceOrderWebhook: {
-    parameters: {
-      query?: never;
-      header: {
-        "X-WC-Webhook-Signature": string;
-        "X-WC-Webhook-Topic"?: string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["WooCommerceOrderWebhook"];
-      };
-    };
-    responses: {
-      /** @description Webhook accepted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["StatusResponse"];
-        };
-      };
-      /** @description Invalid HMAC signature. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Invalid WooCommerce order payload. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  receiveWooCommerceProductWebhook: {
-    parameters: {
-      query?: never;
-      header: {
-        "X-WC-Webhook-Signature": string;
-        "X-WC-Webhook-Topic"?: string;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["WooCommerceProductWebhook"];
-      };
-    };
-    responses: {
-      /** @description Webhook accepted */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["StatusResponse"];
-        };
-      };
-      /** @description Invalid HMAC signature. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Invalid WooCommerce product payload. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listAgents: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Registered agents */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AgentsListResponse"];
-        };
-      };
-    };
-  };
-  runAgent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: "sourcing" | "pricing" | "compliance";
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["AgentRunRequest"];
-      };
-    };
-    responses: {
-      /** @description Agent run queued */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AgentRun"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Agent not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listAgentHistory: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: "sourcing" | "pricing" | "compliance";
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Agent run history */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AgentHistoryResponse"];
-        };
-      };
-      /** @description Agent not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getAgentRun: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        run_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Agent run */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AgentRun"];
-        };
-      };
-      /** @description Agent run not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listAgentSchedules: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Agent schedules */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AgentSchedulesResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Authenticated session does not have agent permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  enableAgentSchedule: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Agent schedule enabled */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AgentScheduleResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Authenticated session does not have agent permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Agent schedule not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  disableAgentSchedule: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Agent schedule disabled */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AgentScheduleResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Authenticated session does not have agent permissions. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Agent schedule not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listWebhooks: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Registered outbound webhook endpoints. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WebhookListResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Caller does not have viewer permission. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  createWebhook: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateWebhookRequest"];
-      };
-    };
-    responses: {
-      /** @description Webhook endpoint registered. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WebhookRegistration"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Caller does not have operator permission. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description URL, event types, or signing secret is invalid. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  deleteWebhook: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Webhook endpoint deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Caller does not have operator permission. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Webhook endpoint not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  testWebhook: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["TestWebhookRequest"];
-      };
-    };
-    responses: {
-      /** @description Test delivery attempted and recorded. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WebhookTestResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Caller does not have operator permission. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Webhook endpoint not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Requested test event type is not subscribed by the webhook. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listRecentEvents: {
-    parameters: {
-      query?: {
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Recent event activity, newest first. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RecentEventsResponse"];
-        };
-      };
-      /** @description Missing or invalid JWT bearer token when auth is configured. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listPayments: {
-    parameters: {
-      query?: {
-        tenant_id?: string;
-        status?: "pending" | "succeeded" | "failed" | "refunded";
-        provider?: "stripe" | "alipay" | "wechat" | "paypal";
-        limit?: number;
-        offset?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated payment list. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PaymentsListResponse"];
-        };
-      };
-      /** @description Invalid filter parameters. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getGMVDailyRollup: {
-    parameters: {
-      query: {
-        /** @description Inclusive lower bound (RFC3339 or YYYY-MM-DD). */
-        from: string;
-        /** @description Inclusive upper bound (RFC3339 or YYYY-MM-DD). */
-        to: string;
-        /** @description Optional channel filter (tiktok|facebook|wc|rednote|instagram). */
-        channel?: string;
-        /** @description Tenant ID fallback when the JWT-derived header is absent. */
-        tenant_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Daily GMV rollup with cumulative summary. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            tenant_id?: string;
-            /** Format: date-time */
-            from?: string;
-            /** Format: date-time */
-            to?: string;
-            channel?: string;
-            daily?: {
-              /** Format: date-time */
-              day?: string;
-              gmv_aud_cents?: number;
-              order_count?: number;
-            }[];
-            summary?: {
-              gmv_aud_cents?: number;
-              order_count?: number;
+    getHealthz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service health */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthResponse"];
+                };
             };
-          };
-        };
-      };
-      /** @description Invalid date range or missing tenant. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Handler closed. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getGMVByChannel: {
-    parameters: {
-      query: {
-        from: string;
-        to: string;
-        tenant_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description GMV totals per channel sorted by GMV descending. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            tenant_id?: string;
-            channels?: {
-              channel?: string;
-              gmv_aud_cents?: number;
-              order_count?: number;
-            }[];
-          };
-        };
-      };
-      /** @description Invalid date range. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getGMVByProduct: {
-    parameters: {
-      query: {
-        from: string;
-        to: string;
-        limit?: number;
-        tenant_id?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Top-N products by GMV sorted descending. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            tenant_id?: string;
-            limit?: number;
-            products?: {
-              product_id?: string;
-              gmv_aud_cents?: number;
-              order_count?: number;
-            }[];
-          };
-        };
-      };
-      /** @description Invalid date range. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  streamAgentActivity: {
-    parameters: {
-      query?: {
-        tenant_id?: string;
-        /** @description Optional channel filter. */
-        channel?: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description text/event-stream — never closes; client may disconnect at any time. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "text/event-stream": string;
-        };
-      };
-      /** @description Tenant not derivable from request. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Handler closed. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  startProductPublishWorkflow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StartProductPublishWorkflowRequest"];
-      };
-    };
-    responses: {
-      /** @description Temporal workflow execution accepted. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowStartResponse"];
-        };
-      };
-      /** @description Invalid JSON body or product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal rejected the workflow start request. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  startMarketplaceSyncWorkflow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StartMarketplaceSyncWorkflowRequest"];
-      };
-    };
-    responses: {
-      /** @description Temporal workflow execution accepted. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowStartResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Required marketplace sync fields are missing. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal rejected the workflow start request. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  startMarketplaceReplayWorkflow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StartMarketplaceReplayWorkflowRequest"];
-      };
-    };
-    responses: {
-      /** @description Temporal workflow execution accepted. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowStartResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Required marketplace replay fields are missing. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal rejected the workflow start request. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  startContentGenerationWorkflow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StartContentGenerationWorkflowRequest"];
-      };
-    };
-    responses: {
-      /** @description Temporal workflow execution accepted. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowStartResponse"];
-        };
-      };
-      /** @description Invalid JSON body or product ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal rejected the workflow start request. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  startMediaProcessingWorkflow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StartMediaProcessingWorkflowRequest"];
-      };
-    };
-    responses: {
-      /** @description Temporal workflow execution accepted. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowStartResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Product ID or source URL is missing. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal rejected the workflow start request. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  startSourcingWorkflow: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StartSourcingWorkflowRequest"];
-      };
-    };
-    responses: {
-      /** @description Temporal workflow execution accepted. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowStartResponse"];
-        };
-      };
-      /** @description Invalid JSON body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description SKU or deterministic candidate list is missing. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal rejected the workflow start request. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listWorkflows: {
-    parameters: {
-      query?: {
-        status?:
-          | "queued"
-          | "running"
-          | "waiting_review"
-          | "completed"
-          | "failed"
-          | "canceled"
-          | "terminated"
-          | "continued_as_new"
-          | "timed_out"
-          | "unspecified";
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Workflow lifecycle summaries for operator and UI surfaces. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowListResponse"];
-        };
-      };
-      /** @description Temporal visibility request failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getWorkflowStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Temporal workflow execution detail. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowDetailResponse"];
-        };
-      };
-      /** @description Workflow execution was not found in Temporal visibility. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal describe request failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  signalProductPublishReview: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ProductPublishReviewSignal"];
-      };
-    };
-    responses: {
-      /** @description Review signal accepted by Temporal with the latest observed workflow snapshot. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["WorkflowSignalResponse"];
-        };
-      };
-      /** @description Invalid JSON body or workflow ID. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal signal request failed. */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Temporal client is not configured for the API process. */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listMembershipPlans: {
-    parameters: {
-      query?: {
-        page?: number;
-        per_page?: number;
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant-scoped paginated plans. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipPlansListResponse"];
-        };
-      };
-      /** @description Tenant header missing or invalid. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  createMembershipPlan: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MembershipPlanRequest"];
-      };
-    };
-    responses: {
-      /** @description Plan created. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipPlanResponse"];
-        };
-      };
-      /** @description Invalid JSON body or tenant. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Plan validation failed (cycle, currency, name). */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getMembershipPlan: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Plan record. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipPlanResponse"];
-        };
-      };
-      /** @description Plan not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  deleteMembershipPlan: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Plan deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Plan not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  updateMembershipPlan: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MembershipPlanRequest"];
-      };
-    };
-    responses: {
-      /** @description Plan updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipPlanResponse"];
-        };
-      };
-    };
-  };
-  listMemberships: {
-    parameters: {
-      query?: {
-        page?: number;
-        per_page?: number;
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant-scoped paginated memberships. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipsListResponse"];
-        };
-      };
-    };
-  };
-  createMembership: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MembershipCreateRequest"];
-      };
-    };
-    responses: {
-      /** @description Membership created (state=trial). */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipResponse"];
-        };
-      };
-      /** @description Plan or member validation failed. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getMembership: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Membership record. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipResponse"];
-        };
-      };
-      /** @description Not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  updateMembership: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MembershipUpdateRequest"];
-      };
-    };
-    responses: {
-      /** @description Membership updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipResponse"];
-        };
-      };
-    };
-  };
-  cancelMembership: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Membership cancelled. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipResponse"];
-        };
-      };
-      /** @description Cancel not allowed from current state. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  pauseMembership: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Membership paused. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipResponse"];
-        };
-      };
-      /** @description Pause not allowed from current state. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  resumeMembership: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Membership resumed. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MembershipResponse"];
-        };
-      };
-      /** @description Resume not allowed from current state. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listDigitalProducts: {
-    parameters: {
-      query?: {
-        page?: number;
-        per_page?: number;
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of digital products. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DigitalProductsListResponse"];
-        };
-      };
-    };
-  };
-  createDigitalProduct: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["DigitalProductRequest"];
-      };
-    };
-    responses: {
-      /** @description Digital product created. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DigitalProductResponse"];
-        };
-      };
-      /** @description Validation error. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getDigitalProduct: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Digital product. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DigitalProductResponse"];
-        };
-      };
-      /** @description Not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  deleteDigitalProduct: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  updateDigitalProduct: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["DigitalProductRequest"];
-      };
-    };
-    responses: {
-      /** @description Digital product updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DigitalProductResponse"];
-        };
-      };
-      /** @description Not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  adminDigitalProductDownload: {
-    parameters: {
-      query: {
-        customer_id: string;
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Signed URL. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DigitalDownloadResponse"];
-        };
-      };
-      /** @description No grant for this customer/product. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listLicenses: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of licences. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LicensesListResponse"];
-        };
-      };
-    };
-  };
-  createLicense: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LicenseRequest"];
-      };
-    };
-    responses: {
-      /** @description Licence issued. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LicenseResponse"];
-        };
-      };
-      /** @description Validation error. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getLicense: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Licence. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LicenseResponse"];
-        };
-      };
-      /** @description Not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  revokeLicense: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Licence revoked. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LicenseResponse"];
-        };
-      };
-      /** @description Already terminal. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listMyLicenses: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of licences scoped to the actor. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["LicensesListResponse"];
-        };
-      };
-    };
-  };
-  customerDigitalDownload: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Signed URL. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DigitalDownloadResponse"];
-        };
-      };
-      /** @description Licence belongs to another customer. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Licence revoked or expired. */
-      410: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listMarketplacePlugins: {
-    parameters: {
-      query?: {
-        page?: number;
-        per_page?: number;
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of marketplace plugin manifests. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplacePluginsListResponse"];
-        };
-      };
-    };
-  };
-  getMarketplacePlugin: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Manifest for the requested slug. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplacePluginManifest"];
-        };
-      };
-      /** @description Plugin not in catalogue. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  uninstallMarketplacePlugin: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Installation removed. */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Installation not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  installMarketplacePlugin: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Installation row in state=installed. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceInstallation"];
-        };
-      };
-      /** @description Plugin not found in catalogue. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Plugin is already installed for this tenant. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  activateMarketplacePlugin: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Installation row in state=active. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceInstallation"];
-        };
-      };
-      /** @description Installation not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Invalid state transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Sandbox budget exceeded. */
-      429: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  deactivateMarketplacePlugin: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Installation row in state=deactivated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceInstallation"];
-        };
-      };
-      /** @description Invalid state transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  getMarketplaceInstallationSettings: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Settings blob. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceSettingsResponse"];
-        };
-      };
-    };
-  };
-  updateMarketplaceInstallationSettings: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          [key: string]: unknown;
-        };
-      };
-    };
-    responses: {
-      /** @description Settings updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceSettingsResponse"];
-        };
-      };
-    };
-  };
-  submitMarketplacePlugin: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MarketplaceSubmissionRequest"];
-      };
-    };
-    responses: {
-      /** @description Submission accepted into pending_review state. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceSubmission"];
-        };
-      };
-      /** @description Invalid submission body. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-      /** @description Submission with this id already exists. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listMarketplaceSubmissions: {
-    parameters: {
-      query?: {
-        tenant_id?: string;
-        page?: number;
-        per_page?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of submissions. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceSubmissionsListResponse"];
-        };
-      };
-    };
-  };
-  getMarketplaceSubmission: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Submission row. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceSubmission"];
-        };
-      };
-      /** @description Submission not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  approveMarketplaceSubmission: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["MarketplaceSubmissionReviewAction"];
-      };
-    };
-    responses: {
-      /** @description Submission transitioned to approved. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceSubmission"];
-        };
-      };
-      /** @description Submission is in a terminal state. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  rejectMarketplaceSubmission: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["MarketplaceSubmissionReviewAction"];
-      };
-    };
-    responses: {
-      /** @description Submission transitioned to rejected. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarketplaceSubmission"];
-        };
-      };
-      /** @description Submission is in a terminal state. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorResponse"];
-        };
-      };
-    };
-  };
-  listTenants: {
-    parameters: {
-      query?: {
-        page?: number;
-        per_page?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Page of tenants. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantsListResponse"];
-        };
-      };
-    };
-  };
-  createTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateTenantRequest"];
-      };
-    };
-    responses: {
-      /** @description Tenant created in status=provisioning. */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantResponse"];
-        };
-      };
-      /** @description Invalid slug or name. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Slug already exists. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Quota exceeded. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant aggregate. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantResponse"];
-        };
-      };
-      /** @description Tenant not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  updateTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateTenantRequest"];
-      };
-    };
-    responses: {
-      /** @description Tenant updated. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantResponse"];
-        };
-      };
-      /** @description Tenant not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  suspendTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant transitioned to status=suspended. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantResponse"];
-        };
-      };
-      /** @description Invalid status transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  activateTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant transitioned to status=active. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantResponse"];
-        };
-      };
-      /** @description Invalid status transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  archiveTenant: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Tenant transitioned to status=archived. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TenantResponse"];
-        };
-      };
-      /** @description Invalid status transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  submitRegistration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RegistrationSubmitRequest"];
-      };
-    };
-    responses: {
-      /** @description Registration accepted; verification email sent. */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationSubmitResponse"];
-        };
-      };
-      /** @description Invalid email or slug. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Slug already taken. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  verifyRegistration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RegistrationVerifyRequest"];
-      };
-    };
-    responses: {
-      /** @description Registration verified; ready for onboarding. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationResponse"];
-        };
-      };
-      /** @description Token invalid or expired. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Registration not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  completeRegistrationOnboarding: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RegistrationOnboardingRequest"];
-      };
-    };
-    responses: {
-      /** @description Tenant provisioned and registration marked active. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationOnboardingResponse"];
-        };
-      };
-      /** @description Slug taken or already active. */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Registration not yet verified. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  listBillingSubscriptions: {
-    parameters: {
-      query?: {
-        page?: number;
-        per_page?: number;
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated subscriptions. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingSubscriptionListResponse"];
-        };
-      };
-    };
-  };
-  getBillingSubscription: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Subscription. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingSubscriptionResponse"];
-        };
-      };
-      /** @description Subscription not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  cancelBillingSubscription: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Subscription transitioned to canceled. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingSubscriptionResponse"];
-        };
-      };
-      /** @description Invalid transition (already canceled, etc.). */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  pauseBillingSubscription: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Subscription transitioned to paused. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingSubscriptionResponse"];
-        };
-      };
-      /** @description Invalid transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  resumeBillingSubscription: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Subscription transitioned to active. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingSubscriptionResponse"];
-        };
-      };
-      /** @description Invalid transition. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  listBillingInvoices: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated invoices. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingInvoiceListResponse"];
-        };
-      };
-    };
-  };
-  getBillingInvoice: {
-    parameters: {
-      query?: never;
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Invoice. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingInvoiceResponse"];
-        };
-      };
-      /** @description Invoice not found. */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  getBillingUsage: {
-    parameters: {
-      query?: {
-        plan?: string;
-      };
-      header?: {
-        /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
-        "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Per-metric usage rollup with plan limits. */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["BillingUsageResponse"];
-        };
-      };
-    };
-  };
-  stripeWebhook: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          [key: string]: unknown;
-        };
-      };
-    };
-    responses: {
-      /** @description Event processed (or duplicate, no-op). */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Missing or malformed Stripe-Signature header. */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Signature mismatch or replay window exceeded. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
+        };
+    };
+    getReadyz: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service readiness */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyResponse"];
+                };
+            };
+            /** @description Service is live but not ready because a configured dependency check failed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyResponse"];
+                };
+            };
+        };
+    };
+    getMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Prometheus text exposition for build metadata, HTTP RED metrics, sync, agent, compliance, and media placeholders. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Only GET is supported. */
+            405: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description JWT access token and refresh token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokenResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid credentials. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description JWT auth or admin credentials are not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    refreshAccessToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description New JWT access token and refresh token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTokenResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid or expired refresh token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description JWT auth is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCurrentSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current session derived from the JWT bearer token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSession"];
+                };
+            };
+            /** @description Missing, invalid, or expired JWT bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bearer token accepted; client may clear its session cookie. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing, invalid, or expired JWT bearer token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listProducts: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated product list */
+            200: {
+                headers: {
+                    /** @description Present when the request origin matches ECOMMERCE_ALLOWED_ORIGIN. */
+                    "Access-Control-Allow-Origin"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductListResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Origin rejected by CORS policy. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductRequest"];
+            };
+        };
+        responses: {
+            /** @description Product created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Duplicate product (SKU or slug collision). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation failed (missing SKU, invalid price, etc). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    productsPreflight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Preflight accepted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Origin rejected by CORS policy. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Product UUID or slug. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Product found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateProductRequest"];
+            };
+        };
+        responses: {
+            /** @description Product updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+            /** @description Invalid JSON body or invalid ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Product deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    generateProductDescription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["GenerateDescriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated content suggestion and quality evaluation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSuggestion"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Fleet bridge generation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content agent is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getProductAISuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generated content suggestion and quality evaluation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentSuggestion"];
+                };
+            };
+            /** @description Invalid product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Fleet bridge generation failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content agent is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    ingestRAGDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RAGDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Document accepted and chunked. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RAGIngestResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Empty or invalid source document. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description RAG service is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    searchRAGEvidence: {
+        parameters: {
+            query: {
+                q: string;
+                top_k?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ranked evidence chunks. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RAGSearchResponse"];
+                };
+            };
+            /** @description Missing query. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description RAG service is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    generateFactCheckedContent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateFactCheckedContentRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated content with fact-check result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentFactCheckResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content generation or fact-checking failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Content generator or fact checker is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getFactCheckResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fact-check result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactCheckResult"];
+                };
+            };
+            /** @description Fact-check result not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    sourceMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaSourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing media asset replayed for a duplicate source request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Media asset sourced and registered. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid source URL. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Supplier media fetch failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media sourcing is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMedia: {
+        parameters: {
+            query?: {
+                product_id?: string;
+                status?: "all" | "sourced" | "processing" | "processed" | "validated" | "failed";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media asset collection for operator review. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAssetListResponse"];
+                };
+            };
+            /** @description Media service is not configured. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    processMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaProcessRequest"];
+            };
+        };
+        responses: {
+            /** @description Processed media asset. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset is not in an approvable state for processing. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing media ID. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media asset metadata. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    validateMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Media quality assessment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaQualityReport"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    approveMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaApproveRequest"];
+            };
+        };
+        responses: {
+            /** @description Media asset approved for processing. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset is not in a pending review state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing reviewer or invalid path parameter. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rejectMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaRejectRequest"];
+            };
+        };
+        responses: {
+            /** @description Media asset rejected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaAsset"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Media asset is not in a pending review state. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing reviewer, review note, or invalid path parameter. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listOperatorAlerts: {
+        parameters: {
+            query: {
+                /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
+                tenant_id: string;
+                status?: "pending" | "acknowledged" | "resolved" | "expired";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator alerts for the requested tenant and lifecycle state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorAlertListResponse"];
+                };
+            };
+            /** @description Missing tenant identifier or invalid query parameters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert repository failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    acknowledgeOperatorAlert: {
+        parameters: {
+            query: {
+                /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
+                tenant_id: string;
+            };
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator alert acknowledged. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorAlertAcknowledgeResponse"];
+                };
+            };
+            /** @description Missing tenant identifier or invalid alert path. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert not found for the tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert is already resolved. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert repository failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resolveOperatorAlert: {
+        parameters: {
+            query: {
+                /** @description Tenant ID fallback when the JWT-derived X-Tenant-Id header is absent. */
+                tenant_id: string;
+                action: "approve" | "deny";
+            };
+            header?: never;
+            path: {
+                alert_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Operator alert resolved with an explicit action. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorAlertResolveResponse"];
+                };
+            };
+            /** @description Missing tenant identifier, invalid alert path, or unsupported action. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert not found for the tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert is already resolved. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Operator alert repository or event publication failure. */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    checkProductCompliance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ComplianceCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Compliance check result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCheckResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    suggestProductSEO: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SEOSuggestionRequest"];
+            };
+        };
+        responses: {
+            /** @description SEO suggestion result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SEOSuggestionResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listComplianceRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Built-in compliance rules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceRulesResponse"];
+                };
+            };
+        };
+    };
+    getTenantSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped configuration settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantSettings"];
+                };
+            };
+            /** @description Tenant context is required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateTenantSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenantSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Updated tenant-scoped configuration settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantSettings"];
+                };
+            };
+            /** @description Invalid JSON body or missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Actor does not have permission to update tenant settings. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Tenant settings failed validation. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listCustomComplianceRules: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped custom compliance rules. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCustomRulesResponse"];
+                };
+            };
+            /** @description Tenant context is required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createCustomComplianceRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplianceCustomRuleRequest"];
+            };
+        };
+        responses: {
+            /** @description Custom compliance rule created at version 1. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCustomRule"];
+                };
+            };
+            /** @description Invalid JSON body or missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Actor does not have permission to mutate custom rules. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateCustomComplianceRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplianceCustomRuleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Custom compliance rule updated with incremented version. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCustomRule"];
+                };
+            };
+            /** @description Invalid JSON body or missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule not found for this tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteCustomComplianceRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Custom rule deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing tenant context. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Custom rule not found for this tenant. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getComplianceReportSummary: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Aggregated pass/fail reporting by tenant, rule, product, and trend. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceSummary"];
+                };
+            };
+            /** @description Tenant context is required. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    exportComplianceReport: {
+        parameters: {
+            query?: {
+                format?: "json" | "csv";
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped compliance history export. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceExportResponse"];
+                    "text/csv": string;
+                };
+            };
+            /** @description Tenant context is required or export format is invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description Order created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Order validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Order found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Invalid order ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateOrderStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrderStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Order"];
+                };
+            };
+            /** @description Invalid JSON body or invalid ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid status or status transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cart session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cart"];
+                };
+            };
+        };
+    };
+    putCart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CartRequest"];
+            };
+        };
+        responses: {
+            /** @description Cart saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cart"];
+                };
+            };
+            /** @description Invalid JSON body or session ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Cart validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getSyncStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current sync status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncStatus"];
+                };
+            };
+        };
+    };
+    listMarketplaceDLQ: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marketplace sync DLQ records currently visible to the API process. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceDLQListResponse"];
+                };
+            };
+        };
+    };
+    replayMarketplaceDLQ: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marketplace replay workflow accepted by Temporal. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid DLQ record ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description DLQ record was not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the replay workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listSyncConflicts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending conflicts queued for manual review */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConflictListResponse"];
+                };
+            };
+        };
+    };
+    resolveSyncConflict: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveConflictRequest"];
+            };
+        };
+        responses: {
+            /** @description Conflict marked resolved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncConflict"];
+                };
+            };
+            /** @description Invalid JSON body or conflict ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Conflict cannot be resolved. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    publishProductToWooCommerce: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Product published */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description Invalid product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description WooCommerce publish failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    receiveWooCommerceOrderWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-WC-Webhook-Signature": string;
+                "X-WC-Webhook-Topic"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WooCommerceOrderWebhook"];
+            };
+        };
+        responses: {
+            /** @description Webhook accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description Invalid HMAC signature. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid WooCommerce order payload. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    receiveWooCommerceProductWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-WC-Webhook-Signature": string;
+                "X-WC-Webhook-Topic"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WooCommerceProductWebhook"];
+            };
+        };
+        responses: {
+            /** @description Webhook accepted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResponse"];
+                };
+            };
+            /** @description Invalid HMAC signature. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid WooCommerce product payload. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listAgents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registered agents */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentsListResponse"];
+                };
+            };
+        };
+    };
+    runAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: "sourcing" | "pricing" | "compliance";
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AgentRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Agent run queued */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Agent not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listAgentHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: "sourcing" | "pricing" | "compliance";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent run history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentHistoryResponse"];
+                };
+            };
+            /** @description Agent not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAgentRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRun"];
+                };
+            };
+            /** @description Agent run not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listAgentSchedules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent schedules */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentSchedulesResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated session does not have agent permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    enableAgentSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent schedule enabled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentScheduleResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated session does not have agent permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Agent schedule not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    disableAgentSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Agent schedule disabled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentScheduleResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Authenticated session does not have agent permissions. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Agent schedule not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listWebhooks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registered outbound webhook endpoints. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookListResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have viewer permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Webhook endpoint registered. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookRegistration"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have operator permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description URL, event types, or signing secret is invalid. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Webhook endpoint deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have operator permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Webhook endpoint not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    testWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TestWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Test delivery attempted and recorded. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookTestResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Caller does not have operator permission. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Webhook endpoint not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Requested test event type is not subscribed by the webhook. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listRecentEvents: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent event activity, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecentEventsResponse"];
+                };
+            };
+            /** @description Missing or invalid JWT bearer token when auth is configured. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPayments: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                status?: "pending" | "succeeded" | "failed" | "refunded";
+                provider?: "stripe" | "alipay" | "wechat" | "paypal";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated payment list. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentsListResponse"];
+                };
+            };
+            /** @description Invalid filter parameters. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGMVDailyRollup: {
+        parameters: {
+            query: {
+                /** @description Inclusive lower bound (RFC3339 or YYYY-MM-DD). */
+                from: string;
+                /** @description Inclusive upper bound (RFC3339 or YYYY-MM-DD). */
+                to: string;
+                /** @description Optional channel filter (tiktok|facebook|wc|rednote|instagram). */
+                channel?: string;
+                /** @description Tenant ID fallback when the JWT-derived header is absent. */
+                tenant_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Daily GMV rollup with cumulative summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tenant_id?: string;
+                        /** Format: date-time */
+                        from?: string;
+                        /** Format: date-time */
+                        to?: string;
+                        channel?: string;
+                        daily?: {
+                            /** Format: date-time */
+                            day?: string;
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        }[];
+                        summary?: {
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        };
+                    };
+                };
+            };
+            /** @description Invalid date range or missing tenant. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Handler closed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGMVByChannel: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                tenant_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description GMV totals per channel sorted by GMV descending. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tenant_id?: string;
+                        channels?: {
+                            channel?: string;
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Invalid date range. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getGMVByProduct: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                limit?: number;
+                tenant_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top-N products by GMV sorted descending. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        tenant_id?: string;
+                        limit?: number;
+                        products?: {
+                            product_id?: string;
+                            gmv_aud_cents?: number;
+                            order_count?: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Invalid date range. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    streamAgentActivity: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                /** @description Optional channel filter. */
+                channel?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description text/event-stream — never closes; client may disconnect at any time. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Tenant not derivable from request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Handler closed. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    startProductPublishWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartProductPublishWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startMarketplaceSyncWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartMarketplaceSyncWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Required marketplace sync fields are missing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startMarketplaceReplayWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartMarketplaceReplayWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Required marketplace replay fields are missing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startContentGenerationWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartContentGenerationWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body or product ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startMediaProcessingWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartMediaProcessingWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Product ID or source URL is missing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    startSourcingWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartSourcingWorkflowRequest"];
+            };
+        };
+        responses: {
+            /** @description Temporal workflow execution accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowStartResponse"];
+                };
+            };
+            /** @description Invalid JSON body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description SKU or deterministic candidate list is missing. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal rejected the workflow start request. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listWorkflows: {
+        parameters: {
+            query?: {
+                status?: "queued" | "running" | "waiting_review" | "completed" | "failed" | "canceled" | "terminated" | "continued_as_new" | "timed_out" | "unspecified";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Workflow lifecycle summaries for operator and UI surfaces. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowListResponse"];
+                };
+            };
+            /** @description Temporal visibility request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getWorkflowStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Temporal workflow execution detail. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDetailResponse"];
+                };
+            };
+            /** @description Workflow execution was not found in Temporal visibility. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal describe request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    signalProductPublishReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductPublishReviewSignal"];
+            };
+        };
+        responses: {
+            /** @description Review signal accepted by Temporal with the latest observed workflow snapshot. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowSignalResponse"];
+                };
+            };
+            /** @description Invalid JSON body or workflow ID. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal signal request failed. */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Temporal client is not configured for the API process. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMembershipPlans: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped paginated plans. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlansListResponse"];
+                };
+            };
+            /** @description Tenant header missing or invalid. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponse"];
+                };
+            };
+            /** @description Invalid JSON body or tenant. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Plan validation failed (cycle, currency, name). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan record. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponse"];
+                };
+            };
+            /** @description Plan not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Plan not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMembershipPlan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipPlanRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponse"];
+                };
+            };
+        };
+    };
+    listMemberships: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant-scoped paginated memberships. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipsListResponse"];
+                };
+            };
+        };
+    };
+    createMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership created (state=trial). */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Plan or member validation failed. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership record. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MembershipUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Membership updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+        };
+    };
+    cancelMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Cancel not allowed from current state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    pauseMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership paused. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Pause not allowed from current state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    resumeMembership: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Membership resumed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipResponse"];
+                };
+            };
+            /** @description Resume not allowed from current state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listDigitalProducts: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of digital products. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalProductsListResponse"];
+                };
+            };
+        };
+    };
+    createDigitalProduct: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DigitalProductRequest"];
+            };
+        };
+        responses: {
+            /** @description Digital product created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalProductResponse"];
+                };
+            };
+            /** @description Validation error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getDigitalProduct: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Digital product. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalProductResponse"];
+                };
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteDigitalProduct: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateDigitalProduct: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DigitalProductRequest"];
+            };
+        };
+        responses: {
+            /** @description Digital product updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalProductResponse"];
+                };
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    adminDigitalProductDownload: {
+        parameters: {
+            query: {
+                customer_id: string;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalDownloadResponse"];
+                };
+            };
+            /** @description No grant for this customer/product. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listLicenses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of licences. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicensesListResponse"];
+                };
+            };
+        };
+    };
+    createLicense: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LicenseRequest"];
+            };
+        };
+        responses: {
+            /** @description Licence issued. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenseResponse"];
+                };
+            };
+            /** @description Validation error. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getLicense: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Licence. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenseResponse"];
+                };
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    revokeLicense: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Licence revoked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicenseResponse"];
+                };
+            };
+            /** @description Already terminal. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMyLicenses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of licences scoped to the actor. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LicensesListResponse"];
+                };
+            };
+        };
+    };
+    customerDigitalDownload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DigitalDownloadResponse"];
+                };
+            };
+            /** @description Licence belongs to another customer. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Licence revoked or expired. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMarketplacePlugins: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of marketplace plugin manifests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplacePluginsListResponse"];
+                };
+            };
+        };
+    };
+    getMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Manifest for the requested slug. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplacePluginManifest"];
+                };
+            };
+            /** @description Plugin not in catalogue. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    uninstallMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Installation not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    installMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation row in state=installed. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceInstallation"];
+                };
+            };
+            /** @description Plugin not found in catalogue. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Plugin is already installed for this tenant. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    activateMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation row in state=active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceInstallation"];
+                };
+            };
+            /** @description Installation not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid state transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Sandbox budget exceeded. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deactivateMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installation row in state=deactivated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceInstallation"];
+                };
+            };
+            /** @description Invalid state transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMarketplaceInstallationSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings blob. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSettingsResponse"];
+                };
+            };
+        };
+    };
+    updateMarketplaceInstallationSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Settings updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSettingsResponse"];
+                };
+            };
+        };
+    };
+    submitMarketplacePlugin: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MarketplaceSubmissionRequest"];
+            };
+        };
+        responses: {
+            /** @description Submission accepted into pending_review state. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Invalid submission body. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Submission with this id already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMarketplaceSubmissions: {
+        parameters: {
+            query?: {
+                tenant_id?: string;
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of submissions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmissionsListResponse"];
+                };
+            };
+        };
+    };
+    getMarketplaceSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submission row. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Submission not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    approveMarketplaceSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarketplaceSubmissionReviewAction"];
+            };
+        };
+        responses: {
+            /** @description Submission transitioned to approved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Submission is in a terminal state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    rejectMarketplaceSubmission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarketplaceSubmissionReviewAction"];
+            };
+        };
+        responses: {
+            /** @description Submission transitioned to rejected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarketplaceSubmission"];
+                };
+            };
+            /** @description Submission is in a terminal state. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listTenants: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of tenants. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantsListResponse"];
+                };
+            };
+        };
+    };
+    createTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description Tenant created in status=provisioning. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid slug or name. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Slug already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Quota exceeded. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant aggregate. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Tenant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    updateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTenantRequest"];
+            };
+        };
+        responses: {
+            /** @description Tenant updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Tenant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    suspendTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant transitioned to status=suspended. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid status transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    activateTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant transitioned to status=active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid status transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    archiveTenant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tenant transitioned to status=archived. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponse"];
+                };
+            };
+            /** @description Invalid status transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    submitRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationSubmitRequest"];
+            };
+        };
+        responses: {
+            /** @description Registration accepted; verification email sent. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationSubmitResponse"];
+                };
+            };
+            /** @description Invalid email or slug. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Slug already taken. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    verifyRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Registration verified; ready for onboarding. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationResponse"];
+                };
+            };
+            /** @description Token invalid or expired. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Registration not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    completeRegistrationOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationOnboardingRequest"];
+            };
+        };
+        responses: {
+            /** @description Tenant provisioned and registration marked active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationOnboardingResponse"];
+                };
+            };
+            /** @description Slug taken or already active. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Registration not yet verified. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listBillingSubscriptions: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated subscriptions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSubscriptionListResponse"];
+                };
+            };
+        };
+    };
+    getBillingSubscription: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscription. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSubscriptionResponse"];
+                };
+            };
+            /** @description Subscription not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    cancelBillingSubscription: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscription transitioned to canceled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSubscriptionResponse"];
+                };
+            };
+            /** @description Invalid transition (already canceled, etc.). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    pauseBillingSubscription: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscription transitioned to paused. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSubscriptionResponse"];
+                };
+            };
+            /** @description Invalid transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    resumeBillingSubscription: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscription transitioned to active. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSubscriptionResponse"];
+                };
+            };
+            /** @description Invalid transition. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listBillingInvoices: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated invoices. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingInvoiceListResponse"];
+                };
+            };
+        };
+    };
+    getBillingInvoice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingInvoiceResponse"];
+                };
+            };
+            /** @description Invoice not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getBillingUsage: {
+        parameters: {
+            query?: {
+                plan?: string;
+            };
+            header?: {
+                /** @description Tenant scope for MVP requests when the JWT does not carry a tenant_id claim. */
+                "X-Tenant-ID"?: components["parameters"]["TenantIDHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-metric usage rollup with plan limits. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingUsageResponse"];
+                };
+            };
+        };
+    };
+    stripeWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Event processed (or duplicate, no-op). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or malformed Stripe-Signature header. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Signature mismatch or replay window exceeded. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
 }

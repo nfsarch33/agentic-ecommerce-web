@@ -26,7 +26,10 @@ for agent activity, agent status, sync events, marketplace/media/admin flows,
 and AI suggestion paths. Workflow list/detail/review flows must consume the
 backend lifecycle payloads directly; if a review signal returns a workflow
 snapshot, replace local state with it instead of synthesizing activities or
-terminal states in the browser. Polling and `bff_fallback` remain transitional
+terminal states in the browser. Workflow review UI stays limited to the
+backend-supported `approve` / `reject` contract, and any reviewer/note
+evidence returned in workflow detail belongs in the rendered timeline rather
+than client-local metadata. Polling and `bff_fallback` remain transitional
 until the `v10.0.0` hardening scope closes.
 
 ## Pages
@@ -108,7 +111,7 @@ bun run build
 | Gate | Command | Threshold |
 |------|---------|-----------|
 | TypeScript strict | `bun run typecheck` | zero errors |
-| Unit tests | `bun run test` | 1089 tests, >= 80% lines |
+| Unit tests | `bun run test` | full Vitest suite green, >= 80% lines |
 | ESLint | `bun run lint` | zero errors |
 | Production build | `bun run build` | First Load JS < 200 kB |
 | Bundle regression | `bun run qa:bundle` | all routes under budget |

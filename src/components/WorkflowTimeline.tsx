@@ -9,6 +9,7 @@ import {
   type ReviewSignal,
   type WorkflowActivity,
   type WorkflowDetail,
+  type WorkflowReview,
 } from "@/lib/domain/workflow";
 import {
   sendReviewSignalForWorkflow,
@@ -23,7 +24,7 @@ export interface WorkflowTimelineProps {
   ) => Promise<WorkflowDetail>;
 }
 
-const reviewSignals: readonly ReviewSignal[] = ["approve", "reject", "request_changes"];
+const reviewSignals: readonly ReviewSignal[] = ["approve", "reject"];
 
 function statusBadgeClasses(status: WorkflowDetail["status"]): string {
   switch (workflowStatusTone(status)) {
@@ -67,6 +68,10 @@ function formatTimestamp(iso?: string): string {
 
 function titleForWorkflow(workflow: WorkflowDetail): string {
   return workflow.productTitle ? `${workflow.productTitle} workflow` : `Workflow ${workflow.id}`;
+}
+
+function reviewDecisionLabel(review: WorkflowReview): string {
+  return review.approved ? "Review approved" : "Review rejected";
 }
 
 export function WorkflowTimeline({
@@ -212,6 +217,21 @@ export function WorkflowTimeline({
         aria-label="Human review"
       >
         <h2 className="text-xl font-semibold">Human review signal</h2>
+        {activeWorkflow.review && (
+          <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-4">
+            <p className="text-sm font-medium text-gray-900">
+              {reviewDecisionLabel(activeWorkflow.review)}
+            </p>
+            {activeWorkflow.review.reviewer && (
+              <p className="mt-1 text-sm text-gray-700">
+                Reviewed by {activeWorkflow.review.reviewer}
+              </p>
+            )}
+            {activeWorkflow.review.note && (
+              <p className="mt-2 text-sm text-gray-700">{activeWorkflow.review.note}</p>
+            )}
+          </div>
+        )}
         {canSignal ? (
           <>
             <label htmlFor="review-note" className="mt-4 block text-sm font-medium text-gray-900">

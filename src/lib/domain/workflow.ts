@@ -17,7 +17,13 @@ export type ActivityStatus =
   | "completed"
   | "failed"
   | "skipped";
-export type ReviewSignal = "approve" | "reject" | "request_changes";
+export type ReviewSignal = "approve" | "reject";
+
+export interface WorkflowReview {
+  readonly approved: boolean;
+  readonly reviewer?: string;
+  readonly note?: string;
+}
 
 export interface WorkflowSummary {
   readonly id: string;
@@ -45,6 +51,7 @@ export interface WorkflowActivity {
 
 export interface WorkflowDetail extends WorkflowSummary {
   readonly activities: readonly WorkflowActivity[];
+  readonly review?: WorkflowReview;
 }
 
 export interface WorkflowStatusCounts {
@@ -103,6 +110,13 @@ function parseOptionalNumber(value: unknown, label: string): number | undefined 
   return value;
 }
 
+function parseBoolean(value: unknown, label: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new WorkflowDomainError(`${label} must be a boolean`);
+  }
+  return value;
+}
+
 function parseWorkflowStatus(value: unknown): WorkflowStatus {
   if (typeof value !== "string" || !workflowStatuses.has(value as WorkflowStatus)) {
     throw new WorkflowDomainError(`workflow.status is invalid: ${String(value)}`);
@@ -145,10 +159,19 @@ export function createWorkflowActivity(input: WorkflowActivity): WorkflowActivit
   };
 }
 
+function createWorkflowReview(input: WorkflowReview): WorkflowReview {
+  return {
+    approved: parseBoolean(input.approved, "workflow.review.approved"),
+    reviewer: parseOptionalString(input.reviewer, "workflow.review.reviewer"),
+    note: parseOptionalString(input.note, "workflow.review.note"),
+  };
+}
+
 export function createWorkflowDetail(input: WorkflowDetail): WorkflowDetail {
   return {
     ...createWorkflowSummary(input),
     activities: input.activities.map(createWorkflowActivity),
+    review: input.review ? createWorkflowReview(input.review) : undefined,
   };
 }
 
@@ -208,8 +231,6 @@ export function reviewSignalLabel(signal: ReviewSignal): string {
       return "Approve";
     case "reject":
       return "Reject";
-    case "request_changes":
-      return "Request changes";
   }
 }
 

@@ -26,8 +26,13 @@ Temporal workflow execution is backend-owned. The frontend should:
 - When a review signal response includes a refreshed workflow snapshot, replace
   the active UI state with that backend payload instead of appending synthetic
   activities or status text locally.
+- Render backend-supplied review evidence (`approved`, `reviewer`, `note`)
+  when the workflow detail payload includes it.
 - Only render review controls when the backend reports a review-bearing status
   such as `waiting_review`.
+- Only offer the backend-supported review actions: `approve` and `reject`.
+  There is no standalone `request_changes` transport verb in the current
+  workflow contract.
 - Link to `NEXT_PUBLIC_TEMPORAL_UI_URL` only when the operator has intentionally exposed a protected Temporal UI.
 
 The browser and Next.js server must not connect to Temporal gRPC.

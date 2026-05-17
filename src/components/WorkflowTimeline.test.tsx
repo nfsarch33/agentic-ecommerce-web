@@ -47,6 +47,14 @@ describe("WorkflowTimeline", () => {
     ).toBeInTheDocument();
   });
 
+  it("only offers backend-supported review actions while awaiting review", () => {
+    render(<WorkflowTimeline workflow={detail} apiBaseUrl="http://api.test" />);
+
+    expect(screen.getByRole("button", { name: /approve/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /reject/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /request changes/i })).not.toBeInTheDocument();
+  });
+
   it("sends an approve review signal and reports success", async () => {
     const user = userEvent.setup();
     const sendReviewSignalImpl = vi.fn().mockResolvedValue({ ...detail, status: "completed" });
@@ -123,6 +131,28 @@ describe("WorkflowTimeline", () => {
     await user.click(screen.getByRole("button", { name: /reject/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Temporal signal failed");
+  });
+
+  it("renders backend review evidence when present", () => {
+    render(
+      <WorkflowTimeline
+        workflow={
+          {
+            ...detail,
+            status: "failed",
+            review: {
+              approved: false,
+              reviewer: "lead@example.com",
+              note: "copy needs work",
+            },
+          } as WorkflowDetail
+        }
+        apiBaseUrl="http://api.test"
+      />,
+    );
+
+    expect(screen.getByText(/reviewed by lead@example.com/i)).toBeInTheDocument();
+    expect(screen.getByText(/copy needs work/i)).toBeInTheDocument();
   });
 
   it("does not render review actions once the workflow is completed", () => {
