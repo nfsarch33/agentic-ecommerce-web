@@ -312,6 +312,14 @@ describe("getAISuggestions", () => {
       getAISuggestions({ baseUrl: "http://api.test", productId: "p_1", fetchImpl: mockFetch }),
     ).rejects.toThrow(/invalid JSON/);
   });
+
+  it("maps bounded-runtime suggestion fetch failures into operator-facing timeout guidance", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(jsonResponse({ error: "dependency_timeout" }, { status: 504 }));
+
+    await expect(
+      getAISuggestions({ baseUrl: "http://api.test", productId: "p_1", fetchImpl: mockFetch }),
+    ).rejects.toThrow("The AI suggestion service hit its runtime limit. Retry after checking backend health.");
+  });
 });
 
 describe("generateDescription edge cases", () => {

@@ -20,6 +20,7 @@ export interface AIProductDescriptionPanelProps {
   readonly apiBaseUrl: string;
   readonly product: ProductFields;
   readonly initialSuggestions: readonly AIProductDescriptionSuggestion[];
+  readonly initialError?: string | null;
   readonly generateDescriptionImpl?: (opts: GenerateDescriptionOptions) => Promise<AIProductDescriptionSuggestion>;
   readonly startProductPublishImpl?: (input: StartProductPublishInput) => Promise<{ readonly id: string }>;
   readonly allowBffFallback?: boolean;
@@ -75,6 +76,7 @@ export function AIProductDescriptionPanel({
   apiBaseUrl,
   product,
   initialSuggestions,
+  initialError = null,
   generateDescriptionImpl = generateDescription,
   startProductPublishImpl = startProductPublish,
   allowBffFallback = process.env.NODE_ENV !== "production",
@@ -94,7 +96,7 @@ export function AIProductDescriptionPanel({
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishWorkflowId, setPublishWorkflowId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError);
 
   async function handleGenerate(): Promise<void> {
     const trimmedPrompt = prompt.trim();
