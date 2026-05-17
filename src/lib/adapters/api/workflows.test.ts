@@ -118,27 +118,20 @@ describe("workflows API adapter", () => {
     ]);
   });
 
-  it("maps backend workflow status responses into a synthetic timeline", async () => {
-    const result = await fetchWorkflowDetail({
-      baseUrl: "http://api.test",
-      workflowId: "product-publish-123",
-      fetchImpl: mockFetch({
-        workflow_id: "product-publish-123",
-        run_id: "run-123",
-        status: "timed_out",
-        start_time: "2026-05-07T04:00:00Z",
-        close_time: "2026-05-07T04:10:00Z",
+  it("rejects legacy status-only workflow detail responses to avoid synthetic timelines", async () => {
+    await expect(
+      fetchWorkflowDetail({
+        baseUrl: "http://api.test",
+        workflowId: "product-publish-123",
+        fetchImpl: mockFetch({
+          workflow_id: "product-publish-123",
+          run_id: "run-123",
+          status: "timed_out",
+          start_time: "2026-05-07T04:00:00Z",
+          close_time: "2026-05-07T04:10:00Z",
+        }),
       }),
-    });
-
-    expect(result.status).toBe("timed_out");
-    expect(result.activities).toEqual([
-      expect.objectContaining({
-        name: "Temporal execution",
-        status: "failed",
-        message: "Temporal status: timed out",
-      }),
-    ]);
+    ).rejects.toThrow("workflow detail response must include activities array");
   });
 
   it("starts a product publish workflow", async () => {
@@ -236,7 +229,29 @@ describe("workflows API adapter", () => {
   });
 
   it("sends human review signals to the workflow", async () => {
-    const fetchImpl = mockFetch({ status: "signaled" }, 202);
+    const fetchImpl = mockFetch(
+      {
+        status: "signaled",
+        workflow: {
+          ...rawDetail,
+          status: "completed",
+          current_activity: "Publish to WooCommerce",
+          activities: [
+            ...rawDetail.activities,
+            {
+              id: "act_publish",
+              name: "Publish to WooCommerce",
+              status: "completed",
+              started_at: "2026-05-07T04:03:00Z",
+              completed_at: "2026-05-07T04:05:00Z",
+              message: "Published to WooCommerce.",
+              attempt: 1,
+            },
+          ],
+        },
+      },
+      202,
+    );
     const result = await sendWorkflowReviewSignal({
       baseUrl: "http://api.test",
       workflowId: "wf_product_publish_1",
@@ -253,6 +268,20 @@ describe("workflows API adapter", () => {
       }),
     );
     expect(result.id).toBe("wf_product_publish_1");
+    expect(result).toHaveProperty("activities");
+    expect(result).toHaveProperty("activities.1.name", "Publish to WooCommerce");
+    expect(result.status).toBe("completed");
+  });
+
+  it("requires a workflow lifecycle snapshot when a review signal succeeds", async () => {
+    await expect(
+      sendWorkflowReviewSignal({
+        baseUrl: "http://api.test",
+        workflowId: "wf_product_publish_1",
+        signal: "approve",
+        fetchImpl: mockFetch({ status: "signaled" }, 202),
+      }),
+    ).rejects.toThrow("sendWorkflowReviewSignal: response body must include workflow detail");
   });
 
   it("throws WorkflowsApiError for HTTP failures and invalid response bodies", async () => {
@@ -288,15 +317,14 @@ describe("workflows API adapter", () => {
     ).rejects.toThrow(/HTTP 503/);
   });
 
-  it("falls back to a synthetic running summary when the review signal response omits a workflow", async () => {
-    const fetchImpl = mockFetch({ status: "accepted" }, 202);
-    const result = await sendWorkflowReviewSignal({
-      baseUrl: "http://api.test",
-      workflowId: "wf_y",
-      signal: "approve",
-      fetchImpl,
-    });
-    expect(result.status).toBe("running");
-    expect(result.currentActivity).toContain("Review signal accepted");
+  it("rejects review signal responses with an invalid status contract", async () => {
+    await expect(
+      sendWorkflowReviewSignal({
+        baseUrl: "http://api.test",
+        workflowId: "wf_y",
+        signal: "approve",
+        fetchImpl: mockFetch({ status: "accepted", workflow: rawDetail }, 202),
+      }),
+    ).rejects.toThrow("sendWorkflowReviewSignal: response body must include status=signaled");
   });
 });

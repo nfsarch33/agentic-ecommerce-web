@@ -23,8 +23,11 @@ blocking UIAuto evidence on that pool.
 Forward contract note: the frontend must consume generated API types and
 adapter layers only. Stable backend HTTP/SSE contracts are the source of truth
 for agent activity, agent status, sync events, marketplace/media/admin flows,
-and AI suggestion paths. Polling and `bff_fallback` remain transitional until
-the `v10.0.0` hardening scope closes.
+and AI suggestion paths. Workflow list/detail/review flows must consume the
+backend lifecycle payloads directly; if a review signal returns a workflow
+snapshot, replace local state with it instead of synthesizing activities or
+terminal states in the browser. Polling and `bff_fallback` remain transitional
+until the `v10.0.0` hardening scope closes.
 
 ## Pages
 

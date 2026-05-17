@@ -10,10 +10,10 @@ import {
 import type { components } from "./generated/schema";
 
 type WorkflowStartResponse = components["schemas"]["WorkflowStartResponse"];
-type WorkflowStatusResponse = components["schemas"]["WorkflowStatusResponse"];
 type ProductPublishReviewSignal = components["schemas"]["ProductPublishReviewSignal"];
 type MarketplaceSyncEvent = components["schemas"]["MarketplaceSyncEvent"];
 type MarketplaceDLQRecord = components["schemas"]["MarketplaceDLQRecord"];
+type WorkflowSignalResponse = components["schemas"]["WorkflowSignalResponse"];
 
 export interface FetchWorkflowListOptions {
   readonly baseUrl: string;
@@ -122,67 +122,20 @@ function mapBackendWorkflowStatus(status: unknown): WorkflowStatus {
 
 function mapWorkflowSummary(raw: RawWorkflowSummary): WorkflowSummary {
   return createWorkflowSummary({
-    id: String(raw.id ?? (raw as WorkflowStatusResponse).workflow_id ?? ""),
+    id: String(raw.id ?? ""),
     type: String(raw.type ?? ""),
     status: mapBackendWorkflowStatus(raw.status),
     productId: String(raw.product_id ?? ""),
     productTitle: parseOptionalString(raw.product_title),
     currentActivity: parseOptionalString(raw.current_activity),
-    startedAt: String(raw.started_at ?? (raw as WorkflowStatusResponse).start_time ?? ""),
-    updatedAt: String(raw.updated_at ?? (raw as WorkflowStatusResponse).close_time ?? (raw as WorkflowStatusResponse).start_time ?? ""),
-    completedAt: parseOptionalString(raw.completed_at ?? (raw as WorkflowStatusResponse).close_time),
+    startedAt: String(raw.started_at ?? ""),
+    updatedAt: String(raw.updated_at ?? ""),
+    completedAt: parseOptionalString(raw.completed_at),
     error: parseOptionalString(raw.error),
   });
 }
 
-function syntheticActivityForStatus(raw: WorkflowStatusResponse): ActivityStatus {
-  switch (raw.status) {
-    case "completed":
-      return "completed";
-    case "failed":
-    case "terminated":
-    case "timed_out":
-      return "failed";
-    case "canceled":
-    case "continued_as_new":
-    case "unspecified":
-      return "skipped";
-    case "running":
-      return "running";
-  }
-}
-
-function mapWorkflowStatusResponse(raw: WorkflowStatusResponse): WorkflowDetail {
-  const timestamp = raw.start_time ?? raw.close_time ?? nowIso();
-  const summary = createWorkflowSummary({
-    id: raw.workflow_id,
-    type: "product_publish",
-    status: mapBackendWorkflowStatus(raw.status),
-    productId: raw.workflow_id,
-    currentActivity: raw.status === "running" ? "Temporal execution" : undefined,
-    startedAt: timestamp,
-    updatedAt: raw.close_time ?? timestamp,
-    completedAt: raw.close_time,
-  });
-  return createWorkflowDetail({
-    ...summary,
-    activities: [
-      {
-        id: `${raw.workflow_id}-temporal`,
-        name: "Temporal execution",
-        status: syntheticActivityForStatus(raw),
-        startedAt: raw.start_time,
-        completedAt: raw.close_time,
-        message: `Temporal status: ${raw.status.replace(/_/g, " ")}`,
-      },
-    ],
-  });
-}
-
 function mapWorkflowDetail(raw: RawWorkflowDetail): WorkflowDetail {
-  if ("workflow_id" in raw && !("activities" in raw)) {
-    return mapWorkflowStatusResponse(raw as WorkflowStatusResponse);
-  }
   if (!Array.isArray(raw.activities)) {
     throw new WorkflowsApiError("workflow detail response must include activities array");
   }
@@ -256,7 +209,9 @@ async function startWorkflow<RequestBody extends object>(opts: {
   throw new WorkflowsApiError(`${opts.label}: response body must include workflow_id`);
 }
 
-export async function fetchWorkflowList(opts: FetchWorkflowListOptions): Promise<WorkflowSummary[]> {
+export async function fetchWorkflowList(
+  opts: FetchWorkflowListOptions,
+): Promise<WorkflowSummary[]> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const params = new URLSearchParams();
   if (opts.status) params.set("status", opts.status);
@@ -282,7 +237,9 @@ export async function fetchWorkflowList(opts: FetchWorkflowListOptions): Promise
   return body.workflows.map((workflow) => mapWorkflowSummary(workflow as RawWorkflowSummary));
 }
 
-export async function fetchWorkflowDetail(opts: FetchWorkflowDetailOptions): Promise<WorkflowDetail> {
+export async function fetchWorkflowDetail(
+  opts: FetchWorkflowDetailOptions,
+): Promise<WorkflowDetail> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const workflowId = encodeURIComponent(opts.workflowId);
   let res: Response;
@@ -353,7 +310,7 @@ export async function startMarketplaceReplayWorkflow(
 
 export async function sendWorkflowReviewSignal(
   opts: SendWorkflowReviewSignalOptions,
-): Promise<WorkflowSummary> {
+): Promise<WorkflowDetail> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const workflowId = encodeURIComponent(opts.workflowId);
   let res: Response;
@@ -368,20 +325,20 @@ export async function sendWorkflowReviewSignal(
   }
   if (!res.ok) throw new WorkflowsApiError(`sendWorkflowReviewSignal: HTTP ${res.status}`);
 
-  const body = (await readJson(res, "sendWorkflowReviewSignal")) as { workflow?: unknown };
-  if (body.workflow) {
-    return mapWorkflowSummary(body.workflow as RawWorkflowSummary);
+  const body = (await readJson(res, "sendWorkflowReviewSignal")) as
+    | WorkflowSignalResponse
+    | { status?: unknown; workflow?: unknown };
+  if (body.status !== "signaled") {
+    throw new WorkflowsApiError(
+      "sendWorkflowReviewSignal: response body must include status=signaled",
+    );
   }
-  const timestamp = nowIso();
-  return createWorkflowSummary({
-    id: opts.workflowId,
-    type: "product_publish",
-    status: "running",
-    productId: opts.workflowId,
-    currentActivity: "Review signal accepted",
-    startedAt: timestamp,
-    updatedAt: timestamp,
-  });
+  if (!body.workflow) {
+    throw new WorkflowsApiError(
+      "sendWorkflowReviewSignal: response body must include workflow detail",
+    );
+  }
+  return mapWorkflowDetail(body.workflow as RawWorkflowDetail);
 }
 
 function reviewSignalBody(signal: ReviewSignal, note?: string): ProductPublishReviewSignal {

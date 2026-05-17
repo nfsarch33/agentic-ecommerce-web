@@ -71,6 +71,43 @@ describe("WorkflowTimeline", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(/sent approve signal/i);
   });
 
+  it("re-renders the workflow lifecycle from the backend signal response", async () => {
+    const user = userEvent.setup();
+    const sendReviewSignalImpl = vi.fn().mockResolvedValue({
+      ...detail,
+      status: "completed",
+      currentActivity: "Publish to WooCommerce",
+      updatedAt: "2026-05-07T04:05:00Z",
+      completedAt: "2026-05-07T04:05:00Z",
+      activities: [
+        ...detail.activities,
+        {
+          id: "act_publish",
+          name: "Publish to WooCommerce",
+          status: "completed",
+          message: "Published to WooCommerce.",
+          startedAt: "2026-05-07T04:03:00Z",
+          completedAt: "2026-05-07T04:05:00Z",
+        },
+      ],
+    });
+
+    render(
+      <WorkflowTimeline
+        workflow={detail}
+        apiBaseUrl="http://api.test"
+        sendReviewSignalImpl={sendReviewSignalImpl}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /approve/i }));
+
+    expect(await screen.findByText("Completed")).toBeInTheDocument();
+    expect(screen.getAllByText("Publish to WooCommerce").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Published to WooCommerce.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /approve/i })).not.toBeInTheDocument();
+  });
+
   it("shows an error when a review signal fails", async () => {
     const user = userEvent.setup();
     const sendReviewSignalImpl = vi.fn().mockRejectedValue(new Error("Temporal signal failed"));
