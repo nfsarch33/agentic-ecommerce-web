@@ -4,6 +4,7 @@ import {
   type ActivityStatus,
   type ReviewSignal,
   type WorkflowDetail,
+  type WorkflowReview,
   type WorkflowStatus,
   type WorkflowSummary,
 } from "@/lib/domain/workflow";
@@ -94,8 +95,15 @@ interface RawWorkflowActivity {
   readonly error?: unknown;
 }
 
+interface RawWorkflowReview {
+  readonly approved?: unknown;
+  readonly reviewer?: unknown;
+  readonly note?: unknown;
+}
+
 interface RawWorkflowDetail extends RawWorkflowSummary {
   readonly activities?: unknown;
+  readonly review?: unknown;
 }
 
 function apiUrl(baseUrl: string, path: string): string {
@@ -154,7 +162,23 @@ function mapWorkflowDetail(raw: RawWorkflowDetail): WorkflowDetail {
         error: parseOptionalString(rawActivity.error),
       };
     }),
+    review: mapWorkflowReview(raw.review),
   });
+}
+
+function mapWorkflowReview(raw: unknown): WorkflowReview | undefined {
+  if (raw === undefined || raw === null) {
+    return undefined;
+  }
+  const review = raw as RawWorkflowReview;
+  if (typeof review.approved !== "boolean") {
+    throw new WorkflowsApiError("workflow detail response review.approved must be boolean");
+  }
+  return {
+    approved: review.approved,
+    reviewer: parseOptionalString(review.reviewer),
+    note: parseOptionalString(review.note),
+  };
 }
 
 async function readJson(res: Response, label: string): Promise<unknown> {
@@ -313,12 +337,13 @@ export async function sendWorkflowReviewSignal(
 ): Promise<WorkflowDetail> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const workflowId = encodeURIComponent(opts.workflowId);
+  const requestBody = reviewSignalBody(opts.signal, opts.note);
   let res: Response;
   try {
     res = await fetchImpl(apiUrl(opts.baseUrl, `/api/v1/workflows/${workflowId}/signals/review`), {
       method: "POST",
       headers: { accept: "application/json", "content-type": "application/json" },
-      body: JSON.stringify(reviewSignalBody(opts.signal, opts.note)),
+      body: JSON.stringify(requestBody),
     });
   } catch (err) {
     throw new WorkflowsApiError("sendWorkflowReviewSignal: network error", err);
@@ -342,8 +367,19 @@ export async function sendWorkflowReviewSignal(
 }
 
 function reviewSignalBody(signal: ReviewSignal, note?: string): ProductPublishReviewSignal {
-  return {
-    approved: signal === "approve",
-    ...(note ? { note } : {}),
-  };
+  if (signal === "approve") {
+    return {
+      approved: true,
+      ...(note ? { note } : {}),
+    };
+  }
+  if (signal === "reject") {
+    return {
+      approved: false,
+      ...(note ? { note } : {}),
+    };
+  }
+  throw new WorkflowsApiError(
+    "sendWorkflowReviewSignal: request_changes is not supported by backend contract",
+  );
 }

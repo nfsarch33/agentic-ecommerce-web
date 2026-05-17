@@ -41,6 +41,11 @@ describe("workflow domain", () => {
           message: "Passed CCE checks.",
         },
       ],
+      review: {
+        approved: true,
+        reviewer: "qa@example.com",
+        note: "ready to publish",
+      },
     });
 
     expect(detail.activities[0]).toEqual({
@@ -50,6 +55,11 @@ describe("workflow domain", () => {
       startedAt: "2026-05-07T04:00:00Z",
       completedAt: "2026-05-07T04:00:30Z",
       message: "Passed CCE checks.",
+    });
+    expect(detail.review).toEqual({
+      approved: true,
+      reviewer: "qa@example.com",
+      note: "ready to publish",
     });
   });
 
@@ -84,9 +94,8 @@ describe("workflow domain", () => {
     ).toThrow("activity.status is invalid");
   });
 
-  it("labels review signals for human review actions", () => {
+  it("labels backend-supported review signals for human review actions", () => {
     expect(reviewSignalLabel("approve")).toBe("Approve");
     expect(reviewSignalLabel("reject")).toBe("Reject");
-    expect(reviewSignalLabel("request_changes")).toBe("Request changes");
   });
 });
