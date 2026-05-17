@@ -4,6 +4,9 @@
 **Date opened**: 2026-05-16
 **Target release**: `agentic-ecommerce-web` v9.0.0
 **Base**: v8.0.0
+Backend SHA: `17eab44dfdfc807e34fbf4ee05b6bd9f2322e41c`
+Frontend SHA: `7682367be3b5af728649a9730a625aa54c46d87b`
+OpenAPI contract path: `api/openapi.yaml`
 
 ## Scope
 
@@ -31,6 +34,15 @@ slice:
   controller SSH contract.
 - Live-AI and external-provider remote vision runs remain operator-gated even
   after the primary self-hosted release gate closes.
+
+Current blockers:
+
+- `primary-testing` still needs the frozen frontend release-gate commands below
+  re-run on the exact backend/frontend SHAs above.
+- The stack tag remains blocked on the backend-owned full-stack E2E and cleanup
+  lanes as well as `frontend-playwright-stable` and `frontend-uiauto-compare`.
+- Direct follow-up probes for additional aliases remain inconclusive until the
+  tooling layer records a clean classification.
 
 ## Required Gates
 
