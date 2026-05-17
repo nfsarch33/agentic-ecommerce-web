@@ -89,4 +89,25 @@ describe("operator alert mutation BFF routes", () => {
     expect(docs).toContain("/api/operator-alerts");
     expect(docs).toContain("/api/agent-activity/stream");
   });
+
+  it("rejects unapproved operator-alert mutation tails instead of proxying them upstream", async () => {
+    global.fetch = vi.fn(async () => {
+      throw new Error("unexpected upstream call");
+    }) as unknown as typeof fetch;
+
+    const { POST } = await import("./[...path]/route");
+    const res = await POST(
+      new Request("http://localhost/api/operator-alerts/alert-1/unapproved?tenant_id=tenant-1", {
+        method: "POST",
+        headers: {
+          "x-tenant-id": "tenant-1",
+          cookie: "session=jwt",
+        },
+      }),
+    );
+
+    expect(res.status).toBe(404);
+    await expect(res.json()).resolves.toMatchObject({ error: "unknown_route" });
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
 });

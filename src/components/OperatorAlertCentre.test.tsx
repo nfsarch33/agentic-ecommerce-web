@@ -108,4 +108,26 @@ describe("OperatorAlertCentre", () => {
       expect(calls.some((c) => c.includes("action=deny"))).toBe(true);
     });
   });
+
+  it("surfaces acknowledge failures to the operator instead of silently swallowing them", async () => {
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/acknowledge")) {
+        return new Response(JSON.stringify({ error: "already_resolved" }), {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return ok(SAMPLE_ALERTS);
+    });
+    render(<OperatorAlertCentre fetchImpl={fetchImpl as unknown as typeof fetch} />);
+    await waitFor(() => {
+      expect(screen.getByTestId("operator-alert-alert-1")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId("operator-alert-ack-alert-1"));
+    await waitFor(() => {
+      expect(screen.getByTestId("operator-alerts-error")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/HTTP 409/i)).toBeInTheDocument();
+  });
 });

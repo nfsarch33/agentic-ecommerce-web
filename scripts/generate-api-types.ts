@@ -15,6 +15,12 @@ import { homedir } from "node:os";
 const root = resolve(__dirname, "..");
 const OUTPUT_PATH = resolve(root, "src/lib/adapters/api/generated/schema.d.ts");
 const runxBackendWorktrees = resolve(root, "../../ecommerce");
+const explicitSpecPath = process.env["OPENAPI_SPEC_PATH"];
+
+if (explicitSpecPath && !existsSync(explicitSpecPath)) {
+  console.error(`OPENAPI_SPEC_PATH does not exist: ${explicitSpecPath}`);
+  process.exit(1);
+}
 
 function runxWorktreeSpecs(): string[] {
   if (!existsSync(runxBackendWorktrees)) return [];
@@ -24,7 +30,7 @@ function runxWorktreeSpecs(): string[] {
 }
 
 const candidates = [
-  process.env["OPENAPI_SPEC_PATH"],
+  explicitSpecPath,
   resolve(root, "../agentic-ecommerce/api/openapi.yaml"),
   resolve(root, "../../agentic-ecommerce/api/openapi.yaml"),
   resolve(homedir(), "agentic-ecommerce/api/openapi.yaml"),

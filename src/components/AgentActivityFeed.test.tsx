@@ -169,4 +169,14 @@ describe("AgentActivityFeed", () => {
     );
     expect(activeSource().url).toBe("/custom/stream");
   });
+
+  it("refuses direct backend stream URLs and stays on the approved BFF stream", () => {
+    render(
+      <AgentActivityFeed
+        EventSourceImpl={StubEventSource as unknown as typeof EventSource}
+        streamUrl="http://backend.test/api/v1/agent-activity/stream"
+      />,
+    );
+    expect(activeSource().url).toBe("/api/agent-activity/stream");
+  });
 });
