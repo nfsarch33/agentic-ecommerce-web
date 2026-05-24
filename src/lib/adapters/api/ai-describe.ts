@@ -1,20 +1,12 @@
-// runx-public-repo-gate: allow-file fleet_host_alias
-// runx-public-repo-gate: allow-file network_topology
-// (Documented v3.6.0: the host alias names + Tailscale prefix
-// constants are intentional product behaviour. The fleet bridge URL
-// validator below uses these literals to enforce the network policy
-// at runtime; replacing them with placeholders would defeat the
-// validation.)
-//
 // Adapter: MiniMax-routed AI description.
 //
 // HARD NETWORK POLICY: this app NEVER calls api.minimaxi.com directly.
-// All MiniMax traffic is proxied through the Tailscale fleet bridge
-// (minimax-openai-bridge running on wsl1 / OCI). The url validator
-// below refuses any *.minimaxi.com host or non-Tailscale localhost
-// fallback so a misconfigured deploy fails loud at request time.
+// All MiniMax traffic is proxied through the fleet bridge
+// (minimax-openai-bridge on a fleet node). The url validator
+// below refuses any *.minimaxi.com host or loopback so a misconfigured
+// deploy fails loud at request time.
 
-const TAILSCALE_HOST_PREFIX = "100.";
+const TAILSCALE_CGNAT_PREFIX = "100.";
 
 export class MiniMaxFleetPolicyError extends Error {
   override readonly name = "MiniMaxFleetPolicyError";
@@ -22,6 +14,7 @@ export class MiniMaxFleetPolicyError extends Error {
 
 export interface FleetEnv {
   readonly FLEET_AI_BRIDGE_URL?: string;
+  readonly FLEET_ALLOWED_HOSTS?: string;
 }
 
 export function fleetBridgeUrl(env: FleetEnv): string {
@@ -38,29 +31,26 @@ export function fleetBridgeUrl(env: FleetEnv): string {
   const host = url.hostname.toLowerCase();
   if (host === "api.minimaxi.com" || host.endsWith(".minimaxi.com")) {
     throw new MiniMaxFleetPolicyError(
-      "MiniMax direct hosts are forbidden; use the Tailscale fleet bridge instead",
+      "MiniMax direct hosts are forbidden; use the fleet bridge instead",
     );
   }
-  // Reject loopback to prevent accidental "developer ran the bridge on
-  // localhost". The bridge MUST be on a fleet node reachable via
-  // Tailscale 100.x, OCI public IP, or a fleet hostname alias.
   if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
     throw new MiniMaxFleetPolicyError(
-      "FLEET_AI_BRIDGE_URL must NOT point to localhost; bridge runs on the fleet (Tailscale)",
+      "FLEET_AI_BRIDGE_URL must NOT point to localhost; bridge runs on a fleet node",
     );
   }
-  // Tailscale (100.x) hosts pass; we also allow private fleet hostnames.
-  // The whitelist intentionally errs on the conservative side.
+  const extraHosts = (env.FLEET_ALLOWED_HOSTS ?? "")
+    .split(",")
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean);
   const looksFleet =
-    host.startsWith(TAILSCALE_HOST_PREFIX) ||
+    host.startsWith(TAILSCALE_CGNAT_PREFIX) ||
     host.endsWith("-travel") ||
     host.endsWith(".oraclecloud.com") ||
-    host === "wsl1" ||
-    host === "win1" ||
-    host === "oracle-jump";
+    extraHosts.includes(host);
   if (!looksFleet) {
     throw new MiniMaxFleetPolicyError(
-      `FLEET_AI_BRIDGE_URL host ${host} is not on the approved fleet allowlist (Tailscale 100.x, *-travel, OCI)`,
+      `FLEET_AI_BRIDGE_URL host ${host} is not on the approved fleet allowlist (CGNAT 100.x, *-travel, OCI, or FLEET_ALLOWED_HOSTS)`,
     );
   }
   return raw;

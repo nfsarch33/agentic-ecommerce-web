@@ -1,15 +1,10 @@
-// runx-public-repo-gate: allow-file fleet_host_alias
-// runx-public-repo-gate: allow-file network_topology
-// Test fixtures use the canonical host aliases (`wsl1`, `wsl1-travel`)
-// + the Tailscale 100.119.x.x prefix because the validator under test
-// pattern-matches those literals. v3.6.0 documented exemption.
 import { describe, it, expect } from "vitest";
 import { fleetBridgeUrl, MiniMaxFleetPolicyError, callDescribe } from "./ai-describe";
 
 describe("fleetBridgeUrl", () => {
   it("returns the env value when set", () => {
-    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://wsl1-travel:9091" })).toBe(
-      "http://wsl1-travel:9091",
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://node-1-travel:9091" })).toBe(
+      "http://node-1-travel:9091",
     );
   });
 
@@ -29,21 +24,21 @@ describe("fleetBridgeUrl", () => {
     ).toThrow(MiniMaxFleetPolicyError);
   });
 
-  it("rejects raw http://localhost — bridge MUST be on Tailscale", () => {
+  it("rejects raw http://localhost — bridge MUST be on fleet", () => {
     expect(() => fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://localhost:9091" })).toThrow(
       MiniMaxFleetPolicyError,
     );
   });
 
-  it("accepts Tailscale 100.x hosts", () => {
-    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://100.119.5.1:9091" })).toBe(
-      "http://100.119.5.1:9091",
+  it("accepts CGNAT 100.x hosts (RFC 6598 range)", () => {
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://100.64.0.1:9091" })).toBe(
+      "http://100.64.0.1:9091",
     );
   });
 
   it("accepts -travel fleet hostnames", () => {
-    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://wsl1-travel:9091" })).toBe(
-      "http://wsl1-travel:9091",
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://node-1-travel:9091" })).toBe(
+      "http://node-1-travel:9091",
     );
   });
 
@@ -53,11 +48,14 @@ describe("fleetBridgeUrl", () => {
     ).toBe("https://gw.host.oraclecloud.com");
   });
 
-  it("accepts the literal wsl1, win1, and oracle-jump hostnames", () => {
-    for (const host of ["wsl1", "win1", "oracle-jump"]) {
-      expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: `http://${host}:9091` })).toBe(
-        `http://${host}:9091`,
-      );
+  it("accepts hosts listed in FLEET_ALLOWED_HOSTS", () => {
+    for (const host of ["fleet-node-1", "fleet-node-2", "jump-host"]) {
+      expect(
+        fleetBridgeUrl({
+          FLEET_AI_BRIDGE_URL: `http://${host}:9091`,
+          FLEET_ALLOWED_HOSTS: "fleet-node-1,fleet-node-2,jump-host",
+        }),
+      ).toBe(`http://${host}:9091`);
     }
   });
 
@@ -102,10 +100,10 @@ describe("callDescribe", () => {
     };
     const out = await callDescribe(
       { prompt: "Describe a tennis ball", productId: "p_1" },
-      { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+      { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
     );
     expect(out.description).toBe("A bouncy ball");
-    expect(captured.url).toBe("http://wsl1-travel:9091/v1/describe");
+    expect(captured.url).toBe("http://node-1-travel:9091/v1/describe");
     expect(captured.method).toBe("POST");
   });
 
@@ -115,7 +113,7 @@ describe("callDescribe", () => {
     await expect(
       callDescribe(
         { prompt: "x", productId: "p_1" },
-        { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+        { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
       ),
     ).rejects.toThrow(/HTTP 502/);
   });
@@ -129,7 +127,7 @@ describe("callDescribe", () => {
     await expect(
       callDescribe(
         { prompt: "x", productId: "p_1" },
-        { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+        { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
       ),
     ).rejects.toThrow(/invalid response shape/);
   });
@@ -143,7 +141,7 @@ describe("callDescribe", () => {
     await expect(
       callDescribe(
         { prompt: "x", productId: "p_1" },
-        { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+        { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
       ),
     ).rejects.toThrow(/invalid response shape/);
   });
