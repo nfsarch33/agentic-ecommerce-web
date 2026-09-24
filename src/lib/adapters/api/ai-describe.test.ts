@@ -1,3 +1,7 @@
+// runx-public-repo-gate: allow-file network_topology
+// (The 100.64.0.1 literals below are RFC 6598 shared-address-space
+// documentation addresses, not a real tailnet IP; the CGNAT-prefix branch
+// of fleetBridgeUrl needs a syntactically real address to exercise.)
 import { describe, it, expect } from "vitest";
 import { fleetBridgeUrl, MiniMaxFleetPolicyError, callDescribe } from "./ai-describe";
 
