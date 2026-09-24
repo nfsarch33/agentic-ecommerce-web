@@ -89,6 +89,48 @@ describe("fleetBridgeUrl", () => {
       fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "https://api.openai.com" }),
     ).toThrow(MiniMaxFleetPolicyError);
   });
+
+  it("allowlist entries can never admit a loopback host", () => {
+    const env = { FLEET_ALLOWED_HOSTS: "localhost,127.0.0.1,127.0.0.2,foo.localhost,0.0.0.0,::1" };
+    for (const url of [
+      "http://localhost:9091",
+      "http://127.0.0.2:9091",
+      "http://foo.localhost:9091",
+      "http://0.0.0.0:9091",
+      "http://[::1]:9091",
+    ]) {
+      expect(() => fleetBridgeUrl({ ...env, FLEET_AI_BRIDGE_URL: url })).toThrow(
+        MiniMaxFleetPolicyError,
+      );
+    }
+  });
+
+  it("trims and case-folds allowlist entries and ignores empty ones", () => {
+    expect(
+      fleetBridgeUrl({
+        FLEET_AI_BRIDGE_URL: "http://fleet-node-1:9091",
+        FLEET_ALLOWED_HOSTS: " Fleet-Node-1 , ,",
+      }),
+    ).toBe("http://fleet-node-1:9091");
+  });
+
+  it("rejects a host absent from a non-empty allowlist", () => {
+    expect(() =>
+      fleetBridgeUrl({
+        FLEET_AI_BRIDGE_URL: "http://fleet-node-9:9091",
+        FLEET_ALLOWED_HOSTS: "fleet-node-1,fleet-node-2",
+      }),
+    ).toThrow(MiniMaxFleetPolicyError);
+  });
+
+  it("checks the CGNAT range as an address range, not a string prefix", () => {
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://100.127.255.254:9091" })).toBe(
+      "http://100.127.255.254:9091",
+    );
+    for (const url of ["http://100.example.com:9091", "http://100.200.0.1:9091", "http://100.63.255.255:9091"]) {
+      expect(() => fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: url })).toThrow(MiniMaxFleetPolicyError);
+    }
+  });
 });
 
 describe("callDescribe", () => {

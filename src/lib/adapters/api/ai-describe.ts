@@ -6,15 +6,44 @@
 // below refuses any *.minimaxi.com host or loopback so a misconfigured
 // deploy fails loud at request time.
 
-const TAILSCALE_CGNAT_PREFIX = "100.";
-
 export class MiniMaxFleetPolicyError extends Error {
   override readonly name = "MiniMaxFleetPolicyError";
 }
 
 export interface FleetEnv {
   readonly FLEET_AI_BRIDGE_URL?: string;
+  // Comma-separated extra bridge host names (fleet aliases). Loopback names
+  // and addresses listed here are never accepted: the loopback check runs
+  // before the allowlist.
   readonly FLEET_ALLOWED_HOSTS?: string;
+}
+
+// WHATWG URL keeps the brackets on an IPv6 hostname ("[::1]"); compare the
+// bare address.
+function bareHost(hostname: string): string {
+  return hostname.toLowerCase().replace(/^\[|\]$/g, "");
+}
+
+function isLoopback(host: string): boolean {
+  return (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.startsWith("127.") ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host === "::"
+  );
+}
+
+// RFC 6598 shared address space (the CGNAT /10): an address-range check, not a
+// string prefix, so a host name that merely starts with "100." and an address
+// outside that /10 do not pass as fleet.
+function isCgnat(host: string): boolean {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!m) return false;
+  const [a, b, c, d] = [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4])];
+  if ([a, b, c, d].some((o) => Number.isNaN(o) || o > 255)) return false;
+  return a === 100 && b >= 64 && b <= 127;
 }
 
 export function fleetBridgeUrl(env: FleetEnv): string {
@@ -28,13 +57,13 @@ export function fleetBridgeUrl(env: FleetEnv): string {
   } catch {
     throw new MiniMaxFleetPolicyError(`FLEET_AI_BRIDGE_URL is not a valid URL`);
   }
-  const host = url.hostname.toLowerCase();
+  const host = bareHost(url.hostname);
   if (host === "api.minimaxi.com" || host.endsWith(".minimaxi.com")) {
     throw new MiniMaxFleetPolicyError(
       "MiniMax direct hosts are forbidden; use the fleet bridge instead",
     );
   }
-  if (host === "localhost" || host === "127.0.0.1" || host === "::1") {
+  if (isLoopback(host)) {
     throw new MiniMaxFleetPolicyError(
       "FLEET_AI_BRIDGE_URL must NOT point to localhost; bridge runs on a fleet node",
     );
@@ -44,13 +73,13 @@ export function fleetBridgeUrl(env: FleetEnv): string {
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean);
   const looksFleet =
-    host.startsWith(TAILSCALE_CGNAT_PREFIX) ||
+    isCgnat(host) ||
     host.endsWith("-travel") ||
     host.endsWith(".oraclecloud.com") ||
     extraHosts.includes(host);
   if (!looksFleet) {
     throw new MiniMaxFleetPolicyError(
-      `FLEET_AI_BRIDGE_URL host ${host} is not on the approved fleet allowlist (CGNAT 100.x, *-travel, OCI, or FLEET_ALLOWED_HOSTS)`,
+      `FLEET_AI_BRIDGE_URL host ${host} is not on the approved fleet allowlist (CGNAT shared address space, *-travel, OCI, or FLEET_ALLOWED_HOSTS)`,
     );
   }
   return raw;
