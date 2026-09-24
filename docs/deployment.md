@@ -35,6 +35,7 @@ Use `.env.production.example` as the deployment template. Copy these values into
 | `AUTH_COOKIE_SAME_SITE` | Production | `lax`, `strict`, or `none`. `none` forces secure cookies for browser compatibility. |
 | `AUTH_COOKIE_DOMAIN` | Optional | Shared cookie domain such as `.example.com` when frontend/API subdomains require it. |
 | `FLEET_AI_BRIDGE_URL` | Only for AI fallback | Approved bridge URL for `/api/ai-describe`; never direct MiniMax. |
+| `FLEET_ALLOWED_HOSTS` | Optional | Comma-separated extra bridge host names accepted by `/api/ai-describe` (fleet aliases). Loopback names and addresses are never accepted, even when listed. |
 | `CSP_CONNECT_SRC` | Production | Header allowlist for backend, BFF, and CDN connections. |
 | `CSP_REPORT_URI` | Optional | CSP reporting endpoint. |
 | `REFERRER_POLICY` | Production | Deployment-platform header value. |

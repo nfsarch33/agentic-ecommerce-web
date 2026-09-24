@@ -1,5 +1,3 @@
-# runx-public-repo-gate: allow-file fleet_host_alias
-# The runner tags and resource groups below must match the private self-hosted fleet.
 stages:
   - status
   - preflight
@@ -12,10 +10,15 @@ stages:
 variables:
   GIT_STRATEGY: fetch
   GIT_SUBMODULE_STRATEGY: none
+  # Runner tags: these yaml defaults are generic. The real tags of the
+  # self-hosted runners are project-level CI/CD variables of the same names,
+  # which override these values.
+  EC_CI_RUNNER_TAG: "shell"
+  EC_CI_GPU_RUNNER_TAG: "gpu"
 
 default:
   tags:
-    - wsl1-shell-primary
+    - $EC_CI_RUNNER_TAG
   interruptible: true
   before_script:
     - mkdir -p .gitlab-artifacts
@@ -23,12 +26,12 @@ default:
 status_pending:
   stage: status
   script:
-    - bash scripts/ci/github_status.sh pending "GitLab frontend pipeline started on wsl1"
+    - bash scripts/ci/github_status.sh pending "GitLab frontend pipeline started"
   allow_failure: true
 
 preflight:
   stage: preflight
-  resource_group: wsl1-frontend
+  resource_group: frontend-1
   script:
     - bash scripts/ci/preflight.sh
   artifacts:
@@ -38,7 +41,7 @@ preflight:
 
 quality:
   stage: quality
-  resource_group: wsl1-frontend
+  resource_group: frontend-1
   script:
     - bun run typecheck
     - bun run lint
@@ -51,7 +54,7 @@ quality:
 
 playwright_stable:
   stage: playwright
-  resource_group: wsl1-frontend
+  resource_group: frontend-1
   timeout: 30m
   script:
     - bash scripts/ci/playwright_stable.sh
@@ -64,8 +67,8 @@ playwright_stable:
 uiauto_compare:
   stage: advisory
   tags:
-    - win1-shell-gpu
-  resource_group: win1-gpu
+    - $EC_CI_GPU_RUNNER_TAG
+  resource_group: gpu-1
   script:
     - bash scripts/ci/uiauto_compare.sh
   rules:
@@ -78,7 +81,7 @@ uiauto_compare:
 
 cleanup:
   stage: cleanup
-  resource_group: wsl1-frontend
+  resource_group: frontend-1
   script:
     - bash scripts/ci/cleanup.sh
   when: always
@@ -90,13 +93,13 @@ cleanup:
 status_success:
   stage: notify
   script:
-    - bash scripts/ci/github_status.sh success "GitLab frontend pipeline passed on wsl1"
+    - bash scripts/ci/github_status.sh success "GitLab frontend pipeline passed"
   when: on_success
   allow_failure: true
 
 status_failure:
   stage: notify
   script:
-    - bash scripts/ci/github_status.sh failure "GitLab frontend pipeline failed on wsl1"
+    - bash scripts/ci/github_status.sh failure "GitLab frontend pipeline failed"
   when: on_failure
   allow_failure: true

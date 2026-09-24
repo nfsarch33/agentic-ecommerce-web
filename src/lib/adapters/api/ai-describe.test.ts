@@ -1,15 +1,14 @@
-// runx-public-repo-gate: allow-file fleet_host_alias
 // runx-public-repo-gate: allow-file network_topology
-// Test fixtures use the canonical host aliases (`wsl1`, `wsl1-travel`)
-// + the Tailscale 100.119.x.x prefix because the validator under test
-// pattern-matches those literals. v3.6.0 documented exemption.
+// (The 100.64.0.1 literals below are RFC 6598 shared-address-space
+// documentation addresses, not a real tailnet IP; the CGNAT-prefix branch
+// of fleetBridgeUrl needs a syntactically real address to exercise.)
 import { describe, it, expect } from "vitest";
 import { fleetBridgeUrl, MiniMaxFleetPolicyError, callDescribe } from "./ai-describe";
 
 describe("fleetBridgeUrl", () => {
   it("returns the env value when set", () => {
-    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://wsl1-travel:9091" })).toBe(
-      "http://wsl1-travel:9091",
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://node-1-travel:9091" })).toBe(
+      "http://node-1-travel:9091",
     );
   });
 
@@ -29,21 +28,21 @@ describe("fleetBridgeUrl", () => {
     ).toThrow(MiniMaxFleetPolicyError);
   });
 
-  it("rejects raw http://localhost — bridge MUST be on Tailscale", () => {
+  it("rejects raw http://localhost — bridge MUST be on fleet", () => {
     expect(() => fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://localhost:9091" })).toThrow(
       MiniMaxFleetPolicyError,
     );
   });
 
-  it("accepts Tailscale 100.x hosts", () => {
-    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://100.119.5.1:9091" })).toBe(
-      "http://100.119.5.1:9091",
+  it("accepts CGNAT 100.x hosts (RFC 6598 range)", () => {
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://100.64.0.1:9091" })).toBe(
+      "http://100.64.0.1:9091",
     );
   });
 
   it("accepts -travel fleet hostnames", () => {
-    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://wsl1-travel:9091" })).toBe(
-      "http://wsl1-travel:9091",
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://node-1-travel:9091" })).toBe(
+      "http://node-1-travel:9091",
     );
   });
 
@@ -53,11 +52,14 @@ describe("fleetBridgeUrl", () => {
     ).toBe("https://gw.host.oraclecloud.com");
   });
 
-  it("accepts the literal wsl1, win1, and oracle-jump hostnames", () => {
-    for (const host of ["wsl1", "win1", "oracle-jump"]) {
-      expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: `http://${host}:9091` })).toBe(
-        `http://${host}:9091`,
-      );
+  it("accepts hosts listed in FLEET_ALLOWED_HOSTS", () => {
+    for (const host of ["fleet-node-1", "fleet-node-2", "jump-host"]) {
+      expect(
+        fleetBridgeUrl({
+          FLEET_AI_BRIDGE_URL: `http://${host}:9091`,
+          FLEET_ALLOWED_HOSTS: "fleet-node-1,fleet-node-2,jump-host",
+        }),
+      ).toBe(`http://${host}:9091`);
     }
   });
 
@@ -87,6 +89,48 @@ describe("fleetBridgeUrl", () => {
       fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "https://api.openai.com" }),
     ).toThrow(MiniMaxFleetPolicyError);
   });
+
+  it("allowlist entries can never admit a loopback host", () => {
+    const env = { FLEET_ALLOWED_HOSTS: "localhost,127.0.0.1,127.0.0.2,foo.localhost,0.0.0.0,::1" };
+    for (const url of [
+      "http://localhost:9091",
+      "http://127.0.0.2:9091",
+      "http://foo.localhost:9091",
+      "http://0.0.0.0:9091",
+      "http://[::1]:9091",
+    ]) {
+      expect(() => fleetBridgeUrl({ ...env, FLEET_AI_BRIDGE_URL: url })).toThrow(
+        MiniMaxFleetPolicyError,
+      );
+    }
+  });
+
+  it("trims and case-folds allowlist entries and ignores empty ones", () => {
+    expect(
+      fleetBridgeUrl({
+        FLEET_AI_BRIDGE_URL: "http://fleet-node-1:9091",
+        FLEET_ALLOWED_HOSTS: " Fleet-Node-1 , ,",
+      }),
+    ).toBe("http://fleet-node-1:9091");
+  });
+
+  it("rejects a host absent from a non-empty allowlist", () => {
+    expect(() =>
+      fleetBridgeUrl({
+        FLEET_AI_BRIDGE_URL: "http://fleet-node-9:9091",
+        FLEET_ALLOWED_HOSTS: "fleet-node-1,fleet-node-2",
+      }),
+    ).toThrow(MiniMaxFleetPolicyError);
+  });
+
+  it("checks the CGNAT range as an address range, not a string prefix", () => {
+    expect(fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: "http://100.127.255.254:9091" })).toBe(
+      "http://100.127.255.254:9091",
+    );
+    for (const url of ["http://100.example.com:9091", "http://100.200.0.1:9091", "http://100.63.255.255:9091"]) {
+      expect(() => fleetBridgeUrl({ FLEET_AI_BRIDGE_URL: url })).toThrow(MiniMaxFleetPolicyError);
+    }
+  });
 });
 
 describe("callDescribe", () => {
@@ -102,10 +146,10 @@ describe("callDescribe", () => {
     };
     const out = await callDescribe(
       { prompt: "Describe a tennis ball", productId: "p_1" },
-      { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+      { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
     );
     expect(out.description).toBe("A bouncy ball");
-    expect(captured.url).toBe("http://wsl1-travel:9091/v1/describe");
+    expect(captured.url).toBe("http://node-1-travel:9091/v1/describe");
     expect(captured.method).toBe("POST");
   });
 
@@ -115,7 +159,7 @@ describe("callDescribe", () => {
     await expect(
       callDescribe(
         { prompt: "x", productId: "p_1" },
-        { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+        { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
       ),
     ).rejects.toThrow(/HTTP 502/);
   });
@@ -129,7 +173,7 @@ describe("callDescribe", () => {
     await expect(
       callDescribe(
         { prompt: "x", productId: "p_1" },
-        { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+        { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
       ),
     ).rejects.toThrow(/invalid response shape/);
   });
@@ -143,7 +187,7 @@ describe("callDescribe", () => {
     await expect(
       callDescribe(
         { prompt: "x", productId: "p_1" },
-        { bridgeUrl: "http://wsl1-travel:9091", fetchImpl: mockFetch },
+        { bridgeUrl: "http://node-1-travel:9091", fetchImpl: mockFetch },
       ),
     ).rejects.toThrow(/invalid response shape/);
   });
