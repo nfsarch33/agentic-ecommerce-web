@@ -513,6 +513,24 @@ const workflows: MockWorkflow[] = [
   workflowDetail,
   {
     ...workflowDetail,
+    id: "wf_product_publish_yoga",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b41",
+    product_title: "Yoga Mat",
+  },
+  {
+    ...workflowDetail,
+    id: "wf_product_publish_foam",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b42",
+    product_title: "Foam Roller",
+  },
+  {
+    ...workflowDetail,
+    id: "wf_product_publish_kettlebell",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b43",
+    product_title: "Kettlebell",
+  },
+  {
+    ...workflowDetail,
     id: "wf_product_publish_completed",
     status: "completed",
     current_activity: "Published to WooCommerce",
