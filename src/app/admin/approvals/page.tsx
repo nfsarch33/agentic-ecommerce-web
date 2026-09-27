@@ -16,10 +16,12 @@ export const metadata: Metadata = {
 
 export default async function ApprovalsAdminPage() {
   await requireServerSession();
-  const baseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
+  // The repo's client pattern: the browser-visible base wins (the e2e
+  // mock harness sets it), the server base is the fallback.
+  const baseUrl = process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? process.env.MC_API_BASE_URL ?? "http://localhost:8080";
   // The usecase throws on failure (the adapter surfaces the API error);
   // Next's error boundary renders it. The inbox itself treats an empty
   // queue as a success state.
   const { workflows } = await loadWorkflowList({ baseUrl, status: "waiting_review" });
-  return <ApprovalsInbox workflows={[...workflows]} />;
+  return <ApprovalsInbox workflows={[...workflows]} baseUrl={baseUrl} />;
 }

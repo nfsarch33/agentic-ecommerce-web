@@ -531,6 +531,15 @@ const workflows: MockWorkflow[] = [
   },
   {
     ...workflowDetail,
+    id: "wf_product_publish_longtitle",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b44",
+    // 64+ chars: the overflow spec must meet a title that cannot fit one
+    // line at 375px, or it proves nothing about wrapping.
+    product_title:
+      "Unreasonably Long Product Title For Wrap Testing 0123456789012345678901234567890123456789",
+  },
+  {
+    ...workflowDetail,
     id: "wf_product_publish_completed",
     status: "completed",
     current_activity: "Published to WooCommerce",
@@ -1204,7 +1213,16 @@ async function handleWorkflowPublishRequest(req: Request, url: URL): Promise<Res
       ],
     };
     workflows.unshift(workflow);
-    return json({ workflow: workflowSummary(workflow) }, { status: 202 });
+    // The decided review contract: WorkflowSignalResponse = { status:
+    // "signaled", workflow: full detail (activities included) }. The
+    // adapter rejects anything less, so the mock honours it.
+    return json(
+      {
+        status: "signaled",
+        workflow: { ...workflowSummary(workflow), activities: workflow.activities },
+      },
+      { status: 202 },
+    );
   }
   return null;
 }
@@ -1253,7 +1271,16 @@ async function handleWorkflowDetailRequest(req: Request, url: URL): Promise<Resp
       webhook.last_delivery_at = "2026-05-07T04:55:10Z";
       webhook.updated_at = "2026-05-07T04:55:10Z";
     }
-    return json({ workflow: workflowSummary(workflow) }, { status: 202 });
+    // The decided review contract: WorkflowSignalResponse = { status:
+    // "signaled", workflow: full detail (activities included) }. The
+    // adapter rejects anything less, so the mock honours it.
+    return json(
+      {
+        status: "signaled",
+        workflow: { ...workflowSummary(workflow), activities: workflow.activities },
+      },
+      { status: 202 },
+    );
   }
   return null;
 }
