@@ -58,16 +58,24 @@ export interface SendWorkflowReviewSignalOptions {
   readonly workflowId: string;
   readonly signal: ReviewSignal;
   readonly note?: string;
+  /** Who decided, set SERVER-side by the BFF route from the verified
+   * session — never accepted from a browser body. */
+  readonly reviewer?: string;
   readonly fetchImpl?: typeof fetch;
 }
 
 export class WorkflowsApiError extends Error {
   override readonly name = "WorkflowsApiError";
   override readonly cause?: unknown;
+  /** HTTP status when the API answered with one; undefined for network
+   * and contract failures. Callers classify from this field, never by
+   * parsing the message. */
+  readonly status?: number;
 
-  constructor(message: string, cause?: unknown) {
+  constructor(message: string, cause?: unknown, status?: number) {
     super(message);
     this.cause = cause;
+    this.status = status;
   }
 }
 
@@ -212,7 +220,7 @@ async function startWorkflow<RequestBody extends object>(opts: {
   } catch (err) {
     throw new WorkflowsApiError(`${opts.label}: network error`, err);
   }
-  if (!res.ok) throw new WorkflowsApiError(`${opts.label}: HTTP ${res.status}`);
+  if (!res.ok) throw new WorkflowsApiError(`${opts.label}: HTTP ${res.status}`, undefined, res.status);
 
   const body = (await readJson(res, opts.label)) as { workflow?: unknown } | WorkflowStartResponse;
   if ("workflow" in body && body.workflow) {
@@ -252,7 +260,7 @@ export async function fetchWorkflowList(
   } catch (err) {
     throw new WorkflowsApiError("fetchWorkflowList: network error", err);
   }
-  if (!res.ok) throw new WorkflowsApiError(`fetchWorkflowList: HTTP ${res.status}`);
+  if (!res.ok) throw new WorkflowsApiError(`fetchWorkflowList: HTTP ${res.status}`, undefined, res.status);
 
   const body = (await readJson(res, "fetchWorkflowList")) as { workflows?: unknown };
   if (!Array.isArray(body.workflows)) {
@@ -276,7 +284,7 @@ export async function fetchWorkflowDetail(
   } catch (err) {
     throw new WorkflowsApiError("fetchWorkflowDetail: network error", err);
   }
-  if (!res.ok) throw new WorkflowsApiError(`fetchWorkflowDetail: HTTP ${res.status}`);
+  if (!res.ok) throw new WorkflowsApiError(`fetchWorkflowDetail: HTTP ${res.status}`, undefined, res.status);
 
   return mapWorkflowDetail((await readJson(res, "fetchWorkflowDetail")) as RawWorkflowDetail);
 }
@@ -337,7 +345,7 @@ export async function sendWorkflowReviewSignal(
 ): Promise<WorkflowDetail> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const workflowId = encodeURIComponent(opts.workflowId);
-  const requestBody = reviewSignalBody(opts.signal, opts.note);
+  const requestBody = reviewSignalBody(opts.signal, opts.note, opts.reviewer);
   let res: Response;
   try {
     res = await fetchImpl(apiUrl(opts.baseUrl, `/api/v1/workflows/${workflowId}/signals/review`), {
@@ -348,7 +356,7 @@ export async function sendWorkflowReviewSignal(
   } catch (err) {
     throw new WorkflowsApiError("sendWorkflowReviewSignal: network error", err);
   }
-  if (!res.ok) throw new WorkflowsApiError(`sendWorkflowReviewSignal: HTTP ${res.status}`);
+  if (!res.ok) throw new WorkflowsApiError(`sendWorkflowReviewSignal: HTTP ${res.status}`, undefined, res.status);
 
   const body = (await readJson(res, "sendWorkflowReviewSignal")) as
     | WorkflowSignalResponse
@@ -366,16 +374,23 @@ export async function sendWorkflowReviewSignal(
   return mapWorkflowDetail(body.workflow as RawWorkflowDetail);
 }
 
-function reviewSignalBody(signal: ReviewSignal, note?: string): ProductPublishReviewSignal {
+function reviewSignalBody(
+  signal: ReviewSignal,
+  note?: string,
+  reviewer?: string,
+): ProductPublishReviewSignal {
+  const identity = reviewer ? { reviewer } : {};
   if (signal === "approve") {
     return {
       approved: true,
+      ...identity,
       ...(note ? { note } : {}),
     };
   }
   if (signal === "reject") {
     return {
       approved: false,
+      ...identity,
       ...(note ? { note } : {}),
     };
   }
