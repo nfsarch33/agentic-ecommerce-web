@@ -33,6 +33,16 @@ const detail: WorkflowDetail = {
 };
 
 describe("WorkflowTimeline", () => {
+
+  it("shows a NEW workflow prop after a re-render (render-phase prop sync)", () => {
+    // Mutant this kills: deleting the `if (lastPropWorkflow !== workflow)` block
+    // in WorkflowTimeline, which leaves the first workflow on screen.
+    const { rerender } = render(<WorkflowTimeline workflow={detail} apiBaseUrl="http://api.test" />);
+    const next: WorkflowDetail = { ...detail, id: "wf_product_publish_2", productTitle: "Yoga Mat Pro" };
+    rerender(<WorkflowTimeline workflow={next} apiBaseUrl="http://api.test" />);
+    expect(screen.getByRole("heading", { name: /yoga mat pro workflow/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /resistance band set workflow/i })).not.toBeInTheDocument();
+  });
   it("renders workflow detail and activity timeline", () => {
     render(<WorkflowTimeline workflow={detail} apiBaseUrl="http://api.test" />);
 

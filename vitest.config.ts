@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from "vitest/config";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 
@@ -17,11 +17,7 @@ import { resolve } from "node:path";
 // without masking real regressions; functions that genuinely run for
 // >5s are still flagged via duration metrics.
 export default defineConfig({
-  // vite 7.3.x ships dual rollup/rolldown plugin typings; plugin-react 5
-  // emits the rolldown flavour while vitest/config expects the rollup
-  // one. Runtime-compatible — only the declared types disagree. Drop the
-  // cast when vitest's config types speak rolldown natively.
-  plugins: [react() as unknown as Plugin],
+  plugins: [react()],
   test: {
     environment: "jsdom",
     globals: true,
