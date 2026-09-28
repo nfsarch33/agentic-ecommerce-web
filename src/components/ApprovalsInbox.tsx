@@ -252,15 +252,27 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
   );
   const selectedIds = reviewableIds.filter((id) => state.selected[id]);
 
+  // Roving tabIndex: exactly one row (focusIndex, over the WORKFLOWS
+  // list — the single index space) is tabbable; j/k move it. Decided
+  // rows keep their position, so an approve on row 1 never shifts what
+  // row 2 means.
+  const [focusIndex, setFocusIndex] = useState(0);
+  const rowRefs = useRef<(HTMLElement | null)[]>([]);
+  const focusRow = useCallback(
+    (i: number) => {
+      const clamped = Math.max(0, Math.min(i, workflows.length - 1));
+      setFocusIndex(clamped);
+      rowRefs.current[clamped]?.focus();
+    },
+    [workflows.length],
+  );
   const focusNextReviewable = useCallback(
     (afterId: string) => {
-      const next = reviewableIds.find((id) => id !== afterId);
-      if (!next) return;
-      document
-        .querySelector<HTMLElement>(`[data-approve-id="${CSS.escape(next)}"]`)
-        ?.focus();
+      const nextIndex = workflows.findIndex((wf) => reviewableIds.includes(wf.id) && wf.id !== afterId);
+      if (nextIndex === -1) return;
+      focusRow(nextIndex);
     },
-    [reviewableIds],
+    [focusRow, reviewableIds, workflows],
   );
 
   const send = useCallback(
@@ -351,6 +363,60 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
     if (rejecting) reasonRef.current?.focus();
   }, [rejecting]);
 
+  // Keyboard: j/k move · Enter preview · A approve · R reject (reason
+  // dialog) · Space select · Shift+A batch approve. The guards ARE the
+  // contract: modifier combos and key-repeat never act; keys from a
+  // focused BUTTON inside the row (or the dialog textarea) never act
+  // (e.target !== e.currentTarget); no shortcuts while a dialog is
+  // open; and actions only fire for reviewable rows.
+  const onRowKeyDown = (e: React.KeyboardEvent<HTMLElement>, index: number, id: string) => {
+    if (rejecting || confirmBatch || preview) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.repeat) return;
+    if (e.target !== e.currentTarget) return;
+    const reviewable = reviewableIds.includes(id);
+    switch (e.key) {
+      case "j":
+        e.preventDefault();
+        focusRow(index + 1);
+        break;
+      case "k":
+        e.preventDefault();
+        focusRow(index - 1);
+        break;
+      case "Enter":
+        e.preventDefault();
+        captureOpener(e.currentTarget);
+        setPreview(id);
+        break;
+      case "a":
+        if (!reviewable) return;
+        e.preventDefault();
+        void send(id, "approve");
+        break;
+      case "A":
+        if (!e.shiftKey || selectedIds.length === 0) return;
+        e.preventDefault();
+        captureOpener(e.currentTarget);
+        setConfirmBatch(true);
+        break;
+      case "r":
+        if (!reviewable) return;
+        e.preventDefault();
+        captureOpener(e.currentTarget);
+        rejectingRef.current = id;
+        setRejecting(id);
+        setReason("");
+        setReasonError(null);
+        break;
+      case " ":
+        if (!reviewable) return;
+        e.preventDefault();
+        dispatch({ type: "select", id, on: !state.selected[id] });
+        break;
+    }
+  };
+
   if (workflows.length === 0) {
     return (
       <section aria-label="Approvals empty" style={{ padding: "1.5rem" }}>
@@ -414,6 +480,10 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
   return (
     <section aria-label="Approvals inbox" style={{ padding: "1rem", minWidth: 0 }} data-testid="approvals-inbox">
       <h1>Approvals</h1>
+      <p style={{ color: TOKENS.textMuted }}>
+        Keyboard: j/k move · Enter preview · A approve · R reject · Space
+        select · Shift+A batch approve
+      </p>
       {state.banner && (
         <p
           role="alert"
@@ -458,7 +528,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
         </span>
       </div>
       <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "0.5rem", minWidth: 0 }}>
-        {workflows.map((wf) => {
+        {workflows.map((wf, i) => {
           const item: ItemState = state.items[wf.id] ?? { status: "pending" };
           const reviewable =
             wf.status === "waiting_review" && (item.status === "pending" || item.status === "failed");
@@ -467,7 +537,13 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
             <li
               key={wf.id}
               data-status={item.status}
+              data-row-id={wf.id}
               aria-label={`Approval item ${wf.productTitle ?? wf.productId}`}
+              tabIndex={i === focusIndex ? 0 : -1}
+              ref={(el) => {
+                rowRefs.current[i] = el;
+              }}
+              onKeyDown={(e) => onRowKeyDown(e, i, wf.id)}
               style={{
                 border: `1px solid ${TOKENS.border}`,
                 borderRadius: "8px",

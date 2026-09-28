@@ -59,6 +59,35 @@ test("reject requires a reason and records it", async ({ page }) => {
   await expect(page.getByTestId("pending-count")).toHaveText(`${before - 1} pending`);
 });
 
+test("keyboard: j moves focus and A approves the focused row (exactly one row changes)", async ({ page }) => {
+  await page.goto("/admin/approvals");
+  // State-relative (the mock keeps decisions across tests in a worker):
+  // snapshot every row's status, act on the j-moved row, then exactly
+  // one row may have changed — the focused one — and it must read
+  // Approved.
+  const rowsBefore = await page.locator("li[data-row-id]").evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const before = await pendingCount(page);
+  await page.locator("li[data-row-id]").first().click();
+  await page.keyboard.press("j");
+  const focusedId = await page.evaluate(() => document.activeElement?.getAttribute("data-row-id"));
+  expect(focusedId).toBeTruthy();
+  await page.keyboard.press("a");
+  const focusedRow = page.locator(`li[data-row-id="${focusedId}"]`);
+  await expect(focusedRow.getByTestId(/item-status-/)).toHaveText("Approved");
+  const rowsAfter = await page.locator("li[data-row-id]").evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const changed = rowsAfter
+    .map((after, i) => ({ i, after, before: rowsBefore[i] }))
+    .filter((r) => r.before !== r.after);
+  // Mutant this kills: the keyboard approve reading the wrong index
+  // space — a second row would have changed too.
+  expect(changed.length, JSON.stringify(changed)).toBe(1);
+  await expect(page.getByTestId("pending-count")).toHaveText(`${before - 1} pending`);
+});
+
 test("batch approve confirms count with the cost summary, then approves exactly the selection", async ({ page }) => {
   await page.goto("/admin/approvals");
   const before = await pendingCount(page);
