@@ -20,8 +20,7 @@ next auditor does not re-derive them):
   that package had NO patched release (≤2.0.1 all vulnerable), so removing
   the consumer was the only fix. Also refreshes `ws` to 8.22.0.
 - `next` ^16.3.6, `vitest` ^3.2.7, `@vitejs/plugin-react` ^5.0.0
-  (in-range/bumped): close their own advisories; plugin-react 5 is the
-  first line typed against vite 7.3's rolldown types.
+  (in-range/bumped): close their own advisories.
 - Transitive re-resolution (fresh lockfile): `brace-expansion` 1.1.21 /
   2.1.7 / 5.0.12, `ws` 7.5.13 / 8.22.0, `nanoid` 3.3.19, `postcss` 8.5.23
   (next's own pin) / 8.5.28 (root), `browserslist` 4.29.1, all within
