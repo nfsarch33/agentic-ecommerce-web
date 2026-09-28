@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   reviewSignalLabel,
@@ -86,9 +86,15 @@ export function WorkflowTimeline({
   const [error, setError] = useState<string | null>(null);
   const canSignal = activeWorkflow.status === "waiting_review";
 
-  useEffect(() => {
+  // Adjust state when the prop changes, during render (React's
+  // documented pattern) instead of an effect: setState directly in an
+  // effect cascades renders. A signal response takes precedence over
+  // the incoming prop identity until a DIFFERENT workflow arrives.
+  const [lastPropWorkflow, setLastPropWorkflow] = useState(workflow);
+  if (lastPropWorkflow !== workflow) {
+    setLastPropWorkflow(workflow);
     setActiveWorkflow(workflow);
-  }, [workflow]);
+  }
 
   async function sendSignal(signal: ReviewSignal): Promise<void> {
     setMessage(null);

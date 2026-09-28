@@ -16,12 +16,21 @@ export const metadata: Metadata = {
 export default async function MediaAdminPage() {
   const serverBaseUrl = process.env.MC_API_BASE_URL ?? "http://localhost:8080";
   const clientBaseUrl = process.env.NEXT_PUBLIC_MC_API_BASE_URL ?? serverBaseUrl;
-  try {
-    const { assets } = await loadMediaLibrary({ baseUrl: serverBaseUrl });
-
-    return <MediaLibrary assets={assets} apiBaseUrl={clientBaseUrl} />;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unable to load media library.";
-    return <MediaLibrary assets={[]} apiBaseUrl={clientBaseUrl} initialError={message} />;
-  }
+  // Load inside try/catch, render AFTER: JSX constructed inside a
+  // try/catch block is not actually guarded by it (the component only
+  // renders later), so the failure path is data, not a second tree.
+  const loaded = await loadMediaLibrary({ baseUrl: serverBaseUrl }).then(
+    (result) => ({ assets: result.assets, error: null as string | null }),
+    (err: unknown) => ({
+      assets: [],
+      error: err instanceof Error ? err.message : "Unable to load media library.",
+    }),
+  );
+  return (
+    <MediaLibrary
+      assets={loaded.assets}
+      apiBaseUrl={clientBaseUrl}
+      initialError={loaded.error ?? undefined}
+    />
+  );
 }
