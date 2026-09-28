@@ -11,19 +11,22 @@ export interface ApprovalsInboxProps {
 const TOKENS = {
   textMuted: "#475467",
   border: "#e4e7ec",
-  borderFocused: "#b45309",
   dangerText: "#b42318",
   dangerBg: "#fef3f2",
 } as const;
 
 type Decision = "approved" | "rejected";
-type ItemStatus = "pending" | "inflight" | Decision | "failed";
-type FailKind = "unreachable" | "retryable" | "rejected-api" | "decided-elsewhere";
+/** "decided-elsewhere" is terminal like a decision, but arrived as a
+ * failure: the item is NOT retryable and must not be offered again. */
+type ItemStatus = "pending" | "inflight" | Decision | "failed" | "decided-elsewhere";
+/** Why the last attempt failed; drives both the banner and the row. */
+type FailKind = "unreachable" | "retryable" | "not-retryable" | "decided-elsewhere" | "sign-in";
 
 interface ItemState {
   status: ItemStatus;
   reason?: string;
-  /** Why the last attempt failed, for in-dialog retry advice. */
+  /** Why the last attempt failed — the ROW reads this, so one item's
+   * failure can never re-label another item's row via the banner. */
   failKind?: FailKind;
 }
 
@@ -46,7 +49,7 @@ interface State {
 type Action =
   | { type: "inflight"; id: string }
   | { type: "decide"; id: string; decision: Decision; reason?: string }
-  | { type: "fail"; id: string; failKind: FailKind }
+  | { type: "fail"; id: string; status: "failed" | "decided-elsewhere"; failKind: FailKind }
   | { type: "select"; id: string; on: boolean }
   | { type: "select_all"; on: boolean }
   | { type: "banner"; banner: Banner }
@@ -71,7 +74,7 @@ function reducer(state: State, action: Action): State {
       // operator's dropped decision stays visible until dismissed.
       return {
         ...state,
-        items: { ...state.items, [action.id]: { status: "failed", failKind: action.failKind } },
+        items: { ...state.items, [action.id]: { status: action.status, failKind: action.failKind } },
       };
     case "select":
       return { ...state, selected: { ...state.selected, [action.id]: action.on } };
@@ -101,15 +104,16 @@ class SignalHttpError extends Error {
 
 function classifyStatus(status: number): Banner {
   if (status === 404 || status === 409) {
-    return {
-      kind: "decided-elsewhere",
-      detail: "this decision was already recorded elsewhere — refresh the queue to see its current state",
-    };
+    return { kind: "decided-elsewhere", detail: "already decided elsewhere" };
+  }
+  if (status === 401) {
+    return { kind: "sign-in", detail: "your session is no longer valid" };
   }
   if (status >= 500) {
     return { kind: "retryable", detail: `the decision could not be recorded (HTTP ${status})` };
   }
-  return { kind: "rejected-api", detail: `the API rejected the decision (HTTP ${status})` };
+  // 400/415/422 (and any other 4xx): the request was refused as invalid.
+  return { kind: "not-retryable", detail: `the API refused the decision as invalid (HTTP ${status})` };
 }
 
 /** Exhaustive over the workflow vocabulary; the default renders the raw
@@ -141,7 +145,12 @@ function itemStatusLabel(item: ItemState): string {
     case "rejected":
       return `Rejected: ${item.reason ?? ""}`;
     case "failed":
-      return "Decision FAILED to record — retry";
+      // A retryable failure says retry; every other failure class keeps
+      // its own words on the row, so the operator never reads "retry"
+      // under a decision that was already made elsewhere or refused.
+      return failLabel(item.failKind ?? "retryable");
+    case "decided-elsewhere":
+      return failLabel("decided-elsewhere");
     case "inflight":
       return "Sending…";
     case "pending":
@@ -151,22 +160,39 @@ function itemStatusLabel(item: ItemState): string {
   }
 }
 
+function failLabel(kind: FailKind): string {
+  switch (kind) {
+    case "decided-elsewhere":
+      return "Decided elsewhere — refresh the queue";
+    case "sign-in":
+      return "Session expired — sign in again";
+    case "not-retryable":
+      return "Decision refused as invalid — not recorded";
+    case "retryable":
+    case "unreachable":
+      return "Decision FAILED to record — retry";
+    default:
+      return `Unknown failure: ${String(kind)}`;
+  }
+}
+
 function signalPath(id: string): string {
   return `/api/admin/workflows/${encodeURIComponent(id)}/signals/review`;
 }
 
 /**
  * The approvals inbox: what agents produced and a person has not yet
- * approved. Approve and reject post SAME-ORIGIN to the BFF route
- * (the session cookie rides along; MC_API_BASE_URL never reaches the
- * browser). Reject REQUIRES a reason (it feeds preference learning) and
- * is never batch; batch-approve confirms count before committing and
- * stops at the first failure, reporting how many selected items were
- * not sent. The cost column shows "—" when the ledger has no number —
- * never a zero. A failed decision keeps its buttons (retry stays
- * possible), is per-item sticky, and raises a banner only the operator
- * dismisses; a 404/409 means decided elsewhere, so it says refresh, not
- * retry. An item that is no longer waiting_review is never approvable.
+ * approved. Approve and reject post SAME-ORIGIN to the BFF route (the
+ * session cookie and Idempotency-Key ride along; MC_API_BASE_URL never
+ * reaches the browser; the operator identity is attached server-side).
+ * Reject REQUIRES a reason (it feeds preference learning) and is never
+ * batch; batch-approve confirms count before committing and stops at
+ * the first failure, reporting how many selected items were not sent.
+ * The cost column shows "—" when the ledger has no number — never a
+ * zero. A retryable failure keeps its buttons; a decision recorded
+ * elsewhere, an expired session or an invalid request does NOT offer
+ * the decision again. An item that is no longer waiting_review is never
+ * approvable.
  */
 export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
   const [state, dispatch] = useReducer(reducer, {
@@ -180,20 +206,25 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
   const [confirmBatch, setConfirmBatch] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
 
-  // Synchronous guards: the reducer state is batched, so a second click
-  // in the same tick would read a stale closure. The refs are the
-  // per-item in-flight lock (B2) and a mirror of terminal statuses so
-  // every entry point refuses to re-decide a decided item.
-  const inflightRef = useRef<Set<string>>(new Set());
+  // Synchronous guard: the reducer state is batched, so a second click
+  // in the same tick would read a stale closure. `statuses` mirrors the
+  // item statuses in a ref and is set to "inflight" BEFORE the await —
+  // that single synchronous lock is what makes every entry point (click,
+  // batch, dialog submit) refuse double-sends and re-decisions.
   const statusRef = useRef<Record<string, ItemStatus> | null>(null);
   if (statusRef.current === null) {
     statusRef.current = Object.fromEntries(workflows.map((wf) => [wf.id, "pending" as ItemStatus]));
   }
   const statuses = statusRef.current;
+  // Live mirror of which item's reject dialog is open: a submit's
+  // continuation must compare against CURRENT state, not the value
+  // captured when it was clicked.
+  const rejectingRef = useRef<string | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const reasonRef = useRef<HTMLTextAreaElement | null>(null);
-  const previewCloseRef = useRef<HTMLButtonElement | null>(null);
-  const batchPrimaryRef = useRef<HTMLButtonElement | null>(null);
+  const rejectDialogRef = useRef<HTMLDialogElement | null>(null);
+  const previewDialogRef = useRef<HTMLDialogElement | null>(null);
+  const batchDialogRef = useRef<HTMLDialogElement | null>(null);
 
   const isReviewable = useCallback(
     (id: string): boolean => {
@@ -202,13 +233,11 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
       const st = statuses[id] ?? "pending";
       return st === "pending" || st === "failed";
     },
-    // `statuses` aliases the ref-backed map; stable for the component's
-    // lifetime, so it is safe as a dependency.
     [workflows, statuses],
   );
 
   // Render-time truth comes from the reducer (recomputes on every
-  // decision); the refs above are ONLY the synchronous double-entry
+  // decision); the ref above is ONLY the synchronous double-entry
   // guard used inside send().
   const reviewableIds = useMemo(
     () =>
@@ -236,15 +265,18 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
 
   const send = useCallback(
     async (id: string, signal: "approve" | "reject", note?: string): Promise<"ok" | "failed" | "refused"> => {
-      if (inflightRef.current.has(id)) return "refused";
       if (!isReviewable(id)) return "refused";
-      inflightRef.current.add(id);
       statuses[id] = "inflight";
       dispatch({ type: "inflight", id });
       try {
         const res = await fetch(signalPath(id), {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            // One key per click: a retried CLICK is a new attempt, a
+            // replayed REQUEST is the same decision.
+            "idempotency-key": crypto.randomUUID(),
+          },
           body: JSON.stringify(note ? { signal, note } : { signal }),
         });
         if (!res.ok) throw new SignalHttpError(res.status);
@@ -257,35 +289,67 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
         const banner =
           err instanceof SignalHttpError
             ? classifyStatus(err.status)
-            : { kind: "unreachable" as const, detail: "the API could not be reached" };
-        statuses[id] = "failed";
-        dispatch({ type: "fail", id, failKind: banner.kind });
+            : ({ kind: "unreachable", detail: "the API could not be reached" } as const);
+        const terminal: ItemStatus = banner.kind === "decided-elsewhere" ? "decided-elsewhere" : "failed";
+        statuses[id] = terminal;
+        dispatch({ type: "fail", id, status: terminal, failKind: banner.kind });
         dispatch({ type: "banner", banner });
         return "failed";
-      } finally {
-        inflightRef.current.delete(id);
       }
     },
     [focusNextReviewable, isReviewable, statuses],
   );
 
-  const captureOpener = useCallback(() => {
-    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  const captureOpener = useCallback((opener: HTMLElement | null) => {
+    openerRef.current = opener;
   }, []);
   const returnFocus = useCallback(() => {
     openerRef.current?.focus();
     openerRef.current = null;
   }, []);
 
+  // Native <dialog>: showModal gives modality, inert background, native
+  // Escape and (in browsers) focus return; the effects below just drive
+  // open/close from state, and a keydown fallback covers jsdom.
+
+  const closeReject = useCallback((restoreFocus: boolean) => {
+    rejectingRef.current = null;
+    setRejecting(null);
+    if (restoreFocus) returnFocus();
+  }, [returnFocus]);
+  const closePreview = useCallback(() => {
+    setPreview(null);
+    returnFocus();
+  }, [returnFocus]);
+  const closeBatch = useCallback(() => {
+    setConfirmBatch(false);
+    returnFocus();
+  }, [returnFocus]);
+
+  // Native dialog open/close driven from state; written inline (not via
+  // a helper) so the refs rule sees each read happen inside its effect.
+  useEffect(() => {
+    const dialog = rejectDialogRef.current;
+    if (!dialog) return;
+    if (rejecting && !dialog.open) dialog.showModal();
+    if (!rejecting && dialog.open) dialog.close();
+  }, [rejecting]);
+  useEffect(() => {
+    const dialog = previewDialogRef.current;
+    if (!dialog) return;
+    if (preview && !dialog.open) dialog.showModal();
+    if (!preview && dialog.open) dialog.close();
+  }, [preview]);
+  useEffect(() => {
+    const dialog = batchDialogRef.current;
+    if (!dialog) return;
+    if (confirmBatch && !dialog.open) dialog.showModal();
+    if (!confirmBatch && dialog.open) dialog.close();
+  }, [confirmBatch]);
+
   useEffect(() => {
     if (rejecting) reasonRef.current?.focus();
   }, [rejecting]);
-  useEffect(() => {
-    if (preview) previewCloseRef.current?.focus();
-  }, [preview]);
-  useEffect(() => {
-    if (confirmBatch) batchPrimaryRef.current?.focus();
-  }, [confirmBatch]);
 
   if (workflows.length === 0) {
     return (
@@ -297,32 +361,58 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
     );
   }
 
-  const closeReject = (restoreFocus: boolean) => {
-    setRejecting(null);
-    if (restoreFocus) returnFocus();
-  };
-
   const submitReject = async () => {
+    const id = rejecting;
+    if (!id) return;
     const note = reason.trim();
     if (note.length < 3) {
       setReasonError("Write a reason (at least 3 characters).");
       return;
     }
-    // send() refuses when the item is in flight or already decided; on
-    // failure the dialog STAYS OPEN with the typed reason (B1).
-    const result = await send(rejecting ?? "", "reject", note);
+    // send() refuses when the item is in flight or already decided; a
+    // failure keeps the dialog open with the typed reason.
+    const result = await send(id, "reject", note);
+    // Stale continuation guard: if the operator moved to a DIFFERENT
+    // item's dialog while this request was in flight, this result must
+    // not close that dialog or touch its reason. rejectingRef holds the
+    // LIVE dialog item — the closure's `rejecting` is frozen at click.
+    if (rejectingRef.current !== id) return;
     if (result === "ok") {
       closeReject(false); // focus already moved to the next item
       setReasonError(null);
+    } else if (result === "refused") {
+      // The item became undecidable while the dialog was open (decided
+      // elsewhere, already in flight): say so instead of a silent no-op.
+      setReasonError("This item can no longer be decided here — refresh the queue.");
+    }
+  };
+
+  // No batch-level lock on purpose: every entry point funnels through
+  // send(), whose synchronous per-item status mirror refuses a second
+  // send of the same item — a double click re-runs the loop but every
+  // item is still sent exactly once (proven by the double-click test).
+  const runBatch = async () => {
+    setConfirmBatch(false);
+    // Stop at the FIRST failure: the operator must see which decision
+    // was dropped instead of losing it in a stream — and how many of
+    // the selection were never sent.
+    const batchIds = [...selectedIds];
+    let sent = 0;
+    for (const id of batchIds) {
+      const result = await send(id, "approve");
+      if (result === "ok") {
+        sent += 1;
+        continue;
+      }
+      if (result === "failed") {
+        dispatch({ type: "batch_stopped", notSent: batchIds.length - sent - 1 });
+        break;
+      }
     }
   };
 
   return (
-    <section
-      aria-label="Approvals inbox"
-      style={{ padding: "1rem", minWidth: 0 }}
-      data-testid="approvals-inbox"
-    >
+    <section aria-label="Approvals inbox" style={{ padding: "1rem", minWidth: 0 }} data-testid="approvals-inbox">
       <h1>Approvals</h1>
       {state.banner && (
         <p
@@ -354,7 +444,13 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
         >
           {selectedIds.length === reviewableIds.length ? "Clear selection" : "Select all pending"}
         </button>
-        <button onClick={() => { captureOpener(); setConfirmBatch(true); }} disabled={selectedIds.length === 0}>
+        <button
+          onClick={(e) => {
+            captureOpener(e.currentTarget);
+            setConfirmBatch(true);
+          }}
+          disabled={selectedIds.length === 0}
+        >
           Approve {selectedIds.length} selected…
         </button>
         <span aria-live="polite" data-testid="pending-count">
@@ -426,8 +522,9 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                       Approve
                     </button>
                     <button
-                      onClick={() => {
-                        captureOpener();
+                      onClick={(e) => {
+                        captureOpener(e.currentTarget);
+                        rejectingRef.current = wf.id;
                         setRejecting(wf.id);
                         setReason("");
                         setReasonError(null);
@@ -441,8 +538,8 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                   </>
                 )}
                 <button
-                  onClick={() => {
-                    captureOpener();
+                  onClick={(e) => {
+                    captureOpener(e.currentTarget);
                     setPreview(wf.id);
                   }}
                   aria-label={`Preview ${wf.productTitle ?? wf.id}`}
@@ -455,150 +552,112 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
         })}
       </ul>
 
-      {preview && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Preview item"
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              setPreview(null);
-              returnFocus();
-            }
-          }}
-          style={{ border: `1px solid ${TOKENS.border}`, padding: "1rem", borderRadius: "8px", marginTop: "1rem" }}
-        >
-          <h2>Preview</h2>
-          {(() => {
-            const wf = workflows.find((w) => w.id === preview);
-            if (!wf) return null;
-            return (
-              <dl style={{ overflowWrap: "anywhere" }}>
-                <dt>Workflow</dt><dd>{wf.id}</dd>
-                <dt>Type</dt><dd>{wf.type}</dd>
-                <dt>Product</dt><dd>{wf.productTitle ?? wf.productId}</dd>
-                <dt>Status</dt><dd>{workflowStatusLabel(wf.status)}</dd>
-                <dt>Current activity</dt><dd>{wf.currentActivity ?? "—"}</dd>
-                <dt>Started</dt><dd>{wf.startedAt}</dd>
-                <dt>Updated</dt><dd>{wf.updatedAt}</dd>
-              </dl>
-            );
-          })()}
-          <button
-            ref={previewCloseRef}
-            onClick={() => {
-              setPreview(null);
-              returnFocus();
-            }}
-          >
-            Close preview
-          </button>
-        </div>
-      )}
+      <dialog
+        ref={previewDialogRef}
+        aria-label="Preview item"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") closePreview();
+        }}
+        style={{ border: `1px solid ${TOKENS.border}`, borderRadius: "8px" }}
+      >
+        {preview && (
+          <>
+            <h2>Preview</h2>
+            {(() => {
+              const wf = workflows.find((w) => w.id === preview);
+              if (!wf) return null;
+              return (
+                <dl style={{ overflowWrap: "anywhere" }}>
+                  <dt>Workflow</dt><dd>{wf.id}</dd>
+                  <dt>Type</dt><dd>{wf.type}</dd>
+                  <dt>Product</dt><dd>{wf.productTitle ?? wf.productId}</dd>
+                  <dt>Status</dt><dd>{workflowStatusLabel(wf.status)}</dd>
+                  <dt>Current activity</dt><dd>{wf.currentActivity ?? "—"}</dd>
+                  <dt>Started</dt><dd>{wf.startedAt}</dd>
+                  <dt>Updated</dt><dd>{wf.updatedAt}</dd>
+                </dl>
+              );
+            })()}
+            <button onClick={closePreview}>Close preview</button>
+          </>
+        )}
+      </dialog>
 
-      {rejecting && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Reject with reason"
-          onKeyDown={(e) => {
-            if (e.key === "Escape") closeReject(true);
-          }}
-          style={{ border: `1px solid ${TOKENS.border}`, padding: "1rem", borderRadius: "8px", marginTop: "1rem" }}
-        >
-          <h2>Reject — a reason is required</h2>
-          <p style={{ color: TOKENS.textMuted }}>
-            The reason feeds the agent&rsquo;s preference learning; a reject
-            without one teaches nothing.
-          </p>
-          <label>
-            Reason
-            <textarea
-              ref={reasonRef}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={3}
-              style={{ width: "100%" }}
-              aria-label="Rejection reason"
-            />
-          </label>
-          {reasonError && <p role="alert" style={{ color: TOKENS.dangerText }}>{reasonError}</p>}
-          {state.items[rejecting]?.status === "failed" && (
-            <p role="alert" style={{ color: TOKENS.dangerText }} data-testid="reject-fail-note">
-              {state.items[rejecting]?.failKind === "decided-elsewhere"
-                ? "This item was already decided elsewhere — refresh the queue. The reason is kept."
-                : "The decision could not be recorded — the reason is kept; try again."}
+      <dialog
+        ref={rejectDialogRef}
+        aria-label="Reject with reason"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") closeReject(true);
+        }}
+        style={{ border: `1px solid ${TOKENS.border}`, borderRadius: "8px" }}
+      >
+        {rejecting && (
+          <>
+            <h2>Reject — a reason is required</h2>
+            <p style={{ color: TOKENS.textMuted }}>
+              The reason feeds the agent&rsquo;s preference learning; a reject
+              without one teaches nothing.
             </p>
-          )}
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              onClick={() => void submitReject()}
-              disabled={state.items[rejecting]?.status === "inflight"}
-            >
-              Reject with this reason
-            </button>
-            <button onClick={() => closeReject(true)}>Cancel</button>
-          </div>
-        </div>
-      )}
+            <label>
+              Reason
+              <textarea
+                ref={reasonRef}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+                style={{ width: "100%" }}
+                aria-label="Rejection reason"
+              />
+            </label>
+            {reasonError && <p role="alert" style={{ color: TOKENS.dangerText }}>{reasonError}</p>}
+            {state.items[rejecting]?.status === "failed" && (
+              <p role="alert" style={{ color: TOKENS.dangerText }} data-testid="reject-fail-note">
+                The decision could not be recorded — the reason is kept; try again.
+              </p>
+            )}
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => void submitReject()}
+                disabled={state.items[rejecting]?.status === "inflight"}
+              >
+                Reject with this reason
+              </button>
+              <button onClick={() => closeReject(true)}>Cancel</button>
+            </div>
+          </>
+        )}
+      </dialog>
 
-      {confirmBatch && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm batch approve"
-          onKeyDown={(e) => {
-            if (e.key === "Escape") {
-              setConfirmBatch(false);
-              returnFocus();
-            }
-          }}
-          style={{ border: `1px solid ${TOKENS.border}`, padding: "1rem", borderRadius: "8px", marginTop: "1rem" }}
-        >
-          <h2>Approve {selectedIds.length} items?</h2>
-          <p>
-            You are approving {selectedIds.length} item
-            {selectedIds.length === 1 ? "" : "s"} a customer would see. Cost:
-            — per item (the run ledger is not wired yet; a dash, never a
-            zero). Reject is never batch — one wrong reject teaches the
-            wrong preference at scale.
-          </p>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              ref={batchPrimaryRef}
-              onClick={async () => {
-                setConfirmBatch(false);
-                // Stop at the FIRST failure: the operator must see which
-                // decision was dropped instead of losing it in a stream —
-                // and how many of the selection were never sent.
-                const batchIds = [...selectedIds];
-                let sent = 0;
-                for (const id of batchIds) {
-                  const result = await send(id, "approve");
-                  if (result === "ok") {
-                    sent += 1;
-                    continue;
-                  }
-                  if (result === "failed") {
-                    dispatch({ type: "batch_stopped", notSent: batchIds.length - sent - 1 });
-                    break;
-                  }
-                }
-              }}
-            >
-              Approve all {selectedIds.length}
-            </button>
-            <button
-              onClick={() => {
-                setConfirmBatch(false);
-                returnFocus();
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <dialog
+        ref={batchDialogRef}
+        aria-label="Confirm batch approve"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") closeBatch();
+        }}
+        style={{ border: `1px solid ${TOKENS.border}`, borderRadius: "8px" }}
+      >
+        {confirmBatch && (
+          <>
+            <h2>Approve {selectedIds.length} items?</h2>
+            <p data-testid="batch-cost-summary">
+              You are approving {selectedIds.length} item
+              {selectedIds.length === 1 ? "" : "s"} a customer would see. Cost:
+              — per item (the run ledger is not wired yet; a dash, never a
+              zero). Reject is never batch — one wrong reject teaches the
+              wrong preference at scale.
+            </p>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={() => void runBatch()}
+                data-testid="batch-confirm"
+              >
+                Approve all {selectedIds.length}
+              </button>
+              <button onClick={closeBatch}>Cancel</button>
+            </div>
+          </>
+        )}
+      </dialog>
     </section>
   );
 }

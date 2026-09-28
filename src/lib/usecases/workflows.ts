@@ -55,6 +55,7 @@ export interface SendReviewSignalForWorkflowInput {
   readonly workflowId: string;
   readonly signal: ReviewSignal;
   readonly note?: string;
+  readonly reviewer?: string;
 }
 
 function requiredId(input: string, label: string): string {
@@ -117,5 +118,6 @@ export async function sendReviewSignalForWorkflow(
     workflowId: requiredId(input.workflowId, "workflowId"),
     signal: input.signal,
     note: optionalText(input.note),
+    ...(input.reviewer ? { reviewer: input.reviewer } : {}),
   });
 }

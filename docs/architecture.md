@@ -1,7 +1,7 @@
 # Architecture
 
 Current structural view of the console. Update this file with the change
-when a ticket moves a boundary (operator rule, 2026-09-28).
+when a PR moves a boundary.
 
 ## Component flow
 
@@ -26,7 +26,7 @@ flowchart LR
     API -. "replaced by" .-> Mock
 ```
 
-## The approvals lane (v18870-2)
+## The approvals lane
 
 The approvals inbox is the commercial gate: an operator approves, rejects
 (with a required reason), or batch-approves agent-produced product
@@ -36,10 +36,14 @@ publishes.
   session and loads the `waiting_review` queue server-side. No API base
   reaches the browser.
 - Decisions POST same-origin to
-  `/api/admin/workflows/[id]/signals/review`. That route verifies the
-  session from the cookie server-side, enforces the reason rule for
-  rejects, and forwards through the generated-schema adapter
-  (`ProductPublishReviewSignal`: `{approved, note?}`).
+  `/api/admin/workflows/[id]/signals/review`. That route refuses
+  non-JSON bodies (415) and cross-site requests (403) before anything
+  upstream runs; it verifies the session from the cookie server-side,
+  sets the upstream `reviewer` from that session (a browser-supplied
+  reviewer is never trusted), forwards the access bearer and the
+  browser's Idempotency-Key, enforces the reason rule for rejects, and
+  forwards through the generated-schema adapter
+  (`ProductPublishReviewSignal`: `{approved, reviewer?, note?}`).
 - The client classifies failures from HTTP status codes only:
   `404/409` → decided elsewhere (refresh, not retry), `5xx`/network →
   retry, other `4xx` → API refusal. A failed decision keeps its buttons

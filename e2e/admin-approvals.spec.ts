@@ -3,11 +3,11 @@ import { join } from "node:path";
 import { signInAs } from "./helpers/auth";
 
 /**
- * Approvals inbox e2e, per the design note: approve, reject-with-reason,
- * batch-approve, plus the responsive contract at six widths (with an
- * UNBROKEN 64-char token fixture that catches wrap regressions) and axe
- * (fail-closed: the run errors if axe is not injectable). The keyboard
- * path lives in v18870-2-approvals-keyboard, not here.
+ * Approvals inbox e2e: approve, reject-with-reason, batch-approve, plus
+ * the responsive contract at six widths (with an UNBROKEN 64-char token
+ * fixture that catches wrap regressions) and axe (fail-closed: the run
+ * errors if axe is not injectable). Keyboard shortcuts are a separate
+ * change and are deliberately absent here.
  *
  * Mock-state note: the mock stack keeps workflow state across tests in a
  * worker, so every test consumes DISTINCT fixtures and pending-count
@@ -49,7 +49,8 @@ test("reject requires a reason and records it", async ({ page }) => {
   const before = await pendingCount(page);
   await item.getByRole("button", { name: /reject yoga mat/i }).click();
   const dialog = page.getByRole("dialog", { name: /reject with reason/i });
-  await expect(dialog).toHaveAttribute("aria-modal", "true");
+  // Native <dialog>.showModal(): visible + modal by construction.
+  await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: /reject with this reason/i }).click();
   await expect(dialog.getByRole("alert")).toContainText(/at least 3 characters/i);
   await dialog.getByLabel(/rejection reason/i).fill("wrong size chart");
@@ -66,9 +67,8 @@ test("batch approve confirms count with the cost summary, then approves exactly 
   await page.getByRole("button", { name: /approve 2 selected/i }).click();
   const dialog = page.getByRole("dialog", { name: /confirm batch approve/i });
   await expect(dialog).toContainText(/you are approving 2 items/i);
-  // The cost summary is part of the confirmation.
-  await expect(dialog).toContainText(/cost/i);
-  await expect(dialog).toContainText("—");
+  // The EXACT cost token (an em dash anywhere else must not satisfy it).
+  await expect(dialog).toContainText("Cost: — per item");
   await dialog.getByRole("button", { name: /approve all 2/i }).click();
   // RELATIVE count: exactly the two selected items left pending.
   await expect(page.getByTestId("pending-count")).toHaveText(
@@ -105,13 +105,16 @@ test("axe: 0 serious violations at 1280 (fail-closed)", async ({ page }) => {
   await page.addScriptTag({
     path: join(process.cwd(), "node_modules", "axe-core", "axe.min.js"),
   });
-  const violations = await page.evaluate(() => {
+  const outcome = await page.evaluate(() => {
     const axe = (window as unknown as { axe?: { run: (o: object) => Promise<{ violations: { impact: string }[] }> } }).axe;
     if (!axe) throw new Error("axe failed to inject — this gate fails closed");
     return axe
       .run({ runOnly: { type: "tags", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } })
-      .then((r) => r.violations.map((v) => v.impact));
+      .then((r) => ({ ran: true, impacts: r.violations.map((v) => v.impact) }));
   });
-  const serious = violations.filter((v) => v === "serious" || v === "critical");
+  // `ran` proves the audit EXECUTED — a disarmed gate that returns an
+  // empty list without running axe must fail here, not pass silently.
+  expect(outcome.ran, "axe.run must have executed").toBe(true);
+  const serious = outcome.impacts.filter((v) => v === "serious" || v === "critical");
   expect(serious, `serious/critical violations: ${serious.length}`).toHaveLength(0);
 });

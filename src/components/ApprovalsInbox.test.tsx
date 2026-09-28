@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, beforeAll, afterEach } from "vitest";
 import { render, screen, waitFor, cleanup, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ApprovalsInbox } from "./ApprovalsInbox";
@@ -51,6 +51,25 @@ function normalizeNbsp(text: string): string {
   return text.replace(/\u00a0/g, " ");
 }
 
+function headersOf(call: unknown): Record<string, string> {
+  const init = (call as unknown[])[1] as RequestInit | undefined;
+  return (init?.headers ?? {}) as Record<string, string>;
+}
+
+// jsdom ships HTMLDialogElement without showModal/close; the component
+// uses the native API and Playwright exercises it in a real browser, so
+// the unit tests stub the minimum: open-attribute bookkeeping.
+beforeAll(() => {
+  if (typeof HTMLDialogElement !== "undefined" && !HTMLDialogElement.prototype.showModal) {
+    HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    };
+    HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {
+      this.removeAttribute("open");
+    };
+  }
+});
+
 beforeEach(() => {
   stubFetch(() => ok202());
 });
@@ -59,7 +78,7 @@ afterEach(() => {
   cleanup();
 });
 
-describe("ApprovalsInbox — B1: a failed decision stays actionable", () => {
+describe("B1 — a failed decision stays actionable", () => {
   it("a FAILED item keeps its Approve/Reject buttons, stays selectable, and counts as pending", async () => {
     stubFetch(() => statusResponse(503));
     render(<ApprovalsInbox workflows={items} />);
@@ -67,14 +86,11 @@ describe("ApprovalsInbox — B1: a failed decision stays actionable", () => {
     await waitFor(() =>
       expect(screen.getByTestId("item-status-wf1").textContent).toContain("FAILED"),
     );
-    // RESTORED ASSERTION (round-3 B1): the failed item's Approve button
-    // must still be present after the failure.
-    // Mutant this kills: the button render narrowed back to
-    // `status === "pending"` — the failed row loses its buttons.
+    // Mutant this kills: the button render narrowed to pending-only —
+    // the failed row loses its buttons.
     expect(screen.getByLabelText(/approve resistance band set/i)).toBeTruthy();
     expect(screen.getByLabelText(/reject resistance band set/i)).toBeTruthy();
     expect(screen.getByLabelText(/select resistance band set/i)).toBeEnabled();
-    // Still batchable: it counts as pending and can join a batch.
     expect(screen.getByTestId("pending-count").textContent).toBe("3 pending");
     await userEvent.click(screen.getByLabelText(/select resistance band set/i));
     expect(screen.getByRole("button", { name: /approve 1 selected/i })).toBeEnabled();
@@ -89,9 +105,8 @@ describe("ApprovalsInbox — B1: a failed decision stays actionable", () => {
     await waitFor(() =>
       expect(screen.getByTestId("reject-fail-note").textContent).toContain("reason is kept"),
     );
-    // Mutant this kills: the dialog closed unconditionally on submit
-    // (`setRejecting(null)` before awaiting the result).
-    expect(screen.getByRole("dialog", { name: /reject with reason/i })).toBeTruthy();
+    // Mutant this kills: the dialog closed unconditionally on submit.
+    expect(screen.getByRole("dialog", { name: /reject with reason/i })).toHaveAttribute("open");
     expect(screen.getByLabelText(/rejection reason/i)).toHaveValue("wrong size chart");
   });
 
@@ -106,8 +121,8 @@ describe("ApprovalsInbox — B1: a failed decision stays actionable", () => {
     await waitFor(() =>
       expect(screen.getByTestId("item-status-wf2").textContent).toBe("Approved"),
     );
-    // Mutant this kills: `dispatch({type:"fail",id})` deleted, or the
-    // banner cleared on every success.
+    // Mutant this kills: the fail dispatch deleted, or the banner
+    // cleared on every success.
     expect(screen.getByTestId("item-status-wf1").textContent).toContain("FAILED");
     expect(screen.getByTestId("stale-banner")).toBeTruthy();
     await userEvent.click(screen.getByText(/dismiss/i));
@@ -116,69 +131,76 @@ describe("ApprovalsInbox — B1: a failed decision stays actionable", () => {
   });
 });
 
-describe("ApprovalsInbox — B2: one request per decision", () => {
-  it("two rapid clicks on Approve send ONE request", async () => {
-    let resolveFn!: (r: Response) => void;
-    const deferred = new Promise<Response>((res) => {
-      resolveFn = res;
-    });
-    const fn = stubFetch(() => deferred);
+describe("B5 — decided elsewhere is terminal on the ROW", () => {
+  it("a 409 row says decided elsewhere, loses its buttons, and leaves pending", async () => {
+    stubFetch(() => statusResponse(409));
     render(<ApprovalsInbox workflows={items} />);
-    const btn = screen.getByLabelText(/approve resistance band set/i);
-    // Both clicks inside ONE act block run before React re-renders, so
-    // the disabled attribute cannot save us — only the in-flight guard
-    // can. Mutant this kills: `inflightRef.current.has(id)` check deleted
-    // → two POSTs race.
-    await act(async () => {
-      fireEvent.click(btn);
-      fireEvent.click(btn);
-    });
-    resolveFn(ok202());
+    await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
+    // The ROW, not only the banner (the banner has its own copy; the row
+    // must never offer the decision again).
     await waitFor(() =>
-      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe(
+        "Decided elsewhere — refresh the queue",
+      ),
     );
-    expect(fn).toHaveBeenCalledTimes(1);
+    // Mutant this kills: the decided-elsewhere status treated as plain
+    // "failed" — the buttons would still render.
+    expect(screen.queryByLabelText(/approve resistance band set/i)).toBeNull();
+    expect(screen.queryByLabelText(/reject resistance band set/i)).toBeNull();
+    expect(screen.getByLabelText(/select resistance band set/i)).toBeDisabled();
+    expect(screen.getByTestId("pending-count").textContent).toBe("2 pending");
+    // And it can no longer join a batch.
+    expect(screen.getByRole("button", { name: /select all pending/i })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /select all pending/i }));
+    expect(screen.getByRole("button", { name: /approve 2 selected/i })).toBeTruthy();
   });
 
-  it("approve then reject on the same item sends one request", async () => {
-    let resolveFn!: (r: Response) => void;
-    const deferred = new Promise<Response>((res) => {
-      resolveFn = res;
-    });
-    const fn = stubFetch(() => deferred);
+  it("an upstream session expiry (401) says sign in again on the row but keeps retry buttons", async () => {
+    stubFetch(() => statusResponse(401));
     render(<ApprovalsInbox workflows={items} />);
-    // Open the reject dialog in the same tick as the approve click —
-    // the pre-render race — then submit after the approve settles.
-    await act(async () => {
-      fireEvent.click(screen.getByLabelText(/approve resistance band set/i));
-      fireEvent.click(screen.getByLabelText(/reject resistance band set/i));
-    });
-    resolveFn(ok202());
+    await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
+    // Mutant this kills: 401 lumped into the retry family.
     await waitFor(() =>
-      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+      expect(screen.getByTestId("item-status-wf1").textContent).toContain("sign in again"),
     );
-    await userEvent.type(screen.getByLabelText(/rejection reason/i), "changed my mind");
-    await userEvent.click(screen.getByText(/reject with this reason/i));
-    await waitFor(() =>
-      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
-    );
-    // Mutant this kills: the `isReviewable` guard in send() deleted →
-    // the reject POSTs on an already-approved item.
-    expect(fn).toHaveBeenCalledTimes(1);
-    expect(fn.mock.calls[0]?.[1]?.body).toBe(JSON.stringify({ signal: "approve" }));
+    expect(screen.getByLabelText(/approve resistance band set/i)).toBeTruthy();
   });
-});
 
-describe("ApprovalsInbox — classification from status codes", () => {
-  it("409 means decided elsewhere: refresh, never retry", async () => {
+  it("an invalid decision (422) is marked not recorded and not retryable", async () => {
+    stubFetch(() => statusResponse(422));
+    render(<ApprovalsInbox workflows={items} />);
+    await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toContain("refused as invalid"),
+    );
+    const banner = screen.getByTestId("stale-banner");
+    expect(banner.textContent).not.toContain("retry it");
+  });
+
+  it("one item's decided-elsewhere failure does not re-label another item's retryable row", async () => {
+    stubFetch((url) => (url.includes("wf1") ? statusResponse(503) : statusResponse(409)));
+    render(<ApprovalsInbox workflows={items} />);
+    await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toContain("FAILED"),
+    );
+    await userEvent.click(screen.getByLabelText(/approve yoga mat/i));
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf2").textContent).toContain("Decided elsewhere"),
+    );
+    // Mutant this kills: the row label read from the shared banner —
+    // wf1's row would flip to decided-elsewhere after wf2's 409.
+    expect(screen.getByTestId("item-status-wf1").textContent).toContain("FAILED");
+    expect(screen.getByTestId("item-status-wf1").textContent).not.toContain("elsewhere");
+  });
+
+  it("409 means decided elsewhere in the banner: refresh, never retry", async () => {
     stubFetch(() => statusResponse(409));
     render(<ApprovalsInbox workflows={items} />);
     await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
     const banner = await screen.findByTestId("stale-banner");
-    // Mutant this kills: the 404/409 branch in classifyStatus deleted →
-    // falls to the retry family and prints retry advice.
-    expect(banner.textContent).toContain("already recorded elsewhere");
-    expect(banner.textContent).toContain("refresh the queue");
+    // Mutant this kills: the 404/409 branch in classifyStatus deleted.
+    expect(banner.textContent).toContain("decided elsewhere");
     expect(banner.textContent).not.toContain("retry");
   });
 
@@ -202,20 +224,156 @@ describe("ApprovalsInbox — classification from status codes", () => {
   });
 });
 
-describe("ApprovalsInbox — contract", () => {
-  it("approve posts SAME-ORIGIN to the BFF route with {signal:'approve'}", async () => {
+describe("B2 — one request per decision (single lock)", () => {
+  it("two rapid clicks on Approve send ONE request", async () => {
+    let resolveFn!: (r: Response) => void;
+    const deferred = new Promise<Response>((res) => {
+      resolveFn = res;
+    });
+    const fn = stubFetch(() => deferred);
+    render(<ApprovalsInbox workflows={items} />);
+    const btn = screen.getByLabelText(/approve resistance band set/i);
+    // Both clicks inside ONE act block run before React re-renders, so
+    // the disabled attribute cannot save us — only the synchronous
+    // status-mirror lock can. Mutant this kills:
+    // `statuses[id] = "inflight"` deleted → two POSTs race. (There is no
+    // second lock any more: this is the proof against the vacuous pair.)
+    await act(async () => {
+      fireEvent.click(btn);
+      fireEvent.click(btn);
+    });
+    resolveFn(ok202());
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+    );
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("approve then reject on the same item sends one request", async () => {
+    let resolveFn!: (r: Response) => void;
+    const deferred = new Promise<Response>((res) => {
+      resolveFn = res;
+    });
+    const fn = stubFetch(() => deferred);
+    render(<ApprovalsInbox workflows={items} />);
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(/approve resistance band set/i));
+      fireEvent.click(screen.getByLabelText(/reject resistance band set/i));
+    });
+    resolveFn(ok202());
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+    );
+    await userEvent.type(screen.getByLabelText(/rejection reason/i), "changed my mind");
+    await userEvent.click(screen.getByText(/reject with this reason/i));
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+    );
+    // Mutant this kills: the isReviewable guard in send() deleted →
+    // the reject POSTs on an already-approved item.
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn.mock.calls[0]?.[1]?.body).toBe(JSON.stringify({ signal: "approve" }));
+  });
+
+  it("a batch confirm double-click runs the loop ONCE", async () => {
+    const resolvers: Array<(r: Response) => void> = [];
+    const fn = stubFetch(
+      () => new Promise<Response>((res) => resolvers.push(res)),
+    );
+    render(<ApprovalsInbox workflows={items} />);
+    await userEvent.click(screen.getByLabelText(/select yoga mat/i));
+    await userEvent.click(screen.getByLabelText(/select foam roller/i));
+    await userEvent.click(screen.getByText(/approve 2 selected…/i));
+    const confirm = screen.getByTestId("batch-confirm");
+    await act(async () => {
+      fireEvent.click(confirm);
+      fireEvent.click(confirm);
+    });
+    for (const r of resolvers.splice(0)) r(ok202());
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf2").textContent).toBe("Approved"),
+    );
+    // Mutant this kills: the batchRunningRef guard deleted → the second
+    // click starts a second loop and 4 POSTs go out.
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("stale reject continuation", () => {
+  it("a slow decision for A does not close B's dialog or touch B's reason", async () => {
+    let resolveWf1!: (r: Response) => void;
+    const fn = stubFetch((url) =>
+      url.includes("wf1")
+        ? new Promise<Response>((res) => {
+            resolveWf1 = res;
+          })
+        : ok202(),
+    );
+    render(<ApprovalsInbox workflows={items} />);
+    // Open A's reject dialog and submit (slow — wf1 pending).
+    await userEvent.click(screen.getByLabelText(/reject resistance band set/i));
+    await userEvent.type(screen.getByLabelText(/rejection reason/i), "A reason");
+    await userEvent.click(screen.getByText(/reject with this reason/i));
+    // While A is in flight, cancel and open B's dialog instead.
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
+    await userEvent.click(screen.getByLabelText(/reject yoga mat/i));
+    await userEvent.type(screen.getByLabelText(/rejection reason/i), "B reason");
+    resolveWf1(ok202());
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Rejected: A reason"),
+    );
+    // Mutant this kills: the `if (rejecting !== id) return` guard deleted
+    // — A's settling continuation closes B's dialog and loses "B reason".
+    const bDialog = screen.getByRole("dialog", { name: /reject with reason/i });
+    expect(bDialog).toHaveAttribute("open");
+    expect(screen.getByLabelText(/rejection reason/i)).toHaveValue("B reason");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("a refused reject (item decided elsewhere meanwhile) shows a message, not a silent no-op", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    await userEvent.click(screen.getByLabelText(/reject resistance band set/i));
+    await userEvent.type(screen.getByLabelText(/rejection reason/i), "bad pick");
+    // Decide wf1 through its Approve button WHILE the dialog is open —
+    // same tick, pre-render race.
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText(/approve resistance band set/i));
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+    );
+    await userEvent.click(screen.getByText(/reject with this reason/i));
+    // Mutant this kills: the refused branch silent (no reasonError) —
+    // the operator would not know nothing happened.
+    await waitFor(() =>
+      expect(screen.getByRole("alert").textContent).toContain("can no longer be decided here"),
+    );
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved");
+  });
+});
+
+describe("contract", () => {
+  it("approve posts SAME-ORIGIN with {signal:'approve'} and an Idempotency-Key per click", async () => {
     const fn = stubFetch(() => ok202());
     render(<ApprovalsInbox workflows={items} />);
     await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
-    await waitFor(() => expect(fn).toHaveBeenCalled());
-    const firstCall = fn.mock.calls[0];
-    expect(firstCall).toBeDefined();
-    const [url, init] = firstCall as unknown as [string, RequestInit];
-    // Mutant this kills: an absolute upstream URL or a different body
-    // (the relative path IS the same-origin contract).
-    expect(url).toBe("/api/admin/workflows/wf1/signals/review");
-    expect(init.method).toBe("POST");
-    expect(JSON.parse(String(init.body))).toEqual({ signal: "approve" });
+    await userEvent.click(screen.getByLabelText(/approve yoga mat/i));
+    await waitFor(() => expect(fn).toHaveBeenCalledTimes(2));
+    const first = fn.mock.calls[0];
+    const second = fn.mock.calls[1];
+    // Mutant this kills: an absolute upstream URL or a different body.
+    expect(first?.[0]).toBe("/api/admin/workflows/wf1/signals/review");
+    expect((first?.[1] as RequestInit).method).toBe("POST");
+    expect(JSON.parse(String((first?.[1] as RequestInit).body))).toEqual({ signal: "approve" });
+    const key1 = headersOf(first)["idempotency-key"];
+    const key2 = headersOf(second)["idempotency-key"];
+    // Mutant this kills: a fixed key (or none) — every click must be a
+    // fresh attempt identity.
+    expect(key1).toMatch(/^[0-9a-f-]{36}$/);
+    expect(key2).toMatch(/^[0-9a-f-]{36}$/);
+    expect(key1).not.toBe(key2);
   });
 
   it("reject posts {signal:'reject', note} and records the reason", async () => {
@@ -228,10 +386,7 @@ describe("ApprovalsInbox — contract", () => {
       expect(screen.getByTestId("item-status-wf2").textContent).toContain("wrong size chart"),
     );
     const init = fn.mock.calls[0]?.[1] as RequestInit | undefined;
-    expect(JSON.parse(String(init?.body))).toEqual({
-      signal: "reject",
-      note: "wrong size chart",
-    });
+    expect(JSON.parse(String(init?.body))).toEqual({ signal: "reject", note: "wrong size chart" });
   });
 
   it("an id with / and ? is percent-encoded in the POST path", async () => {
@@ -249,11 +404,12 @@ describe("ApprovalsInbox — contract", () => {
     await userEvent.click(screen.getByLabelText(/reject yoga mat/i));
     await userEvent.click(screen.getByText(/reject with this reason/i));
     expect(screen.getByRole("alert").textContent).toContain("at least 3 characters");
-    // Mutant this kills: the `< 3` guard relaxed (e.g. `<= 0`) → the
-    // 2-char reason below would POST.
+    // Mutant this kills: the `< 3` guard relaxed to `<= 0`.
     await userEvent.type(screen.getByLabelText(/rejection reason/i), "ab");
     await userEvent.click(screen.getByText(/reject with this reason/i));
-    expect(screen.getAllByRole("alert").some((a) => /at least 3 characters/.test(a.textContent ?? ""))).toBe(true);
+    expect(
+      screen.getAllByRole("alert").some((a) => /at least 3 characters/.test(a.textContent ?? "")),
+    ).toBe(true);
     expect(fn).not.toHaveBeenCalled();
   });
 
@@ -275,7 +431,7 @@ describe("ApprovalsInbox — contract", () => {
   });
 });
 
-describe("ApprovalsInbox — status boundary and labels", () => {
+describe("status boundary and labels", () => {
   const mixed = [
     wf("wf-run", "Still Running", "running"),
     wf("wf-done", "Already Completed", "completed"),
@@ -284,8 +440,7 @@ describe("ApprovalsInbox — status boundary and labels", () => {
 
   it("only waiting_review items are approvable; others show their own status", () => {
     render(<ApprovalsInbox workflows={mixed} />);
-    // Mutant this kills: the `wf.status !== "waiting_review"` filter
-    // deleted → the running item would show Approve and count pending.
+    // Mutant this kills: the wf.status filter deleted.
     expect(screen.queryByLabelText(/approve still running/i)).toBeNull();
     expect(screen.queryByLabelText(/reject still running/i)).toBeNull();
     expect(screen.getByLabelText(/select still running/i)).toBeDisabled();
@@ -297,21 +452,19 @@ describe("ApprovalsInbox — status boundary and labels", () => {
   it("workflow labels are exhaustive with an explicit unknown branch", () => {
     const weird = [{ ...wf("wf-x", "Odd One"), status: "teleported" as WorkflowSummary["status"] }];
     render(<ApprovalsInbox workflows={weird} />);
-    // Mutant this kills: the default branch replaced by any catch-all
-    // (e.g. rendering "Completed") → the raw status would be hidden.
+    // Mutant this kills: the default branch replaced by any catch-all.
     expect(screen.getByTestId("item-status-wf-x").textContent).toBe("Unknown status: teleported");
   });
 
   it("completed and running map to their own labels, not a decision word", () => {
     render(<ApprovalsInbox workflows={mixed} />);
     expect(screen.getByTestId("item-status-wf-run").textContent).toBe("Running");
-    // Mutant this kills: the "completed" case deleted from the switch →
-    // falls through to "Unknown status: completed".
+    // Mutant this kills: the "completed" case deleted from the switch.
     expect(screen.getByTestId("item-status-wf-done").textContent).toBe("Completed");
   });
 });
 
-describe("ApprovalsInbox — batch", () => {
+describe("batch", () => {
   it("batch approve STOPS at the first failure and reports the un-sent remainder", async () => {
     const fn = stubFetch((url) => (url.includes("wf2") ? statusResponse(503) : ok202()));
     render(<ApprovalsInbox workflows={items} />);
@@ -322,40 +475,39 @@ describe("ApprovalsInbox — batch", () => {
     await waitFor(() =>
       expect(screen.getByTestId("item-status-wf2").textContent).toContain("FAILED"),
     );
-    // The sibling was never sent, so it stays PENDING with its buttons.
     expect(screen.queryByTestId("item-status-wf3")).toBeNull();
     expect(screen.getByLabelText(/approve foam roller/i)).toBeTruthy();
     expect(fn).toHaveBeenCalledTimes(1);
-    // Mutant this kills: the batch_stopped dispatch deleted → the
-    // operator loses sight of the never-sent remainder.
+    // Mutant this kills: the batch_stopped dispatch deleted.
     expect(screen.getByTestId("batch-not-sent").textContent).toBe("1 selected item was not sent.");
   });
 
-  it("batch confirm shows the cost summary with a dash", async () => {
+  it("batch confirm shows the exact cost summary token", async () => {
     render(<ApprovalsInbox workflows={items} />);
     await userEvent.click(screen.getByLabelText(/select yoga mat/i));
     await userEvent.click(screen.getByText(/approve 1 selected…/i));
     const dialog = screen.getByRole("dialog", { name: /confirm batch approve/i });
-    expect(dialog.textContent).toContain("Cost:");
-    expect(dialog.textContent).toContain("—");
+    // Mutant this kills: the em dash deleted from the prose — the exact
+    // token fails (the old toContain("—") passed on any dash anywhere).
+    expect(normalizeNbsp(dialog.textContent ?? "")).toContain("Cost: — per item");
     await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
   });
 });
 
-describe("ApprovalsInbox — dialog semantics", () => {
+describe("dialog semantics (native <dialog>)", () => {
   it("the reject dialog is modal, takes focus, and Escape returns focus to its opener", async () => {
     render(<ApprovalsInbox workflows={items} />);
     const rejectBtn = screen.getByLabelText(/reject yoga mat/i);
     await userEvent.click(rejectBtn);
     const dialog = screen.getByRole("dialog", { name: /reject with reason/i });
-    // Mutant this kills: aria-modal attribute dropped from the dialog.
-    expect(dialog.getAttribute("aria-modal")).toBe("true");
-    // Focus moves IN on open.
+    // Mutant this kills: showModal not called on open.
+    expect(dialog).toHaveAttribute("open");
     expect(document.activeElement).toBe(screen.getByLabelText(/rejection reason/i));
     fireEvent.keyDown(dialog, { key: "Escape" });
-    // Mutant this kills: Escape handler or focus-return deleted → the
-    // dialog lingers or focus stays on the removed textarea.
-    expect(screen.queryByRole("dialog", { name: /reject with reason/i })).toBeNull();
+    // Mutant this kills: the Escape handler or focus-return deleted.
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: /reject — a reason is required/i })).toBeNull(),
+    );
     expect(document.activeElement).toBe(rejectBtn);
   });
 
@@ -364,12 +516,13 @@ describe("ApprovalsInbox — dialog semantics", () => {
     const previewBtn = screen.getByLabelText(/preview yoga mat/i);
     await userEvent.click(previewBtn);
     const dialog = screen.getByRole("dialog", { name: /preview item/i });
-    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog).toHaveAttribute("open");
     expect(dialog.textContent).toContain("wf2");
     expect(dialog.textContent).toContain("drafted listing");
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: /close preview/i }));
     fireEvent.keyDown(dialog, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: /preview item/i })).toBeNull();
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: /preview/i })).toBeNull(),
+    );
     expect(document.activeElement).toBe(previewBtn);
   });
 
@@ -379,8 +532,7 @@ describe("ApprovalsInbox — dialog semantics", () => {
     await waitFor(() =>
       expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
     );
-    // Mutant this kills: focusNextReviewable deleted from send() →
-    // focus falls to body after the wf1 row unmounts its buttons.
+    // Mutant this kills: focusNextReviewable deleted from send().
     expect(document.activeElement).toBe(screen.getByLabelText(/approve yoga mat/i));
   });
 });

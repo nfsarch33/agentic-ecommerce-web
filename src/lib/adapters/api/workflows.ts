@@ -58,6 +58,9 @@ export interface SendWorkflowReviewSignalOptions {
   readonly workflowId: string;
   readonly signal: ReviewSignal;
   readonly note?: string;
+  /** Who decided, set SERVER-side by the BFF route from the verified
+   * session — never accepted from a browser body. */
+  readonly reviewer?: string;
   readonly fetchImpl?: typeof fetch;
 }
 
@@ -342,7 +345,7 @@ export async function sendWorkflowReviewSignal(
 ): Promise<WorkflowDetail> {
   const fetchImpl = opts.fetchImpl ?? fetch;
   const workflowId = encodeURIComponent(opts.workflowId);
-  const requestBody = reviewSignalBody(opts.signal, opts.note);
+  const requestBody = reviewSignalBody(opts.signal, opts.note, opts.reviewer);
   let res: Response;
   try {
     res = await fetchImpl(apiUrl(opts.baseUrl, `/api/v1/workflows/${workflowId}/signals/review`), {
@@ -371,16 +374,23 @@ export async function sendWorkflowReviewSignal(
   return mapWorkflowDetail(body.workflow as RawWorkflowDetail);
 }
 
-function reviewSignalBody(signal: ReviewSignal, note?: string): ProductPublishReviewSignal {
+function reviewSignalBody(
+  signal: ReviewSignal,
+  note?: string,
+  reviewer?: string,
+): ProductPublishReviewSignal {
+  const identity = reviewer ? { reviewer } : {};
   if (signal === "approve") {
     return {
       approved: true,
+      ...identity,
       ...(note ? { note } : {}),
     };
   }
   if (signal === "reject") {
     return {
       approved: false,
+      ...identity,
       ...(note ? { note } : {}),
     };
   }
