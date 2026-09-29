@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.13-alpine AS deps
+FROM oven/bun:1.3.13 AS deps
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ ENV CI=1
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-FROM oven/bun:1.3.13-alpine AS builder
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -15,9 +15,14 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN mkdir -p public && bun run build
+# Run next under REAL node: the bun base image ships no node, so
+# 'bun run build' executes the next bin through bun's node shim, which
+# trips a Bun CJS loader bug on next-server's turbo runtime
+# ('Expected CommonJS module to have a function wrapper'). Wherever node
+# exists (CI VM, dev hosts) the same build is green.
+RUN mkdir -p public && node node_modules/next/dist/bin/next build
 
-FROM node:22-alpine AS runner
+FROM node:22-bookworm-slim AS runner
 
 WORKDIR /app
 
@@ -26,7 +31,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV PORT=3000
 
-RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001 -G nodejs
+RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -s /usr/sbin/nologin nextjs
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
