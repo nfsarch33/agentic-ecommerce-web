@@ -544,6 +544,9 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                 rowRefs.current[i] = el;
               }}
               onKeyDown={(e) => onRowKeyDown(e, i, wf.id)}
+              // Click-focus must sync the roving index too, or Tab leaves
+              // the list at row 0 instead of the last-used row.
+              onFocus={() => setFocusIndex(i)}
               style={{
                 border: `1px solid ${TOKENS.border}`,
                 borderRadius: "8px",

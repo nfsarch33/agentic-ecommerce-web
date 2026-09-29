@@ -579,6 +579,17 @@ describe("keyboard path (roving tabIndex, one index space)", () => {
     expect(fn.mock.calls[1]?.[0]).toBe("/api/admin/workflows/wf2/signals/review");
   });
 
+  it("focus by click syncs the roving index — Tab returns to the last-used row", () => {
+    render(<ApprovalsInbox workflows={items} />);
+    // A mouse click focuses the row WITHOUT j/k: the roving tabIndex must
+    // follow, or the next Tab leaves the list at row 0, not wf3.
+    fireEvent.focus(row("wf3"));
+    // Mutant this kills: the onFocus sync on the row deleted — wf3 keeps
+    // tabIndex -1 and wf1 keeps the single tab stop.
+    expect(row("wf3")).toHaveAttribute("tabindex", "0");
+    expect(row("wf1")).toHaveAttribute("tabindex", "-1");
+  });
+
   it("key-repeat and modifier combos never act", async () => {
     const fn = stubFetch(() => ok202());
     render(<ApprovalsInbox workflows={items} />);
@@ -633,8 +644,10 @@ describe("keyboard path (roving tabIndex, one index space)", () => {
     row("wf1").focus();
     fireEvent.keyDown(row("wf1"), { key: "Enter" });
     expect(screen.getByRole("dialog", { name: /preview item/i })).toHaveAttribute("open");
-    // The preview dialog is open: j must not move (the rows are inert
-    // background) — asserted via no focus change and no fetch.
+    // The preview dialog is open: the rows are inert background — j must
+    // not move focus and a must not send.
+    fireEvent.keyDown(row("wf1"), { key: "j" });
+    expect(document.activeElement).toBe(row("wf1"));
     fireEvent.keyDown(row("wf1"), { key: "a" });
     expect(fn).not.toHaveBeenCalled();
     fireEvent.keyDown(screen.getByRole("dialog", { name: /preview item/i }), { key: "Escape" });

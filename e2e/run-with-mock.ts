@@ -525,6 +525,16 @@ const workflows: MockWorkflow[] = [
   },
   {
     ...workflowDetail,
+    // Dedicated to the keyboard e2e (the second pending row once the two
+    // mouse tests above have decided Resistance Band Set and Yoga Mat):
+    // the mock keeps decisions across a worker, and every OTHER pending
+    // fixture is depended on by a later test in this file.
+    id: "wf_product_publish_massage",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b45",
+    product_title: "Massage Gun",
+  },
+  {
+    ...workflowDetail,
     id: "wf_product_publish_kettlebell",
     product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b43",
     product_title: "Kettlebell",
