@@ -598,8 +598,13 @@ describe("keyboard path (roving tabIndex, one index space)", () => {
     fireEvent.keyDown(row("wf1"), { key: "a", metaKey: true });
     fireEvent.keyDown(row("wf1"), { key: "a", altKey: true });
     await waitFor(() => expect(fn).not.toHaveBeenCalled());
-    // A HELD key: the first keydown acts, the repeats must not — a
-    // held-key mutant (e.repeat guard deleted) fires on every repeat.
+    // A HELD key: the first keydown acts, the repeats must not. This is
+    // defense in DEPTH over three layers (documented survivor pattern):
+    // the e.repeat guard (event layer), the synchronous statuses mirror
+    // (send's own refusal), and reviewableIds re-derived from state on
+    // the re-render between events. Deleting ANY ONE layer still sends
+    // exactly once (proven by mutation this round); the criterion is
+    // enforced by the trio.
     fireEvent.keyDown(row("wf1"), { key: "a", repeat: false });
     fireEvent.keyDown(row("wf1"), { key: "a", repeat: true });
     fireEvent.keyDown(row("wf1"), { key: "a", repeat: true });
