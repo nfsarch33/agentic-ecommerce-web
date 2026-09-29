@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInAs } from "./helpers/auth";
 
 // E2E for the v3.9.1 Existing #10 onboarding wizard. The mock backend
 // returned by run-with-mock.ts may not implement the onboarding
@@ -26,6 +27,9 @@ test("onboarding wizard renders the page shell", async ({ page }) => {
 });
 
 test("operator alert centre page renders the centre shell", async ({ page }) => {
+  // The page is behind requireServerSession("operator"): without a
+  // session it redirects to /login and the shell never renders.
+  await signInAs(page, "operator");
   await page.goto("/operator-alerts");
   await expect(page.getByRole("heading", { level: 1, name: /Operator alert centre/i })).toBeVisible();
   const candidates = [

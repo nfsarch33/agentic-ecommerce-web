@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./helpers/auth";
 
+const mockApiBaseUrl = `http://127.0.0.1:${process.env.E2E_MOCK_API_PORT ?? "18080"}`;
+
 test("vendor submits and admin approves a marketplace plugin submission", async ({ page }) => {
   await signInAs(page, "admin");
 
@@ -9,7 +11,7 @@ test("vendor submits and admin approves a marketplace plugin submission", async 
   // review surface and the BFF). The mock seeds an existing pending
   // submission so the queue is non-empty, but we POST one more to
   // exercise the create path end-to-end.
-  const createResponse = await page.request.post("http://127.0.0.1:18080/api/v1/marketplace/plugins/submit", {
+  const createResponse = await page.request.post(`${mockApiBaseUrl}/api/v1/marketplace/plugins/submit`, {
     headers: { "x-tenant-id": "tenant_default", "content-type": "application/json" },
     data: {
       submitter_email: "vendor-e2e@example.com",
@@ -46,7 +48,7 @@ test("vendor submits and admin approves a marketplace plugin submission", async 
 
 test("admin rejects a pending submission", async ({ page }) => {
   await signInAs(page, "admin");
-  const createResponse = await page.request.post("http://127.0.0.1:18080/api/v1/marketplace/plugins/submit", {
+  const createResponse = await page.request.post(`${mockApiBaseUrl}/api/v1/marketplace/plugins/submit`, {
     headers: { "x-tenant-id": "tenant_default", "content-type": "application/json" },
     data: {
       submitter_email: "spammer@example.com",

@@ -8,11 +8,15 @@ test("admin workflows page shows status groups and sends review signal", async (
   await page.goto("/admin/workflows");
 
   await expect(page.getByRole("heading", { name: "Workflow Status" })).toBeVisible();
-  await expect(page.getByRole("region", { name: /running workflows/i }).getByText("Resistance Band Set")).toBeVisible();
+  // Ankle Weights is this spec's dedicated fixture: Resistance Band Set
+  // (wf_product_publish_1) is decided by the admin-approvals spec, which
+  // runs first against the shared mock — asserting it here coupled the
+  // two specs on mutable state.
+  await expect(page.getByRole("region", { name: /running workflows/i }).getByText("Ankle Weights")).toBeVisible();
   await expect(page.getByText("WooCommerce publish failed")).toBeVisible();
 
-  await page.goto("/admin/workflows/wf_product_publish_1");
-  await expect(page.getByRole("heading", { name: /resistance band set workflow/i })).toBeVisible();
+  await page.goto("/admin/workflows/wf_product_publish_ankle");
+  await expect(page.getByRole("heading", { name: /ankle weights workflow/i })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Check compliance" })).toBeVisible();
   await expect(page.getByText("Waiting for operator approval.")).toBeVisible();
 
