@@ -526,13 +526,213 @@ describe("dialog semantics (native <dialog>)", () => {
     expect(document.activeElement).toBe(previewBtn);
   });
 
-  it("after a decision, focus moves to the next pending item's Approve", async () => {
+  it("after a decision, focus moves to the next pending ROW (roving index, one space)", async () => {
     render(<ApprovalsInbox workflows={items} />);
     await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
     await waitFor(() =>
       expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
     );
     // Mutant this kills: focusNextReviewable deleted from send().
-    expect(document.activeElement).toBe(screen.getByLabelText(/approve yoga mat/i));
+    expect(document.activeElement).toBe(screen.getByText("Yoga Mat").closest("li"));
+  });
+});
+
+describe("keyboard path (roving tabIndex, one index space)", () => {
+  function row(id: string): HTMLElement {
+    return document.querySelector(`li[data-row-id="${id}"]`) as HTMLElement;
+  }
+
+  it("exactly one row is tabbable and j/k move focus through it", async () => {
+    render(<ApprovalsInbox workflows={items} />);
+    const tabbables = document.querySelectorAll('li[data-row-id][tabindex="0"]');
+    expect(tabbables.length).toBe(1);
+    row("wf1").focus();
+    fireEvent.keyDown(row("wf1"), { key: "j" });
+    // Mutant this kills: the j case deleted (or focusRow not called) —
+    // activeElement stays on wf1's row.
+    expect(document.activeElement).toBe(row("wf2"));
+    fireEvent.keyDown(row("wf2"), { key: "k" });
+    expect(document.activeElement).toBe(row("wf1"));
+    // k at the top and j at the bottom clamp, never leave the list.
+    fireEvent.keyDown(row("wf1"), { key: "k" });
+    expect(document.activeElement).toBe(row("wf1"));
+  });
+
+  it("A approves the FOCUSED row — and still the right row after a prior decision", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    // Prior decision via the mouse on wf1.
+    await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+    );
+    // The roving index landed on wf2's row; A must act on wf2 — one
+    // index space means approving row 1 never shifted the rows.
+    expect(document.activeElement).toBe(row("wf2"));
+    fireEvent.keyDown(row("wf2"), { key: "a" });
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf2").textContent).toBe("Approved"),
+    );
+    // Mutant this kills: the keyboard approve reading the wrong index
+    // space (e.g. always row 0) — wf3 would have been approved.
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn.mock.calls[1]?.[0]).toBe("/api/admin/workflows/wf2/signals/review");
+  });
+
+  it("focus by click syncs the roving index — Tab returns to the last-used row", () => {
+    render(<ApprovalsInbox workflows={items} />);
+    // A mouse click focuses the row WITHOUT j/k: the roving tabIndex must
+    // follow, or the next Tab leaves the list at row 0, not wf3.
+    fireEvent.focus(row("wf3"));
+    // Mutant this kills: the onFocus sync on the row deleted — wf3 keeps
+    // tabIndex -1 and wf1 keeps the single tab stop.
+    expect(row("wf3")).toHaveAttribute("tabindex", "0");
+    expect(row("wf1")).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("key-repeat and modifier combos never act", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    row("wf1").focus();
+    fireEvent.keyDown(row("wf1"), { key: "a", ctrlKey: true });
+    fireEvent.keyDown(row("wf1"), { key: "a", metaKey: true });
+    fireEvent.keyDown(row("wf1"), { key: "a", altKey: true });
+    await waitFor(() => expect(fn).not.toHaveBeenCalled());
+    // A HELD key: the first keydown acts, the repeats must not. This is
+    // defense in DEPTH over three layers (documented survivor pattern):
+    // the e.repeat guard (event layer), the synchronous statuses mirror
+    // (send's own refusal), and reviewableIds re-derived from state on
+    // the re-render between events. Deleting ANY ONE layer still sends
+    // exactly once (proven by mutation this round); the criterion is
+    // enforced by the trio.
+    fireEvent.keyDown(row("wf1"), { key: "a", repeat: false });
+    fireEvent.keyDown(row("wf1"), { key: "a", repeat: true });
+    fireEvent.keyDown(row("wf1"), { key: "a", repeat: true });
+    await waitFor(() => expect(fn).toHaveBeenCalledTimes(1));
+    expect(fn.mock.calls[0]?.[0]).toBe("/api/admin/workflows/wf1/signals/review");
+    // The approve succeeded: focus advanced to the next reviewable row.
+    expect(document.activeElement).toBe(row("wf2"));
+  });
+
+  it("keys from a focused BUTTON inside the row never act", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    const previewBtn = screen.getByLabelText(/preview resistance band set/i);
+    previewBtn.focus();
+    fireEvent.keyDown(previewBtn, { key: "a", bubbles: true });
+    // Mutant this kills: the e.target !== e.currentTarget guard deleted
+    // — the bubbled keydown approves from the button.
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("Space selects the focused row and Shift+A opens the batch confirm", async () => {
+    render(<ApprovalsInbox workflows={items} />);
+    row("wf1").focus();
+    fireEvent.keyDown(row("wf1"), { key: " " });
+    expect(screen.getByLabelText(/select resistance band set/i)).toBeChecked();
+    fireEvent.keyDown(row("wf1"), { key: "A", shiftKey: true });
+    // Mutant this kills: the Space dispatch or the Shift+A branch
+    // deleted.
+    expect(screen.getByRole("dialog", { name: /confirm batch approve/i })).toHaveAttribute("open");
+  });
+
+  it("R opens the reject dialog for the focused row; Enter opens its preview", async () => {
+    render(<ApprovalsInbox workflows={items} />);
+    row("wf2").focus();
+    fireEvent.keyDown(row("wf2"), { key: "r" });
+    expect(screen.getByRole("dialog", { name: /reject with reason/i })).toHaveAttribute("open");
+    // Mutant this kills: R (or Enter) wired to the wrong row's dialog.
+    fireEvent.keyDown(screen.getByRole("dialog", { name: /reject with reason/i }), { key: "Escape" });
+    fireEvent.keyDown(row("wf2"), { key: "Enter" });
+    expect(screen.getByRole("dialog", { name: /preview item/i })).toHaveAttribute("open");
+    expect(screen.getByRole("dialog", { name: /preview item/i }).textContent).toContain("wf2");
+  });
+
+  it("no shortcuts while a dialog is open", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    row("wf1").focus();
+    fireEvent.keyDown(row("wf1"), { key: "Enter" });
+    expect(screen.getByRole("dialog", { name: /preview item/i })).toHaveAttribute("open");
+    // The preview dialog is open: the rows are inert background — j must
+    // not move focus and a must not send.
+    fireEvent.keyDown(row("wf1"), { key: "j" });
+    expect(document.activeElement).toBe(row("wf1"));
+    fireEvent.keyDown(row("wf1"), { key: "a" });
+    expect(fn).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByRole("dialog", { name: /preview item/i }), { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("heading", { name: /preview/i })).toBeNull(),
+    );
+  });
+
+  it("Space on a focused checkbox toggles ONLY that checkbox (the row handler must not double-toggle)", async () => {
+    render(<ApprovalsInbox workflows={items} />);
+    const box = screen.getByLabelText(/select resistance band set/i);
+    box.focus();
+    // jsdom does not implement Space-activates-checkbox, so the test
+    // models what a browser does for the keystroke: the keydown bubbles
+    // (target=input, NOT the row — the row handler must decline it) and
+    // the native activation toggles the input once. Mutant this kills:
+    // the e.target !== e.currentTarget guard deleted — the row's Space
+    // branch dispatches its own select and untoggles the input.
+    fireEvent.keyDown(box, { key: " ", bubbles: true });
+    fireEvent.click(box);
+    expect(box).toBeChecked();
+    expect(screen.getByLabelText(/select yoga mat/i)).not.toBeChecked();
+  });
+
+  it("Enter on a focused Approve button never opens the preview (button keys are the button's, not the row's)", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    const approveBtn = screen.getByLabelText(/approve resistance band set/i);
+    approveBtn.focus();
+    fireEvent.keyDown(approveBtn, { key: "Enter", bubbles: true });
+    // Mutant this kills: the e.target !== e.currentTarget guard deleted —
+    // the row's Enter branch opens the PREVIEW dialog instead of letting
+    // the button be a button.
+    expect(screen.queryByRole("dialog", { name: /preview item/i })).toBeNull();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("the list declares its shortcuts (aria-keyshortcuts)", () => {
+    render(<ApprovalsInbox workflows={items} />);
+    // Acceptance criterion: the shortcut surface is discoverable by
+    // assistive tech. Mutant this kills: the attribute deleted.
+    expect(
+      screen.getByRole("list", { name: undefined }) ||
+        document.querySelector("ul[aria-keyshortcuts]"),
+    ).toBeTruthy();
+    expect(document.querySelector("ul[aria-keyshortcuts]")).toHaveAttribute(
+      "aria-keyshortcuts",
+      "j k Enter a r Space Shift+A",
+    );
+  });
+
+  it("clamps the roving index when the workflows prop shrinks", () => {
+    const { rerender } = render(<ApprovalsInbox workflows={items} />);
+    fireEvent.focus(row("wf3"));
+    expect(row("wf3")).toHaveAttribute("tabindex", "0");
+    // A refetch drops wf3: focusIndex 2 is now out of range — the LAST
+    // row must hold the single tab stop or Tab leaves the list.
+    // Mutant this kills: the Math.min clamp deleted — no row is tabbable.
+    rerender(<ApprovalsInbox workflows={items.slice(0, 2)} />);
+    expect(row("wf2")).toHaveAttribute("tabindex", "0");
+    expect(row("wf1")).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("actions refuse decided rows (A and R do nothing on approved)", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    await userEvent.click(screen.getByLabelText(/approve resistance band set/i));
+    await waitFor(() =>
+      expect(screen.getByTestId("item-status-wf1").textContent).toBe("Approved"),
+    );
+    fireEvent.keyDown(row("wf1"), { key: "a" });
+    fireEvent.keyDown(row("wf1"), { key: "r" });
+    // Mutant this kills: the reviewable check deleted in the switch —
+    // a second POST or a dialog for the decided row appears.
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("heading", { name: /reject — a reason is required/i })).toBeNull();
   });
 });
