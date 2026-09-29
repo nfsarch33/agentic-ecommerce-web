@@ -31,7 +31,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV PORT=3000
 
-RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -s /usr/sbin/nologin nextjs
+# The bundled npm carries its own vulnerable transitive tree (pacote,
+# sigstore, ip-address, brace-expansion; trivy HIGH x7) and the server
+# never invokes npm at runtime — remove the whole bundle instead of
+# ignoring the findings.
+RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -s /usr/sbin/nologin nextjs     && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
