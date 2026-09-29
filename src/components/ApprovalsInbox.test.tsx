@@ -594,14 +594,19 @@ describe("keyboard path (roving tabIndex, one index space)", () => {
     const fn = stubFetch(() => ok202());
     render(<ApprovalsInbox workflows={items} />);
     row("wf1").focus();
-    fireEvent.keyDown(row("wf1"), { key: "a", repeat: true });
     fireEvent.keyDown(row("wf1"), { key: "a", ctrlKey: true });
     fireEvent.keyDown(row("wf1"), { key: "a", metaKey: true });
     fireEvent.keyDown(row("wf1"), { key: "a", altKey: true });
     await waitFor(() => expect(fn).not.toHaveBeenCalled());
-    // Mutant this kills: the e.repeat or modifier guards deleted — one
-    // of the four keydowns sends.
-    expect(document.activeElement).toBe(row("wf1"));
+    // A HELD key: the first keydown acts, the repeats must not — a
+    // held-key mutant (e.repeat guard deleted) fires on every repeat.
+    fireEvent.keyDown(row("wf1"), { key: "a", repeat: false });
+    fireEvent.keyDown(row("wf1"), { key: "a", repeat: true });
+    fireEvent.keyDown(row("wf1"), { key: "a", repeat: true });
+    await waitFor(() => expect(fn).toHaveBeenCalledTimes(1));
+    expect(fn.mock.calls[0]?.[0]).toBe("/api/admin/workflows/wf1/signals/review");
+    // The approve succeeded: focus advanced to the next reviewable row.
+    expect(document.activeElement).toBe(row("wf2"));
   });
 
   it("keys from a focused BUTTON inside the row never act", async () => {
@@ -654,6 +659,61 @@ describe("keyboard path (roving tabIndex, one index space)", () => {
     await waitFor(() =>
       expect(screen.queryByRole("heading", { name: /preview/i })).toBeNull(),
     );
+  });
+
+  it("Space on a focused checkbox toggles ONLY that checkbox (the row handler must not double-toggle)", async () => {
+    render(<ApprovalsInbox workflows={items} />);
+    const box = screen.getByLabelText(/select resistance band set/i);
+    box.focus();
+    // jsdom does not implement Space-activates-checkbox, so the test
+    // models what a browser does for the keystroke: the keydown bubbles
+    // (target=input, NOT the row — the row handler must decline it) and
+    // the native activation toggles the input once. Mutant this kills:
+    // the e.target !== e.currentTarget guard deleted — the row's Space
+    // branch dispatches its own select and untoggles the input.
+    fireEvent.keyDown(box, { key: " ", bubbles: true });
+    fireEvent.click(box);
+    expect(box).toBeChecked();
+    expect(screen.getByLabelText(/select yoga mat/i)).not.toBeChecked();
+  });
+
+  it("Enter on a focused Approve button never opens the preview (button keys are the button's, not the row's)", async () => {
+    const fn = stubFetch(() => ok202());
+    render(<ApprovalsInbox workflows={items} />);
+    const approveBtn = screen.getByLabelText(/approve resistance band set/i);
+    approveBtn.focus();
+    fireEvent.keyDown(approveBtn, { key: "Enter", bubbles: true });
+    // Mutant this kills: the e.target !== e.currentTarget guard deleted —
+    // the row's Enter branch opens the PREVIEW dialog instead of letting
+    // the button be a button.
+    expect(screen.queryByRole("dialog", { name: /preview item/i })).toBeNull();
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("the list declares its shortcuts (aria-keyshortcuts)", () => {
+    render(<ApprovalsInbox workflows={items} />);
+    // Acceptance criterion: the shortcut surface is discoverable by
+    // assistive tech. Mutant this kills: the attribute deleted.
+    expect(
+      screen.getByRole("list", { name: undefined }) ||
+        document.querySelector("ul[aria-keyshortcuts]"),
+    ).toBeTruthy();
+    expect(document.querySelector("ul[aria-keyshortcuts]")).toHaveAttribute(
+      "aria-keyshortcuts",
+      "j k Enter a r Space Shift+A",
+    );
+  });
+
+  it("clamps the roving index when the workflows prop shrinks", () => {
+    const { rerender } = render(<ApprovalsInbox workflows={items} />);
+    fireEvent.focus(row("wf3"));
+    expect(row("wf3")).toHaveAttribute("tabindex", "0");
+    // A refetch drops wf3: focusIndex 2 is now out of range — the LAST
+    // row must hold the single tab stop or Tab leaves the list.
+    // Mutant this kills: the Math.min clamp deleted — no row is tabbable.
+    rerender(<ApprovalsInbox workflows={items.slice(0, 2)} />);
+    expect(row("wf2")).toHaveAttribute("tabindex", "0");
+    expect(row("wf1")).toHaveAttribute("tabindex", "-1");
   });
 
   it("actions refuse decided rows (A and R do nothing on approved)", async () => {

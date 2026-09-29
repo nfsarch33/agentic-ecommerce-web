@@ -551,6 +551,15 @@ const workflows: MockWorkflow[] = [
   },
   {
     ...workflowDetail,
+    // Dedicated to the keyboard-only REJECT e2e (the last pending row
+    // after every other test consumed its fixtures): reached by Tab
+    // then j, never by mouse.
+    id: "wf_product_publish_wobble",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b47",
+    product_title: "Wobble Board",
+  },
+  {
+    ...workflowDetail,
     id: "wf_product_publish_completed",
     status: "completed",
     current_activity: "Published to WooCommerce",

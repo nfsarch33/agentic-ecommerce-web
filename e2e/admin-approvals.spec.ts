@@ -145,6 +145,52 @@ for (const width of WIDTHS) {
   });
 }
 
+test("keyboard-only reject: Tab into the list, j, r, type, submit — exactly that row reads Rejected", async ({ page }) => {
+  await page.goto("/admin/approvals");
+  // Keyboard-ONLY reach: Tab until a list row holds focus — no mouse,
+  // no click. The last pending rows here are the width fixture and the
+  // dedicated Wobble Board; j moves focus from row 0 to row 1.
+  const rows = page.locator("li[data-row-id]");
+  const targetId = await rows.nth(1).getAttribute("data-row-id");
+  expect(targetId, "a second pending row must exist").toBeTruthy();
+  const rowsBefore = await rows.evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const before = await pendingCount(page);
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press("Tab");
+    const onRow = await page.evaluate(
+      () => document.activeElement?.matches("li[data-row-id]") ?? false,
+    );
+    if (onRow) break;
+  }
+  await page.keyboard.press("j");
+  const focusedId = await page.evaluate(() => document.activeElement?.getAttribute("data-row-id"));
+  expect(focusedId).toBe(targetId);
+  await page.keyboard.press("r");
+  const dialog = page.getByRole("dialog", { name: /reject with reason/i });
+  // The reason textarea takes focus when the dialog opens: type and
+  // submit without touching the mouse.
+  await expect(dialog).toBeVisible();
+  await page.keyboard.type("wrong size chart");
+  // Enter inside a textarea is a newline, not submit: Tab reaches the
+  // dialog's reject button, Enter activates it — still keyboard-only.
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  const rejectedRow = page.locator(`li[data-row-id="${targetId}"]`);
+  await expect(rejectedRow.getByTestId(/item-status-/)).toHaveText(/Rejected/);
+  await expect(rejectedRow).toContainText("wrong size chart");
+  // Exactly one row changed, and it is the rejected one.
+  const rowsAfter = await rows.evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const changed = rowsAfter
+    .map((after, i) => ({ i, after, before: rowsBefore[i] }))
+    .filter((r) => r.before !== r.after);
+  expect(changed.length, JSON.stringify(changed)).toBe(1);
+  await expect(page.getByTestId("pending-count")).toHaveText(`${before - 1} pending`);
+});
+
 test("axe: 0 serious violations at 1280 (fail-closed)", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/admin/approvals");

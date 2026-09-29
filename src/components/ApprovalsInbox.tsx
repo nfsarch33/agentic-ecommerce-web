@@ -527,7 +527,10 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
           {reviewableIds.length} pending
         </span>
       </div>
-      <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "0.5rem", minWidth: 0 }}>
+      <ul
+        style={{ listStyle: "none", padding: 0, display: "grid", gap: "0.5rem", minWidth: 0 }}
+        aria-keyshortcuts="j k Enter a r Space Shift+A"
+      >
         {workflows.map((wf, i) => {
           const item: ItemState = state.items[wf.id] ?? { status: "pending" };
           const reviewable =
@@ -539,7 +542,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
               data-status={item.status}
               data-row-id={wf.id}
               aria-label={`Approval item ${wf.productTitle ?? wf.productId}`}
-              tabIndex={i === focusIndex ? 0 : -1}
+              tabIndex={i === Math.min(focusIndex, workflows.length - 1) ? 0 : -1}
               ref={(el) => {
                 rowRefs.current[i] = el;
               }}
