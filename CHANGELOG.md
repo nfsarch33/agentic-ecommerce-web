@@ -2,6 +2,8 @@
 
 All notable changes to the Agentic Ecommerce web frontend are documented here.
 
+Fixed: main-branch CI gates restored — the PR change-scope classifier now runs hosted e2e, Docker and Trivy on pull requests (a depth-1 three-dot diff had classified every PR metadata-only since May, hiding regressions on main); the nightly-red accumulated spec/contract drifts were fixed alongside (sync mock fields, workflows fixture, alerts sign-in, port derivation).
+
 ## [Unreleased]
 
 ### Release Follow-Through
