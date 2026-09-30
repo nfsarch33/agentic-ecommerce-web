@@ -32,6 +32,21 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
             metadata_only=true
+            # Two-dot diff: the checkout and the fetch above are both
+            # depth=1, so the three-dot form cannot find a merge base and
+            # died with "no merge base" — the read loop then saw NO files,
+            # every PR was classified metadata-only, and hosted e2e/Docker/
+            # Trivy silently stopped running on PRs (main pushes were the
+            # only lane left, and they were red). Two-dot diffs the two
+            # tips directly, which is exactly the PR's changes here.
+            changed=$(git diff --name-only "origin/${{ github.base_ref }}..HEAD" || true)
+            # Fail OPEN: an empty diff means the classifier is broken (a
+            # real PR always changes something) — run the gates, never
+            # skip them on a diff we could not compute.
+            if [ -z "$changed" ]; then
+              echo "::warning::change-scope diff came back empty; running all gates"
+              metadata_only=false
+            fi
             while IFS= read -r changed_file; do
               case "$changed_file" in
                 .github/workflows/ci.yml|CHANGELOG.md|README.md|docs/release-checklist.md|package.json)
@@ -40,7 +55,7 @@ jobs:
                   metadata_only=false
                   ;;
               esac
-            done < <(git diff --name-only "origin/${{ github.base_ref }}...HEAD")
+            done <<< "$changed"
           fi
           echo "metadata_only=$metadata_only" >> "$GITHUB_OUTPUT"
 

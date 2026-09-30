@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { signInAs } from "./helpers/auth";
 
+const mockApiBaseUrl = `http://127.0.0.1:${process.env.E2E_MOCK_API_PORT ?? "18080"}`;
+
 test.describe("v2.3.0 digital goods flow", () => {
   test("admin lists digital products and issues a licence", async ({ page }) => {
     await signInAs(page, "operator");
@@ -12,7 +14,7 @@ test.describe("v2.3.0 digital goods flow", () => {
 
     // Issue a licence via the API (admin button is a follow-up; the
     // /licenses page renders the result).
-    const create = await page.request.post("http://127.0.0.1:18080/api/v1/licenses", {
+    const create = await page.request.post(`${mockApiBaseUrl}/api/v1/licenses`, {
       headers: { "x-tenant-id": "tenant_default", "content-type": "application/json" },
       data: { product_id: "prod_pdf_001", customer_id: "cust_e2e_1", source: "purchase" },
     });
@@ -34,7 +36,7 @@ test.describe("v2.3.0 digital goods flow", () => {
     await signInAs(page, "operator");
 
     // Seed an active licence for the signed-in customer.
-    const seed = await page.request.post("http://127.0.0.1:18080/api/v1/licenses", {
+    const seed = await page.request.post(`${mockApiBaseUrl}/api/v1/licenses`, {
       headers: { "x-tenant-id": "tenant_default", "content-type": "application/json" },
       data: {
         product_id: "prod_pdf_001",

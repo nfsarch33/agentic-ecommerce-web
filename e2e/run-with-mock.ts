@@ -551,9 +551,20 @@ const workflows: MockWorkflow[] = [
   },
   {
     ...workflowDetail,
-    // Dedicated to the keyboard-only REJECT e2e (the last pending row
-    // after every other test consumed its fixtures): reached by Tab
-    // then j, never by mouse.
+    // Dedicated to the keyboard-only REJECT e2e: at its point in the
+    // file the pending rows are [WrapProof, Ankle, Wobble], Tab lands on
+    // WrapProof and j takes the SECOND row — this one. Reached without a
+    // mouse anywhere.
+    id: "wf_product_publish_ankle",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b46",
+    product_title: "Ankle Weights",
+  },
+  {
+    ...workflowDetail,
+    // Dedicated to the admin-workflows spec (runs after admin-approvals
+    // alphabetically): by then Ankle is rejected and this is the last
+    // reviewable row nothing else consumes — the workflows page's
+    // running fixture and detail-page target.
     id: "wf_product_publish_wobble",
     product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b47",
     product_title: "Wobble Board",
@@ -1680,6 +1691,13 @@ async function handleSyncRequest(req: Request, url: URL): Promise<Response | nul
         created_at: "2026-05-07T00:05:00Z",
       },
       updated_at: "2026-05-07T00:06:00Z",
+      // Required by the generated SyncStatus contract (schema.d.ts): the
+      // app parser throws SyncApiError without these three — the sync
+      // dashboard spec went red when the app shipped the fields because
+      // no PR ran hosted e2e to catch it (the ci.yml classifier bug).
+      dlq_depth: 0,
+      marketplace_replay: { state: "idle", updated_at: "2026-05-07T00:06:00Z" },
+      marketplace_reconciliation: { total_local: 24, total_remote: 24, mismatch_count: 0 },
     });
   }
   if (url.pathname === "/api/v1/sync/conflicts" && req.method === "GET") {
