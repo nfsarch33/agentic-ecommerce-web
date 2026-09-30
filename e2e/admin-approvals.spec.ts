@@ -59,11 +59,58 @@ test("reject requires a reason and records it", async ({ page }) => {
   await expect(page.getByTestId("pending-count")).toHaveText(`${before - 1} pending`);
 });
 
+test("keyboard: j moves focus and A approves the focused row (exactly one row changes)", async ({ page }) => {
+  await page.goto("/admin/approvals");
+  // State-relative AND deterministic (the mock keeps decisions across
+  // tests in a worker): snapshot every row's status, read the SECOND
+  // row's id from the DOM, j must focus exactly it and a approve exactly
+  // it. The second pending row is the dedicated Massage Gun fixture, so
+  // no later test loses a row it depends on.
+  const rows = page.locator("li[data-row-id]");
+  const rowsBefore = await rows.evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const targetId = await rows.nth(1).getAttribute("data-row-id");
+  expect(targetId, "a second row must exist to move to").toBeTruthy();
+  const before = await pendingCount(page);
+  await rows.nth(0).click();
+  await page.keyboard.press("j");
+  const focusedId = await page.evaluate(() => document.activeElement?.getAttribute("data-row-id"));
+  expect(focusedId).toBe(targetId);
+  await page.keyboard.press("a");
+  const focusedRow = page.locator(`li[data-row-id="${focusedId}"]`);
+  await expect(focusedRow.getByTestId(/item-status-/)).toHaveText("Approved");
+  const rowsAfter = await rows.evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const changed = rowsAfter
+    .map((after, i) => ({ i, after, before: rowsBefore[i] }))
+    .filter((r) => r.before !== r.after);
+  // Mutant this kills: the keyboard approve reading the wrong index
+  // space — a second row would have changed too.
+  expect(changed.length, JSON.stringify(changed)).toBe(1);
+  await expect(page.getByTestId("pending-count")).toHaveText(`${before - 1} pending`);
+});
+
 test("batch approve confirms count with the cost summary, then approves exactly the selection", async ({ page }) => {
   await page.goto("/admin/approvals");
+  // State-relative (the mock keeps decisions across tests in a worker):
+  // take the FIRST TWO currently selectable rows from the DOM instead of
+  // hard-coded names — the last pending row (the 64-char width fixture)
+  // stays untouched for the width tests below.
+  const checkboxes = page.getByRole("checkbox", { name: /^select /i });
+  const available = await checkboxes.count();
+  expect(available, "two spare pending rows must remain for this test").toBeGreaterThanOrEqual(2);
+  const picks: { id: string; label: string }[] = [];
+  for (const n of [0, 1]) {
+    const box = checkboxes.nth(n);
+    picks.push({
+      label: (await box.getAttribute("aria-label")) ?? "",
+      id: (await box.evaluate((el) => el.closest("li")?.getAttribute("data-row-id"))) ?? "",
+    });
+    await box.check();
+  }
   const before = await pendingCount(page);
-  await page.getByLabel(/select foam roller/i).check();
-  await page.getByLabel(/select kettlebell/i).check();
   await page.getByRole("button", { name: /approve 2 selected/i }).click();
   const dialog = page.getByRole("dialog", { name: /confirm batch approve/i });
   await expect(dialog).toContainText(/you are approving 2 items/i);
@@ -74,12 +121,13 @@ test("batch approve confirms count with the cost summary, then approves exactly 
   await expect(page.getByTestId("pending-count")).toHaveText(
     `${Math.max(before - 2, 0)} pending`,
   );
-  await expect(
-    page.locator("li", { hasText: "Foam Roller" }).first().getByTestId(/item-status-/),
-  ).toHaveText("Approved");
-  await expect(
-    page.locator("li", { hasText: "Kettlebell" }).first().getByTestId(/item-status-/),
-  ).toHaveText("Approved");
+  for (const pick of picks) {
+    // Mutant this kills: the batch approving something other than the
+    // checked selection — a picked row would not read Approved.
+    await expect(
+      page.locator(`li[data-row-id="${pick.id}"]`).getByTestId(/item-status-/),
+    ).toHaveText("Approved");
+  }
 });
 
 for (const width of WIDTHS) {
@@ -96,6 +144,52 @@ for (const width of WIDTHS) {
     expect(overflowed, `horizontal scroll at ${width}`).toBe(false);
   });
 }
+
+test("keyboard-only reject: Tab into the list, j, r, type, submit — exactly that row reads Rejected", async ({ page }) => {
+  await page.goto("/admin/approvals");
+  // Keyboard-ONLY reach: Tab until a list row holds focus — no mouse,
+  // no click. The last pending rows here are the width fixture and the
+  // dedicated Wobble Board; j moves focus from row 0 to row 1.
+  const rows = page.locator("li[data-row-id]");
+  const targetId = await rows.nth(1).getAttribute("data-row-id");
+  expect(targetId, "a second pending row must exist").toBeTruthy();
+  const rowsBefore = await rows.evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const before = await pendingCount(page);
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press("Tab");
+    const onRow = await page.evaluate(
+      () => document.activeElement?.matches("li[data-row-id]") ?? false,
+    );
+    if (onRow) break;
+  }
+  await page.keyboard.press("j");
+  const focusedId = await page.evaluate(() => document.activeElement?.getAttribute("data-row-id"));
+  expect(focusedId).toBe(targetId);
+  await page.keyboard.press("r");
+  const dialog = page.getByRole("dialog", { name: /reject with reason/i });
+  // The reason textarea takes focus when the dialog opens: type and
+  // submit without touching the mouse.
+  await expect(dialog).toBeVisible();
+  await page.keyboard.type("wrong size chart");
+  // Enter inside a textarea is a newline, not submit: Tab reaches the
+  // dialog's reject button, Enter activates it — still keyboard-only.
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+  const rejectedRow = page.locator(`li[data-row-id="${targetId}"]`);
+  await expect(rejectedRow.getByTestId(/item-status-/)).toHaveText(/Rejected/);
+  await expect(rejectedRow).toContainText("wrong size chart");
+  // Exactly one row changed, and it is the rejected one.
+  const rowsAfter = await rows.evaluateAll((els) =>
+    els.map((el) => el.querySelector("[data-testid^='item-status-']")?.textContent ?? "pending"),
+  );
+  const changed = rowsAfter
+    .map((after, i) => ({ i, after, before: rowsBefore[i] }))
+    .filter((r) => r.before !== r.after);
+  expect(changed.length, JSON.stringify(changed)).toBe(1);
+  await expect(page.getByTestId("pending-count")).toHaveText(`${before - 1} pending`);
+});
 
 test("axe: 0 serious violations at 1280 (fail-closed)", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });

@@ -525,6 +525,16 @@ const workflows: MockWorkflow[] = [
   },
   {
     ...workflowDetail,
+    // Dedicated to the keyboard e2e (the second pending row once the two
+    // mouse tests above have decided Resistance Band Set and Yoga Mat):
+    // the mock keeps decisions across a worker, and every OTHER pending
+    // fixture is depended on by a later test in this file.
+    id: "wf_product_publish_massage",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b45",
+    product_title: "Massage Gun",
+  },
+  {
+    ...workflowDetail,
     id: "wf_product_publish_kettlebell",
     product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b43",
     product_title: "Kettlebell",
@@ -541,14 +551,23 @@ const workflows: MockWorkflow[] = [
   },
   {
     ...workflowDetail,
-    // Dedicated to the admin-workflows spec: the base wf_product_publish_1
-    // (Resistance Band Set) is decided by the admin-approvals spec, which
-    // runs first in the single shared mock, so the workflows page needs a
-    // running fixture nothing else consumes. Placed AFTER WrapProof so the
-    // approvals spec's first-two-checkboxes arithmetic is unchanged.
+    // Dedicated to the keyboard-only REJECT e2e: at its point in the
+    // file the pending rows are [WrapProof, Ankle, Wobble], Tab lands on
+    // WrapProof and j takes the SECOND row — this one. Reached without a
+    // mouse anywhere.
     id: "wf_product_publish_ankle",
     product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b46",
     product_title: "Ankle Weights",
+  },
+  {
+    ...workflowDetail,
+    // Dedicated to the admin-workflows spec (runs after admin-approvals
+    // alphabetically): by then Ankle is rejected and this is the last
+    // reviewable row nothing else consumes — the workflows page's
+    // running fixture and detail-page target.
+    id: "wf_product_publish_wobble",
+    product_id: "018f1c8e-3b58-7c0a-a3a1-1f2d8e0a2b47",
+    product_title: "Wobble Board",
   },
   {
     ...workflowDetail,
