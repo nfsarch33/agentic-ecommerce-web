@@ -199,16 +199,11 @@ function signalPath(id: string): string {
  * the decision again. An item that is no longer waiting_review is never
  * approvable.
  */
-function useProductLabel(products?: ApprovalProducts) {
-  return useCallback(
-    (wf: WorkflowSummary) =>
-      wf.productTitle ?? products?.[wf.productId]?.title ?? wf.productId,
-    [products],
-  );
-}
-
 export function ApprovalsInbox({ workflows, products }: ApprovalsInboxProps) {
-  const productLabel = useProductLabel(products);
+  // Joined title first (the summary API carries no product_title), then
+  // the API's own field, then the raw id — a plain derivation, no hook.
+  const productLabel = (wf: WorkflowSummary) =>
+    wf.productTitle ?? products?.[wf.productId]?.title ?? wf.productId;
   const [state, dispatch] = useReducer(reducer, {
     items: Object.fromEntries(workflows.map((wf) => [wf.id, { status: "pending" as const }])),
     selected: {},
@@ -667,7 +662,13 @@ export function ApprovalsInbox({ workflows, products }: ApprovalsInboxProps) {
                   <dt>Workflow</dt><dd>{wf.id}</dd>
                   <dt>Type</dt><dd>{wf.type}</dd>
                   <dt>Product</dt><dd>{productLabel(wf)}{products?.[wf.productId]?.sku ? ` (${products[wf.productId]?.sku})` : ""}</dd>
-                  <dt>Draft</dt><dd>{products?.[wf.productId]?.description ?? "\u2014 no draft text on the product record \u2014"}</dd>
+                  <dt>Current description</dt>
+                  <dd data-testid={`current-description-${wf.id}`}>
+                    {products?.[wf.productId]?.description ?? "\u2014 no description on the product record \u2014"}
+                    <span style={{ display: "block", color: TOKENS.textMuted }}>
+                      the store record as it is now \u2014 the workflow overwrites it only after approval; the draft text itself appears here once the workflow API exposes it
+                    </span>
+                  </dd>
                   <dt>Status</dt><dd>{workflowStatusLabel(wf.status)}</dd>
                   <dt>Current activity</dt><dd>{wf.currentActivity ?? "—"}</dd>
                   <dt>Started</dt><dd>{wf.startedAt}</dd>

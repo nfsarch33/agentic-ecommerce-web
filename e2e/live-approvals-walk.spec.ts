@@ -46,8 +46,11 @@ test("lists the waiting drafts with product + draft and approves one end to end"
   expect(rowId).toBeTruthy();
   const productLabel = (await first.locator("[data-testid^='title-']").textContent()) ?? "";
   await first.getByRole("button", { name: new RegExp(`Preview ${productLabel}`, "i") }).click();
-  const draft = page.getByText(/draft/i).locator("..");
-  await expect(draft).toBeVisible();
+  // The preview pins the relabel: the store's CURRENT description, not
+  // a "draft" — the workflow overwrites it only after approval.
+  const current = page.getByTestId(`current-description-${rowId}`);
+  await expect(current).toBeVisible();
+  await expect(current).toContainText(/only after approval/);
   await page.getByRole("button", { name: /close preview/i }).click();
 
   await first.getByRole("button", { name: new RegExp(`Approve ${productLabel}`, "i") }).click();
