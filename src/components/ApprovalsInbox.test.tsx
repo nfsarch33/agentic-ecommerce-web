@@ -759,7 +759,7 @@ describe("ApprovalsInbox product join", () => {
     cleanup();
   });
 
-  it("the preview drawer shows the draft description from the join", async () => {
+  it("the preview drawer shows the store's CURRENT description, labelled as such", async () => {
     stubFetch(() => ok202());
     render(
       <ApprovalsInbox
@@ -768,9 +768,14 @@ describe("ApprovalsInbox product join", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /Preview Walnut Serving Board/i }));
-    // Mutant this kills: the Draft row dropped — the approver decides
-    // without ever seeing the text they are approving.
-    expect(screen.getByText(/Walnut serving board, forty centimetres/i)).toBeInTheDocument();
+    // Round-1 review: the store record is the CURRENT text — the
+    // workflow overwrites it only after approval — so the row must NOT
+    // be labelled "Draft". Mutant this kills: the mislabel back — the
+    // approver thinks they are reading the text being approved.
+    expect(screen.getByText("Current description")).toBeInTheDocument();
+    expect(screen.queryByText(/^Draft$/)).toBeNull();
+    expect(screen.getByTestId("current-description-wfC").textContent).toContain("Walnut serving board, forty centimetres");
+    expect(screen.getByTestId("current-description-wfC").textContent).toContain("only after approval");
     expect(screen.getByText(/ENR-P-006/)).toBeInTheDocument();
     cleanup();
   });
