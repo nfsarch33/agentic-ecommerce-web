@@ -84,7 +84,13 @@ jobs:
           fi
 
       - name: Run dependency audit
-        run: bun audit --audit-level=high
+        # GHSA-vfj7-8cjw-p6xm (braces, stack-exhaustion DoS) has NO patched
+        # release — 3.0.3 is latest and the advisory lists "patched: none" —
+        # and it is reachable only through the dev toolchain
+        # (eslint-config-next -> fast-glob -> micromatch -> braces), never
+        # the shipped bundle. Ignore this one advisory until upstream ships
+        # a fix, then delete the flag.
+        run: bun audit --audit-level=high --ignore=GHSA-vfj7-8cjw-p6xm
 
       - name: Run unit tests
         run: bun run test
