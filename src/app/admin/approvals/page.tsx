@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { requireServerSession } from "@/lib/server/auth-session";
 import { adminPageMetadata } from "@/lib/seo-metadata";
 import { loadWorkflowList } from "@/lib/usecases/workflows";
+import { loadApprovalProducts } from "@/lib/usecases/approval-products";
 import { ApprovalsInbox } from "@/components/ApprovalsInbox";
 
 export const dynamic = "force-dynamic";
@@ -27,5 +28,12 @@ export default async function ApprovalsAdminPage() {
   // Next's error boundary renders it. The inbox itself treats an empty
   // queue as a success state.
   const { workflows } = await loadWorkflowList({ baseUrl, status: "waiting_review" });
-  return <ApprovalsInbox workflows={[...workflows]} />;
+  // The summary API carries no product_title on this backend yet, so the
+  // product (title, SKU, draft description) is joined here server-side;
+  // a failed join degrades to the raw product id per row.
+  const products = await loadApprovalProducts({
+    baseUrl,
+    productIds: workflows.map((w) => w.productId),
+  });
+  return <ApprovalsInbox workflows={[...workflows]} products={products} />;
 }

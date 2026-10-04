@@ -736,3 +736,42 @@ describe("keyboard path (roving tabIndex, one index space)", () => {
     expect(screen.queryByRole("heading", { name: /reject — a reason is required/i })).toBeNull();
   });
 });
+
+describe("ApprovalsInbox product join", () => {
+  const noTitle = (id: string, productId: string): WorkflowSummary => ({
+    ...wf(id, "" as string, "waiting_review"),
+    productTitle: undefined,
+    productId,
+  });
+
+  it("falls back to the joined product title, then the raw product id", () => {
+    stubFetch(() => ok202());
+    render(
+      <ApprovalsInbox
+        workflows={[noTitle("wfA", "e8bd-1"), noTitle("wfB", "e8bd-2")]}
+        products={{ "e8bd-1": { id: "e8bd-1", title: "Walnut Serving Board", sku: "ENR-P-006" } }}
+      />,
+    );
+    // Mutant this kills: the products prop ignored — the row shows the
+    // raw uuid the backend leaves when product_title is absent.
+    expect(screen.getByTestId("title-wfA").textContent).toBe("Walnut Serving Board");
+    expect(screen.getByTestId("title-wfB").textContent).toBe("e8bd-2");
+    cleanup();
+  });
+
+  it("the preview drawer shows the draft description from the join", async () => {
+    stubFetch(() => ok202());
+    render(
+      <ApprovalsInbox
+        workflows={[noTitle("wfC", "e8bd-3")]}
+        products={{ "e8bd-3": { id: "e8bd-3", title: "Walnut Serving Board", sku: "ENR-P-006", description: "Walnut serving board, forty centimetres, oiled and finished by hand." } }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Preview Walnut Serving Board/i }));
+    // Mutant this kills: the Draft row dropped — the approver decides
+    // without ever seeing the text they are approving.
+    expect(screen.getByText(/Walnut serving board, forty centimetres/i)).toBeInTheDocument();
+    expect(screen.getByText(/ENR-P-006/)).toBeInTheDocument();
+    cleanup();
+  });
+});
