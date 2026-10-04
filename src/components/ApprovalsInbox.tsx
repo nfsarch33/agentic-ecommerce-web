@@ -2,9 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { WorkflowSummary } from "@/lib/domain/workflow";
+import type { ApprovalProducts } from "@/lib/usecases/approval-products";
 
 export interface ApprovalsInboxProps {
   workflows: WorkflowSummary[];
+  /** Server-side product join: the summary API carries no product_title
+   * on this backend, so the row label falls back to it before the raw
+   * product id, and the preview drawer shows the draft description. */
+  products?: ApprovalProducts;
 }
 
 /** The component's small palette; one place to retint. */
@@ -194,7 +199,11 @@ function signalPath(id: string): string {
  * the decision again. An item that is no longer waiting_review is never
  * approvable.
  */
-export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
+export function ApprovalsInbox({ workflows, products }: ApprovalsInboxProps) {
+  // Joined title first (the summary API carries no product_title), then
+  // the API's own field, then the raw id — a plain derivation, no hook.
+  const productLabel = (wf: WorkflowSummary) =>
+    wf.productTitle ?? products?.[wf.productId]?.title ?? wf.productId;
   const [state, dispatch] = useReducer(reducer, {
     items: Object.fromEntries(workflows.map((wf) => [wf.id, { status: "pending" as const }])),
     selected: {},
@@ -541,7 +550,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
               key={wf.id}
               data-status={item.status}
               data-row-id={wf.id}
-              aria-label={`Approval item ${wf.productTitle ?? wf.productId}`}
+              aria-label={`Approval item ${productLabel(wf)}`}
               tabIndex={i === Math.min(focusIndex, workflows.length - 1) ? 0 : -1}
               ref={(el) => {
                 rowRefs.current[i] = el;
@@ -562,7 +571,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
               <div style={{ display: "flex", gap: "0.5rem", alignItems: "baseline", flexWrap: "wrap", minWidth: 0 }}>
                 <input
                   type="checkbox"
-                  aria-label={`Select ${wf.productTitle ?? wf.id}`}
+                  aria-label={`Select ${productLabel(wf)}`}
                   checked={!!state.selected[wf.id]}
                   disabled={!reviewable}
                   onChange={(e) => dispatch({ type: "select", id: wf.id, on: e.target.checked })}
@@ -572,7 +581,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                   style={{ overflowWrap: "anywhere", minWidth: 0, flex: "1 1 12rem" }}
                   data-testid={`title-${wf.id}`}
                 >
-                  {wf.productTitle ?? wf.productId}
+                  {productLabel(wf)}
                 </span>
                 <span aria-label="Cost" title="Run cost from the ledger; dash means not available">
                   cost&nbsp;—
@@ -598,7 +607,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                     <button
                       onClick={() => void send(wf.id, "approve")}
                       disabled={item.status === "inflight"}
-                      aria-label={`Approve ${wf.productTitle ?? wf.id}`}
+                      aria-label={`Approve ${productLabel(wf)}`}
                       data-approve-id={wf.id}
                     >
                       Approve
@@ -612,7 +621,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                         setReasonError(null);
                       }}
                       disabled={item.status === "inflight"}
-                      aria-label={`Reject ${wf.productTitle ?? wf.id}`}
+                      aria-label={`Reject ${productLabel(wf)}`}
                       data-reject-id={wf.id}
                     >
                       Reject…
@@ -624,7 +633,7 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                     captureOpener(e.currentTarget);
                     setPreview(wf.id);
                   }}
-                  aria-label={`Preview ${wf.productTitle ?? wf.id}`}
+                  aria-label={`Preview ${productLabel(wf)}`}
                 >
                   Preview
                 </button>
@@ -652,7 +661,14 @@ export function ApprovalsInbox({ workflows }: ApprovalsInboxProps) {
                 <dl style={{ overflowWrap: "anywhere" }}>
                   <dt>Workflow</dt><dd>{wf.id}</dd>
                   <dt>Type</dt><dd>{wf.type}</dd>
-                  <dt>Product</dt><dd>{wf.productTitle ?? wf.productId}</dd>
+                  <dt>Product</dt><dd>{productLabel(wf)}{products?.[wf.productId]?.sku ? ` (${products[wf.productId]?.sku})` : ""}</dd>
+                  <dt>Current description</dt>
+                  <dd data-testid={`current-description-${wf.id}`}>
+                    {products?.[wf.productId]?.description ?? "\u2014 no description on the product record \u2014"}
+                    <span style={{ display: "block", color: TOKENS.textMuted }}>
+                      the store record as it is now \u2014 the workflow overwrites it only after approval; the draft text itself appears here once the workflow API exposes it
+                    </span>
+                  </dd>
                   <dt>Status</dt><dd>{workflowStatusLabel(wf.status)}</dd>
                   <dt>Current activity</dt><dd>{wf.currentActivity ?? "—"}</dd>
                   <dt>Started</dt><dd>{wf.startedAt}</dd>
