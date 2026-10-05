@@ -37,6 +37,10 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          # Same reason as the CI gate's docker build --pull: a floating
+          # base tag must re-resolve on every build or the image inherits
+          # whatever the runner cached, patched or not.
+          pull: true
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha

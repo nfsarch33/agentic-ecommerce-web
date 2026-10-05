@@ -118,7 +118,11 @@ jobs:
 
       - name: Build Docker image
         if: steps.change-scope.outputs.metadata_only != 'true'
-        run: docker build -t agentic-ecommerce-web:${{ github.sha }} .
+        # --pull re-resolves the floating node:22-bookworm-slim tag: the
+        # runner's cached base carried libpcre2-8-0 10.42-1+deb12u1
+        # (CVE-2026-103111, HIGH; fixed in deb12u2) months after the patch
+        # shipped, and the scan gate went red on a base we never pinned.
+        run: docker build --pull -t agentic-ecommerce-web:${{ github.sha }} .
 
       - name: Scan Docker image with Trivy
         if: steps.change-scope.outputs.metadata_only != 'true'
