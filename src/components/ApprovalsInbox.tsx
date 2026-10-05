@@ -664,9 +664,9 @@ export function ApprovalsInbox({ workflows, products }: ApprovalsInboxProps) {
                   <dt>Product</dt><dd>{productLabel(wf)}{products?.[wf.productId]?.sku ? ` (${products[wf.productId]?.sku})` : ""}</dd>
                   <dt>Current description</dt>
                   <dd data-testid={`current-description-${wf.id}`}>
-                    {products?.[wf.productId]?.description ?? "\u2014 no description on the product record \u2014"}
+                    {products?.[wf.productId]?.description ?? "— no description on the product record —"}
                     <span style={{ display: "block", color: TOKENS.textMuted }}>
-                      the store record as it is now \u2014 the workflow overwrites it only after approval; the draft text itself appears here once the workflow API exposes it
+                      the store record as it is now — the workflow overwrites it only after approval; the draft text itself appears here once the workflow API exposes it
                     </span>
                   </dd>
                   <dt>Status</dt><dd>{workflowStatusLabel(wf.status)}</dd>
