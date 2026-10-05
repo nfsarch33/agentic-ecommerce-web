@@ -122,3 +122,19 @@ describe("workflow usecases", () => {
     expect(fetchWorkflowDetailImpl).not.toHaveBeenCalled();
   });
 });
+
+describe("loadWorkflowList: bearer forwarding (deps.fetchImpl)", () => {
+  it("forwards the server component's authed fetch to the adapter", async () => {
+    const seen: unknown[] = [];
+    const authedFetch: typeof fetch = (async () => new Response("{}")) as unknown as typeof fetch;
+    const impl = vi.fn(async (opts: { fetchImpl?: typeof fetch }) => {
+      seen.push(opts.fetchImpl);
+      return [];
+    });
+    await loadWorkflowList({ baseUrl: "http://api.test" }, { fetchWorkflowListImpl: impl, fetchImpl: authedFetch });
+    // Mutant this kills: deps.fetchImpl dropped before the adapter call —
+    // the approvals page reads the backend unauthenticated and 500s the
+    // moment the backend turns RBAC on.
+    expect(seen[0]).toBe(authedFetch);
+  });
+});

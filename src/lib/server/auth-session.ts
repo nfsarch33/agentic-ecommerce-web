@@ -27,6 +27,17 @@ export async function getServerSession(): Promise<Session | null> {
   return getSessionFromCookieHeader(headerStore.get("cookie"));
 }
 
+/** The raw bearer for server-side DATA calls to the backend (admin
+ * pages' list and product-join fetches). Same cookie the session read
+ * uses; deliberately NOT re-validated here — the backend enforces it,
+ * and a null means "not logged in", which the page's
+ * requireServerSession has already turned into a redirect by the time
+ * anyone calls this. */
+export async function getServerAccessToken(): Promise<string | null> {
+  const headerStore = await headers();
+  return readAuthTokenFromCookieHeader(headerStore.get("cookie"));
+}
+
 export async function requireServerSession(minRole: Role = "viewer"): Promise<Session> {
   const session = await getServerSession();
   if (!session) {

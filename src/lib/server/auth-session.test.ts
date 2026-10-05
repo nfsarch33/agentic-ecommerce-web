@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 
 import {
   authBackendBaseUrl,
+  getServerAccessToken,
   getServerSession,
   getSessionFromCookieHeader,
   requireServerSession,
@@ -104,6 +105,22 @@ describe("getServerSession", () => {
   it("returns null when next/headers reports no cookie", async () => {
     headersMock.mockReturnValue(Promise.resolve({ get: () => null }));
     expect(await getServerSession()).toBeNull();
+  });
+});
+
+describe("getServerAccessToken", () => {
+  it("returns the raw bearer from the session cookie, unvalidated", async () => {
+    const get = vi.fn().mockReturnValue(`${AUTH_COOKIE_NAME}=token-abc`);
+    headersMock.mockReturnValue(Promise.resolve({ get }));
+    // Deliberately NO fetchBackendSession expectation: this helper must
+    // not spend an upstream call validating what the backend will check
+    // again anyway.
+    expect(await getServerAccessToken()).toBe("token-abc");
+  });
+
+  it("returns null when there is no cookie (caller handles the redirect)", async () => {
+    headersMock.mockReturnValue(Promise.resolve({ get: () => null }));
+    expect(await getServerAccessToken()).toBeNull();
   });
 });
 
