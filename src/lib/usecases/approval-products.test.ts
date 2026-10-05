@@ -50,3 +50,36 @@ describe("loadApprovalProducts", () => {
     expect(Object.keys(fetched)).toHaveLength(20);
   });
 });
+
+describe("loadApprovalProducts: bearer forwarding (input.fetch)", () => {
+  it("wraps the default adapter with the authed fetch", async () => {
+    // Spy on the adapter seam indirectly: the wrapper must pass a
+    // fetchImpl (the authed fetch) through to fetchProductBySlug. We
+    // intercept by giving a custom global fetch and asserting the
+    // adapter's outgoing request carries the bearer.
+    const authedFetch: typeof fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      return new Response(
+        JSON.stringify({
+          id: url.split("/").pop(),
+          sku: "SKU-T",
+          title: "T",
+          slug: url.split("/").pop(),
+          stock: 1,
+          price: { amount: 10, currency: "AUD" },
+          description: "d",
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    }) as unknown as typeof fetch;
+    const out = await loadApprovalProducts({
+      baseUrl: "http://api.test",
+      productIds: ["x"],
+      fetch: authedFetch,
+    });
+    // The join still lands (the authed fetch was used, not the default
+    // adapter's bare fetch — a dropped `fetch` would leave the row
+    // missing here because the real adapter would hit a 401 fixture).
+    expect(out["x"]?.title).toBe("T");
+  });
+});

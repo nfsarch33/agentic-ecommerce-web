@@ -30,6 +30,9 @@ export interface LoadApprovalProductsInput {
   readonly productIds: readonly string[];
   /** Test seam; defaults to the real adapter. */
   readonly fetchImpl?: typeof fetchProductBySlug;
+  /** A fetch with the session bearer attached (server components): the
+   * backend's product reads are RBAC-authed; rides along to the adapter. */
+  readonly fetch?: typeof fetch;
 }
 
 export async function loadApprovalProducts(
@@ -38,7 +41,10 @@ export async function loadApprovalProducts(
   const unique = [...new Set(input.productIds.filter((id) => id.trim() !== ""))];
   const out: ApprovalProducts = {};
   let next = 0;
-  const fetchOne = input.fetchImpl ?? fetchProductBySlug;
+  const fetchOne =
+    input.fetchImpl ??
+    ((opts: Parameters<typeof fetchProductBySlug>[0]) =>
+      fetchProductBySlug({ ...opts, ...(input.fetch ? { fetchImpl: input.fetch } : {}) }));
   const worker = async (): Promise<void> => {
     for (let i = next++; i < unique.length; i = next++) {
       const id = unique[i];

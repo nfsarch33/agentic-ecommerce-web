@@ -29,6 +29,9 @@ export interface LoadWorkflowListResult {
 }
 
 export interface WorkflowUsecaseDeps {
+  /** A fetch with the session bearer attached (server components); when
+   * set it rides along to the adapter calls that talk to the backend. */
+  readonly fetchImpl?: typeof fetch;
   readonly fetchWorkflowListImpl?: (opts: FetchWorkflowListOptions) => Promise<WorkflowSummary[]>;
   readonly fetchWorkflowDetailImpl?: (opts: FetchWorkflowDetailOptions) => Promise<WorkflowDetail>;
   readonly startProductPublishWorkflowImpl?: (
@@ -78,6 +81,11 @@ export async function loadWorkflowList(
     baseUrl: input.baseUrl,
     status: input.status,
     limit: input.limit,
+    // fetchImpl carries the session bearer in server components: the
+    // backend's /api/v1/workflows is RBAC-authed, and the default fetch
+    // sends no Authorization at all (it only worked while the backend
+    // ran unauthenticated).
+    ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
   });
   return {
     workflows,
