@@ -776,6 +776,11 @@ describe("ApprovalsInbox product join", () => {
     expect(screen.queryByText(/^Draft$/)).toBeNull();
     expect(screen.getByTestId("current-description-wfC").textContent).toContain("Walnut serving board, forty centimetres");
     expect(screen.getByTestId("current-description-wfC").textContent).toContain("only after approval");
+    // The muted note renders a REAL em dash, never the literal escape:
+    // in JSX text "\u2014" prints as backslash-u2014 on the page. Mutant
+    // this kills: the escape sneaking back into the note.
+    expect(screen.getByTestId("current-description-wfC").textContent).toContain("now — the workflow");
+    expect(screen.getByTestId("current-description-wfC").textContent).not.toContain("u2014");
     expect(screen.getByText(/ENR-P-006/)).toBeInTheDocument();
     cleanup();
   });

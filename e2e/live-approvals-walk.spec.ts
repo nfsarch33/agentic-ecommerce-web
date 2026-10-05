@@ -67,10 +67,12 @@ test("lists the waiting drafts with product + draft and approves one end to end"
     )
     .not.toBe("pending");
 
-  // Store read-back: the workflow completes and the fixture store shows
-  // the enriched description on the product (via the audited proxy).
-  // The read-back is asserted through the public product API so the test
-  // holds no store credentials.
+  // Completion read-back: poll the workflow's status through the admin
+  // workflows API (the session is already the admin's) until it leaves
+  // waiting_review — that is the approval's durable effect this spec can
+  // see. The STORE-side read-back (the product record showing the
+  // enriched description) is pasted on the ticket by hand from a curl
+  // against the public product API; this spec holds no store assertion.
   await expect
     .poll(
       async () => {
