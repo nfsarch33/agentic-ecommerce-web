@@ -71,7 +71,16 @@ function runGitleaks(): void {
 }
 
 runGitleaks();
-runGate("bun audit", "bun", ["audit", "--audit-level=high"]);
+// GHSA-vfj7-8cjw-p6xm (braces stack-exhaustion DoS, via the eslint
+// chain) has NO patched release upstream (affected <=3.0.3, "Patched
+// versions: None"; 3.0.3 is the latest tag). CI already ignores it; the
+// local gate must carry the same ignore or it stays red on pristine
+// main. Drop the flag the day a fixed braces ships.
+runGate("bun audit", "bun", [
+  "audit",
+  "--audit-level=high",
+  "--ignore=GHSA-vfj7-8cjw-p6xm",
+]);
 runGate("trivy fs", "trivy", [
   "fs",
   "--severity",
