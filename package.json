@@ -1,9 +1,11 @@
 {
   "dependencies": {
-    "next": "^16.3.6",
+    "next": "^16.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "swr": "^2.4.1"
+    "source-map-js": "^1.2.2",
+    "swr": "^2.4.1",
+    "tinypool": "^2.2.0"
   },
   "description": "Public Next.js 16 App Router frontend for the Agentic Ecommerce stack",
   "devDependencies": {
