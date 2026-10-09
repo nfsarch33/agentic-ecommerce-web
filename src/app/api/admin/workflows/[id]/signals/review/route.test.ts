@@ -221,6 +221,31 @@ describe("CSRF", () => {
     });
   });
 
+  it("an Origin matching the HOST header is same-origin even when request.url carries the internal host", async () => {
+    await withUpstream({}, async (upstream) => {
+      // The pilot-approver acceptance shape: the browser (or test driver)
+      // posts to the published address, so Origin and the Host header both
+      // name it, while the server-side request.url still reflects the
+      // container's internal listener. Comparing Origin against
+      // request.url would 403 the inbox's own signed-in approver.
+      const res = await callRoute("wf1", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://100.84.108.92:15504",
+          host: "100.84.108.92:15504",
+          cookie: "ec_session=jwt",
+        },
+        body: JSON.stringify({ signal: "approve" }),
+      });
+      expect(res.status).toBe(202);
+      expect(upstream.captured).toHaveLength(1);
+      // Mutant this kills: reverting the comparison to request.url only —
+      // web.test (the URL host) differs from 100.84.108.92:15504, so the
+      // mutant turns this row into a 403.
+    });
+  });
+
   it("a text/plain body is 415 with ZERO upstream calls", async () => {
     await withUpstream({}, async (upstream) => {
       const res = await callRoute("wf1", {
