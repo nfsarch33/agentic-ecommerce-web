@@ -232,8 +232,8 @@ describe("CSRF", () => {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          origin: "http://100.84.108.92:15504",
-          host: "100.84.108.92:15504",
+          origin: "http://203.0.113.10:8443",
+          host: "203.0.113.10:8443",
           cookie: "ec_session=jwt",
         },
         body: JSON.stringify({ signal: "approve" }),
@@ -241,7 +241,7 @@ describe("CSRF", () => {
       expect(res.status).toBe(202);
       expect(upstream.captured).toHaveLength(1);
       // Mutant this kills: reverting the comparison to request.url only —
-      // web.test (the URL host) differs from 100.84.108.92:15504, so the
+      // web.test (the URL host) differs from 203.0.113.10:8443, so the
       // mutant turns this row into a 403.
     });
   });
