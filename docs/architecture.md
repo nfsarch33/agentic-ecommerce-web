@@ -38,7 +38,9 @@ publishes.
 - Decisions POST same-origin to
   `/api/admin/workflows/[id]/signals/review`. That route refuses
   non-JSON bodies (415) and cross-site requests (403) before anything
-  upstream runs; it verifies the session from the cookie server-side,
+  upstream runs (same-origin is decided from the request's own Host
+  header, because behind a published port the server-side URL can carry
+  the container's internal host); it verifies the session from the cookie server-side,
   sets the upstream `reviewer` from that session (a browser-supplied
   reviewer is never trusted), forwards the access bearer and the
   browser's Idempotency-Key, enforces the reason rule for rejects, and

@@ -38,14 +38,22 @@ interface RouteContext {
 }
 
 /** Same-origin check for a cookie-authenticated state-changing POST:
- * accept a matching Origin header OR an explicit Sec-Fetch-Site. */
+ * accept a matching Origin header OR an explicit Sec-Fetch-Site. The
+ * Origin is compared against the request's OWN Host header: behind a
+ * published port or reverse proxy the server-side `request.url` can
+ * carry the container's internal host, which would refuse every
+ * legitimately same-origin browser call from outside (found by the
+ * pilot-approver acceptance: the tailnet share 403'd its own inbox). */
 function isSameOrigin(request: Request): boolean {
   const secFetchSite = request.headers.get("sec-fetch-site");
   if (secFetchSite === "same-origin") return true;
   const origin = request.headers.get("origin");
   if (!origin) return false;
+  const host = request.headers.get("host");
   try {
-    return new URL(origin).host === new URL(request.url).host;
+    const originHost = new URL(origin).host;
+    if (host !== null) return originHost === host;
+    return originHost === new URL(request.url).host;
   } catch {
     return false;
   }
