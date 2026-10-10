@@ -24,11 +24,13 @@ RUN mkdir -p public && node node_modules/next/dist/bin/next build
 
 FROM node:22-bookworm-slim AS runner
 
-# Pull the patched libpcre2-8-0 straight from Debian at build time: the
-# floating node tag itself still ships 10.42-1+deb12u1 (CVE-2026-103111,
-# HIGH; fixed in deb12u2) and downstream base images lag the security
-# repo by weeks -- the scan gate cannot wait for the tag to catch up.
-RUN apt-get update     && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0     && rm -rf /var/lib/apt/lists/*
+# Pull patched packages straight from Debian at build time: floating
+# base tags lag the security repo by weeks -- the scan gate cannot wait
+# for the tags to catch up. libpcre2-8-0: CVE-2026-103111 (HIGH, fixed
+# deb12u2; the node tag shipped 10.42-1+deb12u1). perl-base: the
+# CVE-2026-13221/42496/42497/48962/57432/57433/8376 cluster (CRITICAL+HIGH,
+# fixed 5.36.0-7+deb12u4; the tag still ships deb12u3).
+RUN apt-get update     && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 perl-base     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
